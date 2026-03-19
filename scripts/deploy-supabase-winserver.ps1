@@ -155,16 +155,16 @@ if (-not $hasUbuntu) {
     }
     
     Write-OK "Ubuntu 发行版已安装"
-    Write-Warn "首次启动 Ubuntu 需要设置用户名和密码"
-    Write-Warn "请在弹出的 Ubuntu 窗口中完成初始设置后，重新运行此脚本"
     
-    # 启动 Ubuntu 让用户完成初始设置
-    Start-Process "ubuntu.exe"
-    
-    Write-Host ""
-    Write-Host "等待您完成 Ubuntu 初始设置..." -ForegroundColor Yellow
-    Write-Host "设置完成后按 Enter 继续..." -ForegroundColor Yellow
-    Read-Host
+    # wsl --import 导入的发行版默认以 root 运行，无需手动设置用户
+    # 验证 Ubuntu 可以启动
+    Write-Step "验证 Ubuntu WSL 可用..."
+    $testResult = wsl -d Ubuntu echo "ok" 2>$null
+    if ($testResult -match "ok") {
+        Write-OK "Ubuntu WSL 启动正常"
+    } else {
+        Write-Warn "Ubuntu WSL 启动测试未通过，可能需要重启服务器后重试"
+    }
 } else {
     Write-OK "Ubuntu 已安装"
 }

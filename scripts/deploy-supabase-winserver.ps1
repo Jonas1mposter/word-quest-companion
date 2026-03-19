@@ -212,24 +212,76 @@ Write-OK "防火墙规则已配置"
 # ============================================================
 Write-Step "配置 WSL2 端口转发..."
 
-$wslIPRaw = wsl -d Ubuntu -- hostname -I 2>$null
-$wslIP = ""
-if ($wslIPRaw) {
-    $wslIP = ($wslIPRaw.Trim().Split(" ") | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+$portProxyReady = $true
+
+try {
+    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if (-not $isAdmin) {
+        throw "当前 PowerShell 不是管理员权限"
+    }
+
+    $ipHelper = Get-Service -Name "iphlpsvc" -ErrorAction Stop
+    if ($ipHelper.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
+        Write-Warn "IP Helper 服务未运行，正在尝试启动..."
+        Start-Service -Name "iphlpsvc" -ErrorAction Stop
+        $ipHelper = Get-Service -Name "iphlpsvc" -ErrorAction Stop
+    }
+
+    if ($ipHelper.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
+        throw "IP Helper 服务未成功启动，无法配置 portproxy"
+    }
+} catch {
+    $portProxyReady = $false
+    Write-Warn "端口转发前置检查失败: $($_.Exception.Message)"
+    Log "端口转发前置检查失败: $($_.Exception.Message)"
 }
 
-if ($wslIP) {
-    Write-Host "  WSL2 内部 IP: $wslIP" -ForegroundColor Gray
-    
-    foreach ($p in $ports) {
-        netsh interface portproxy delete v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 2>$null | Out-Null
-        netsh interface portproxy add v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 connectport=$($p.Port) connectaddress=$wslIP
-        Write-Host "  端口转发: 0.0.0.0:$($p.Port) -> ${wslIP}:$($p.Port)" -ForegroundColor Gray
+$wslIP = ""
+if ($portProxyReady) {
+    try {
+        $wslIPRaw = wsl -d Ubuntu -- hostname -I 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "无法从 Ubuntu 获取 WSL IP"
+        }
+
+        $wslIP = ((($wslIPRaw | Out-String).Trim() -split '\s+') | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+        if (-not $wslIP) {
+            throw "Ubuntu 已启动，但未获取到有效 IPv4 地址"
+        }
+    } catch {
+        $portProxyReady = $false
+        Write-Warn "获取 WSL IP 失败: $($_.Exception.Message)"
+        Log "获取 WSL IP 失败: $($_.Exception.Message)"
     }
-    
-    Write-OK "端口转发已配置"
+}
+
+if ($portProxyReady -and $wslIP) {
+    Write-Host "  WSL2 内部 IP: $wslIP" -ForegroundColor Gray
+
+    $successCount = 0
+    foreach ($p in $ports) {
+        try {
+            netsh interface portproxy delete v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 2>$null | Out-Null
+            $null = netsh interface portproxy add v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 connectport=$($p.Port) connectaddress=$wslIP 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                throw "netsh 返回退出码 $LASTEXITCODE"
+            }
+
+            $successCount++
+            Write-Host "  端口转发: 0.0.0.0:$($p.Port) -> ${wslIP}:$($p.Port)" -ForegroundColor Gray
+        } catch {
+            Write-Warn "端口 $($p.Port) 转发失败: $($_.Exception.Message)"
+            Log "端口 $($p.Port) 转发失败: $($_.Exception.Message)"
+        }
+    }
+
+    if ($successCount -gt 0) {
+        Write-OK "端口转发已配置（成功 $successCount/$($ports.Count)）"
+    } else {
+        Write-Warn "端口转发未成功配置，后续将继续执行部署"
+    }
 } else {
-    Write-Warn "无法获取 Ubuntu WSL IP，端口转发需要在部署完成后手动配置"
+    Write-Warn "已跳过自动端口转发，后续将继续执行部署"
     Write-Host "  手动配置命令示例:" -ForegroundColor Gray
     Write-Host "  netsh interface portproxy add v4tov4 listenport=8000 listenaddress=0.0.0.0 connectport=8000 connectaddress=<WSL_IP>" -ForegroundColor Gray
 }

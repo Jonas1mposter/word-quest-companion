@@ -111,15 +111,25 @@ try {
 # ============================================================
 Write-Step "检查 Ubuntu 发行版..."
 
-$wslList = wsl -l -q 2>$null
+# 使用多种方式检测 Ubuntu 是否已安装
 $hasUbuntu = $false
-if ($wslList) {
-    foreach ($distro in $wslList) {
-        $clean = $distro.Trim() -replace '\x00', ''
-        if ($clean -match "Ubuntu") {
-            $hasUbuntu = $true
-            break
-        }
+
+# 方法1: 直接尝试运行 Ubuntu
+$testRun = wsl -d Ubuntu -- echo "UBUNTU_EXISTS" 2>$null
+if ($testRun -match "UBUNTU_EXISTS") {
+    $hasUbuntu = $true
+}
+
+# 方法2: 如果方法1失败，检查安装目录
+if (-not $hasUbuntu -and (Test-Path "C:\WSL\Ubuntu\ext4.vhdx")) {
+    $hasUbuntu = $true
+}
+
+# 方法3: 解析 wsl -l 输出（兜底）
+if (-not $hasUbuntu) {
+    $wslRaw = (wsl -l 2>$null | Out-String) -replace '\x00', ''
+    if ($wslRaw -match "Ubuntu") {
+        $hasUbuntu = $true
     }
 }
 

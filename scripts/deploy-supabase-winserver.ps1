@@ -130,7 +130,8 @@ Write-Step "检查 Docker..."
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Warn "正在下载 Docker Desktop..."
-    $dockerUrl = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+    # 使用阿里云镜像加速下载
+    $dockerUrl = "https://mirrors.aliyun.com/docker-toolbox/windows/docker-for-windows/stable/Docker%20Desktop%20Installer.exe"
     $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
     
     Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstaller -UseBasicParsing

@@ -67,6 +67,33 @@ class QueryBuilder {
     return this;
   }
 
+  upsert(data: any | any[], options?: { onConflict?: string }) {
+    this.isInsert = true;
+    const conflictField = options?.onConflict || 'id';
+    const items = Array.isArray(data) ? data : [data];
+    const current = getStore(this.table);
+    
+    this.insertData = items.map(item => {
+      const existing = current.find((row: any) => row[conflictField] === item[conflictField]);
+      if (existing) {
+        return { ...existing, ...item, updated_at: new Date().toISOString() };
+      }
+      return {
+        id: item.id || crypto.randomUUID(),
+        created_at: item.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...item,
+      };
+    });
+    
+    // Remove existing conflicting rows
+    this.data = current.filter((row: any) => 
+      !items.some(item => row[conflictField] === item[conflictField])
+    );
+    // We'll handle the merge in execute
+    return this;
+  }
+
   delete() {
     this.isDelete = true;
     return this;

@@ -265,7 +265,7 @@ const ProfileCard = () => {
 
     if (allCards) {
       const cards: NameCardData[] = allCards.map((card: any) => {
-        const owned = ownedCardsMap.get(card.id);
+        const owned = ownedCardsMap.get(card.id) as any;
         return {
           ...card,
           is_equipped: owned?.is_equipped || false,
@@ -405,11 +405,11 @@ const ProfileCard = () => {
       }
 
       // 上传新背景
-      const { error: uploadError } = await supabase.storage
+      const uploadResult = await supabase.storage
         .from('profile-backgrounds')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { upsert: true }) as any;
 
-      if (uploadError) throw uploadError;
+      if (uploadResult?.error) throw uploadResult.error;
 
       // 获取公共 URL
       const { data: urlData } = supabase.storage

@@ -127,7 +127,7 @@ if (-not $hasUbuntu) {
     Write-Warn "正在安装 Ubuntu 发行版..."
     
     # 优先使用清华大学镜像下载 Ubuntu WSL rootfs (约 80MB，比微软源快很多)
-    $ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz"
+    $ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz"
     $ubuntuRootfs = "$env:TEMP\ubuntu-wsl.tar.gz"
     $ubuntuInstallDir = "C:\WSL\Ubuntu"
     

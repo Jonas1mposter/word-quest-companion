@@ -36,7 +36,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Swords, BookOpen, Trophy, LogOut, ChevronLeft, Sparkles, User, Crown, Users, BookX, GraduationCap, Target, Globe, Book, History, Calculator, FlaskConical, Shield } from "lucide-react";
 import SubjectBattleSelector, { BattleSubject } from "./SubjectBattleSelector";
 import { toast } from "sonner";
-import logoDashboard from "@/assets/logo-dashboard.jpg";
+// Logo placeholder - asset not yet imported
+const logoDashboard = "/placeholder.svg";
 
 interface DashboardProps {
   grade: 7 | 8;

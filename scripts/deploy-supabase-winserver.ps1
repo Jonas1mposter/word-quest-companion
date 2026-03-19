@@ -130,7 +130,8 @@ Write-Step "检查 Docker..."
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Warn "正在下载 Docker Desktop..."
-    $dockerUrl = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+    # 使用阿里云镜像加速下载
+    $dockerUrl = "https://mirrors.aliyun.com/docker-toolbox/windows/docker-for-windows/stable/Docker%20Desktop%20Installer.exe"
     $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
     
     Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstaller -UseBasicParsing
@@ -186,7 +187,8 @@ if (Test-Path $supabaseDir) {
     Set-Location $supabaseDir
     git pull origin master 2>$null
 } else {
-    git clone --depth 1 https://github.com/supabase/supabase.git "$INSTALL_DIR\supabase-repo"
+    # 使用 GitHub 国内镜像加速克隆
+    git clone --depth 1 https://ghproxy.net/https://github.com/supabase/supabase.git "$INSTALL_DIR\supabase-repo"
     Copy-Item -Recurse "$INSTALL_DIR\supabase-repo\docker" $supabaseDir
     Remove-Item -Recurse -Force "$INSTALL_DIR\supabase-repo" -ErrorAction SilentlyContinue
 }

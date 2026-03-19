@@ -134,8 +134,8 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     
     Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstaller -UseBasicParsing
     
-    Write-Warn "正在安装 Docker Desktop (可能需要几分钟)..."
-    Start-Process -Wait -FilePath $dockerInstaller -ArgumentList "install", "--quiet", "--accept-license"
+    Write-Warn "正在安装 Docker Desktop (使用 WSL2 后端，可能需要几分钟)..."
+    Start-Process -Wait -FilePath $dockerInstaller -ArgumentList "install", "--quiet", "--accept-license", "--backend=wsl-2"
     
     # 刷新 PATH
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")

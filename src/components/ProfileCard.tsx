@@ -265,7 +265,7 @@ const ProfileCard = () => {
 
     if (allCards) {
       const cards: NameCardData[] = allCards.map((card: any) => {
-        const owned = ownedCardsMap.get(card.id);
+        const owned = ownedCardsMap.get(card.id) as any;
         return {
           ...card,
           is_equipped: owned?.is_equipped || false,

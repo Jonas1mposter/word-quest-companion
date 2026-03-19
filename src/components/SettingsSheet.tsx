@@ -156,11 +156,13 @@ export const SettingsSheet = () => {
     }
     setPasswordLoading(true);
     try {
-      const {
-        error
-      } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Mock: update password in local store
+      const users = JSON.parse(localStorage.getItem('wq_auth_users') || '[]');
+      const session = JSON.parse(localStorage.getItem('wq_auth_session') || '{}');
+      const userId = session?.user?.id;
+      const updated = users.map((u: any) => u.id === userId ? { ...u, password: newPassword } : u);
+      localStorage.setItem('wq_auth_users', JSON.stringify(updated));
+      const error = null;
       if (error) throw error;
       toast.success("密码修改成功！");
       setNewPassword("");

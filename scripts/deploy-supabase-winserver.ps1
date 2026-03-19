@@ -39,6 +39,48 @@ function Log($msg) {
     Write-Host $msg
 }
 
+function Stop-Script {
+    param(
+        [int]$Code = 0,
+        [string]$PauseMessage = "按回车键关闭窗口..."
+    )
+
+    Write-Host ""
+    if ($Code -eq 0) {
+        Write-Host "脚本执行结束。" -ForegroundColor Green
+    } else {
+        Write-Host "脚本已停止，退出码: $Code" -ForegroundColor Red
+    }
+
+    Write-Host $PauseMessage -ForegroundColor Yellow
+    try {
+        [void](Read-Host)
+    } catch {
+    }
+
+    exit $Code
+}
+
+trap {
+    $errorMessage = $_.Exception.Message
+    $positionMessage = $_.InvocationInfo.PositionMessage
+
+    Write-Err "脚本发生未处理异常: $errorMessage"
+    if ($positionMessage) {
+        Write-Host $positionMessage -ForegroundColor DarkYellow
+    }
+
+    try {
+        Log "未处理异常: $errorMessage"
+        if ($positionMessage) {
+            Log $positionMessage
+        }
+    } catch {
+    }
+
+    Stop-Script -Code 1 -PauseMessage "脚本异常退出，请先查看上方报错，按回车键关闭窗口..."
+}
+
 # ============================================================
 # 0. 初始化
 # ============================================================
@@ -84,10 +126,10 @@ if ($needReboot) {
     $restart = Read-Host "是否现在重启服务器？(Y/N)"
     if ($restart -eq "Y" -or $restart -eq "y") {
         Restart-Computer -Force
-        exit
+        return
     }
     Write-Err "请手动重启服务器后重新运行此脚本"
-    exit 1
+    Stop-Script -Code 1 -PauseMessage "请手动重启服务器后重新运行此脚本，按回车键关闭窗口..."
 }
 
 Write-OK "WSL2 所需 Windows 功能已就绪"
@@ -304,7 +346,7 @@ Write-Step "准备在 WSL2 Ubuntu 内执行部署..."
 if (-not (Test-Path $BASH_SCRIPT_WIN_PATH)) {
     Write-Err "找不到 bash 部署脚本: $BASH_SCRIPT_WIN_PATH"
     Write-Host "  请确保 $BASH_SCRIPT_NAME 与此脚本在同一目录下" -ForegroundColor Yellow
-    exit 1
+    Stop-Script -Code 1 -PauseMessage "缺少 bash 部署脚本，按回车键关闭窗口..."
 }
 
 $wslScriptDir = "/tmp/supabase-deploy"
@@ -329,7 +371,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Err "WSL2 内部署失败，请检查上方日志"
     Write-Host "  可以手动进入 Ubuntu 排查: wsl -d Ubuntu" -ForegroundColor Gray
     Write-Host "  查看日志: wsl -d Ubuntu -- bash -lc 'cat /opt/supabase/deploy.log'" -ForegroundColor Gray
-    exit 1
+    Stop-Script -Code 1 -PauseMessage "WSL2 内部署失败，请查看上方日志后按回车键关闭窗口..."
 }
 
 # ============================================================
@@ -369,3 +411,4 @@ Write-Host "注意: WSL2 重启后 Docker 不会自动启动，需手动执行:"
 Write-Host "  wsl -d Ubuntu -- bash -lc 'service docker start'" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "重要: 请妥善保管部署信息中的密码！" -ForegroundColor Red
+Stop-Script -Code 0 -PauseMessage "部署完成，请记录以上信息后按回车键关闭窗口..."

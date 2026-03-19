@@ -106,7 +106,8 @@ Write-Step "检查 Git..."
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Warn "正在安装 Git..."
-    $gitUrl = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
+    # 使用淘宝镜像加速下载
+    $gitUrl = "https://registry.npmmirror.com/-/binary/git-for-windows/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
     $gitInstaller = "$env:TEMP\git-installer.exe"
     
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

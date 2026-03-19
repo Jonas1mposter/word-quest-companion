@@ -361,6 +361,17 @@ export const supabase = {
       return { data: { user: { id: user.id, email: user.email }, session }, error: null };
     },
 
+    signInWithOAuth: async ({ provider, options }: { provider: string; options?: any }) => {
+      // For self-hosted Supabase, this will redirect to the OAuth provider
+      // In mock mode, show a message
+      console.log(`[Mock] OAuth sign-in with provider: ${provider}`, options);
+      const redirectTo = options?.redirectTo || window.location.origin;
+      // When using real Supabase, this will auto-redirect to Azure AD
+      // For now, simulate by showing the redirect URL
+      alert(`OAuth 登录需要连接真实的 Supabase 服务器。\n请先部署自托管 Supabase 并配置 Azure AD。\n\nProvider: ${provider}\nRedirect: ${redirectTo}`);
+      return { data: { provider, url: null }, error: { message: '请先连接自托管 Supabase 服务器' } };
+    },
+
     signInWithOtp: async ({ email }: { email: string }) => {
       // Auto-create account and sign in for OTP
       const users = getStore('auth_users');

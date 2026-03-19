@@ -50,21 +50,51 @@ if (-not (Test-Path $INSTALL_DIR)) {
 Log "开始部署..."
 
 # ============================================================
-# 1. 检查并启用容器功能
+# 1. 检查并启用容器功能 (优先 WSL2，Hyper-V 可选)
 # ============================================================
 Write-Step "检查 Windows 容器功能..."
 
+# 安装 Containers 功能
 $containersFeature = Get-WindowsFeature -Name Containers -ErrorAction SilentlyContinue
 if ($containersFeature -and -not $containersFeature.Installed) {
     Write-Warn "正在安装 Containers 功能..."
     Install-WindowsFeature -Name Containers -Restart:$false
 }
 
-# 检查 Hyper-V
+# 尝试安装 Hyper-V（如果 CPU 不支持虚拟化会失败，改用 WSL2）
+$useWSL2 = $false
 $hyperV = Get-WindowsFeature -Name Hyper-V -ErrorAction SilentlyContinue
 if ($hyperV -and -not $hyperV.Installed) {
-    Write-Warn "正在安装 Hyper-V..."
-    Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false
+    Write-Warn "尝试安装 Hyper-V..."
+    try {
+        Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false -ErrorAction Stop
+        Write-OK "Hyper-V 安装成功"
+    } catch {
+        Write-Warn "Hyper-V 安装失败 (CPU 不支持虚拟化)，将改用 WSL2 后端"
+        $useWSL2 = $true
+    }
+} elseif (-not $hyperV) {
+    Write-Warn "Hyper-V 功能不可用，将使用 WSL2 后端"
+    $useWSL2 = $true
+}
+
+# 安装 WSL2 (如果需要)
+if ($useWSL2) {
+    Write-Step "安装 WSL2..."
+    try {
+        # 启用 WSL 功能
+        dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart 2>$null
+        dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart 2>$null
+        
+        # 安装 WSL2
+        wsl --install --no-distribution 2>$null
+        wsl --set-default-version 2 2>$null
+        
+        Write-OK "WSL2 已配置"
+        Write-Warn ">>> 如果是首次安装 WSL2，可能需要重启服务器后继续 <<<"
+    } catch {
+        Write-Warn "WSL2 自动安装失败，请手动运行: wsl --install"
+    }
 }
 
 Write-OK "Windows 功能检查完成"

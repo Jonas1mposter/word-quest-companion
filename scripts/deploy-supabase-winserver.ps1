@@ -212,23 +212,24 @@ Write-OK "防火墙规则已配置"
 # ============================================================
 Write-Step "配置 WSL2 端口转发..."
 
-# 获取 WSL2 内部 IP
-$wslIP = (wsl hostname -I 2>$null).Trim().Split(" ")[0]
+$wslIPRaw = wsl -d Ubuntu -- hostname -I 2>$null
+$wslIP = ""
+if ($wslIPRaw) {
+    $wslIP = ($wslIPRaw.Trim().Split(" ") | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+}
 
 if ($wslIP) {
     Write-Host "  WSL2 内部 IP: $wslIP" -ForegroundColor Gray
     
     foreach ($p in $ports) {
-        # 删除旧规则
         netsh interface portproxy delete v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 2>$null | Out-Null
-        # 添加新规则
         netsh interface portproxy add v4tov4 listenport=$($p.Port) listenaddress=0.0.0.0 connectport=$($p.Port) connectaddress=$wslIP
         Write-Host "  端口转发: 0.0.0.0:$($p.Port) -> ${wslIP}:$($p.Port)" -ForegroundColor Gray
     }
     
     Write-OK "端口转发已配置"
 } else {
-    Write-Warn "无法获取 WSL2 IP，端口转发需要在部署完成后手动配置"
+    Write-Warn "无法获取 Ubuntu WSL IP，端口转发需要在部署完成后手动配置"
     Write-Host "  手动配置命令示例:" -ForegroundColor Gray
     Write-Host "  netsh interface portproxy add v4tov4 listenport=8000 listenaddress=0.0.0.0 connectport=8000 connectaddress=<WSL_IP>" -ForegroundColor Gray
 }
@@ -244,18 +245,15 @@ if (-not (Test-Path $BASH_SCRIPT_WIN_PATH)) {
     exit 1
 }
 
-# 将 Windows 路径转为 WSL 路径并复制
 $wslScriptDir = "/tmp/supabase-deploy"
-wsl bash -c "mkdir -p $wslScriptDir"
+wsl -d Ubuntu -- bash -lc "mkdir -p '$wslScriptDir'"
 
-# 转换路径并复制脚本
 $winPathForWSL = $BASH_SCRIPT_WIN_PATH -replace '\\', '/'
 $driveLetter = $winPathForWSL.Substring(0, 1).ToLower()
 $wslWinPath = "/mnt/$driveLetter$($winPathForWSL.Substring(2))"
 
-wsl bash -c "cp '$wslWinPath' '$wslScriptDir/deploy.sh' && chmod +x '$wslScriptDir/deploy.sh'"
+wsl -d Ubuntu -- bash -lc "cp '$wslWinPath' '$wslScriptDir/deploy.sh' && chmod +x '$wslScriptDir/deploy.sh'"
 
-# 传递服务器 IP 并执行
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host "  正在 WSL2 Ubuntu 内执行部署..."        -ForegroundColor Yellow
@@ -263,12 +261,12 @@ Write-Host "  这需要 10-20 分钟，请耐心等待"         -ForegroundColor
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host ""
 
-wsl bash -c "export SERVER_IP='$SERVER_IP' && $wslScriptDir/deploy.sh"
+wsl -d Ubuntu -- bash -lc "export SERVER_IP='$SERVER_IP'; export DEBIAN_FRONTEND=noninteractive; '$wslScriptDir/deploy.sh'"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Err "WSL2 内部署失败，请检查上方日志"
-    Write-Host "  可以手动进入 WSL 排查: wsl" -ForegroundColor Gray
-    Write-Host "  日志文件: wsl bash -c 'cat /opt/supabase/deploy.log'" -ForegroundColor Gray
+    Write-Host "  可以手动进入 Ubuntu 排查: wsl -d Ubuntu" -ForegroundColor Gray
+    Write-Host "  查看日志: wsl -d Ubuntu -- bash -lc 'cat /opt/supabase/deploy.log'" -ForegroundColor Gray
     exit 1
 }
 
@@ -287,7 +285,7 @@ Write-Host "  Auth 端点:        http://${SERVER_IP}:8000/auth/v1" -ForegroundC
 Write-Host ""
 Write-Host "登录凭据和密钥:" -ForegroundColor Cyan
 Write-Host "  请查看 WSL 内的配置文件:" -ForegroundColor White
-Write-Host "  wsl bash -c 'cat /opt/supabase/deployment-info.txt'" -ForegroundColor Yellow
+Write-Host "  wsl -d Ubuntu -- bash -lc 'cat /opt/supabase/deployment-info.txt'" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "微软 SSO 配置步骤:" -ForegroundColor Yellow
 Write-Host "  1. 登录 https://portal.azure.com" -ForegroundColor White
@@ -295,17 +293,17 @@ Write-Host "  2. Azure AD -> App registrations -> New registration" -ForegroundC
 Write-Host "  3. 应用名称: 狄邦单词通" -ForegroundColor White
 Write-Host "  4. Redirect URI: http://${SERVER_IP}:8000/auth/v1/callback" -ForegroundColor White
 Write-Host "  5. 获取 Client ID 和 Client Secret" -ForegroundColor White
-Write-Host "  6. 编辑 WSL 内 .env 文件: wsl bash -c 'nano /opt/supabase/supabase-docker/.env'" -ForegroundColor White
-Write-Host "  7. 重启: wsl bash -c 'cd /opt/supabase/supabase-docker && docker compose down && docker compose up -d'" -ForegroundColor White
+Write-Host "  6. 编辑 WSL 内 .env 文件: wsl -d Ubuntu -- bash -lc 'nano /opt/supabase/supabase-docker/.env'" -ForegroundColor White
+Write-Host "  7. 重启: wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && docker compose down && docker compose up -d'" -ForegroundColor White
 Write-Host ""
 Write-Host "常用命令 (在 PowerShell 中执行):" -ForegroundColor Cyan
-Write-Host "  查看状态:    wsl bash -c 'cd /opt/supabase/supabase-docker && docker compose ps'" -ForegroundColor White
-Write-Host "  查看日志:    wsl bash -c 'cd /opt/supabase/supabase-docker && docker compose logs -f'" -ForegroundColor White
-Write-Host "  重启服务:    wsl bash -c 'cd /opt/supabase/supabase-docker && docker compose restart'" -ForegroundColor White
-Write-Host "  停止服务:    wsl bash -c 'cd /opt/supabase/supabase-docker && docker compose down'" -ForegroundColor White
-Write-Host "  启动服务:    wsl bash -c 'cd /opt/supabase/supabase-docker && sudo service docker start && docker compose up -d'" -ForegroundColor White
+Write-Host "  查看状态:    wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && docker compose ps'" -ForegroundColor White
+Write-Host "  查看日志:    wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && docker compose logs -f'" -ForegroundColor White
+Write-Host "  重启服务:    wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && docker compose restart'" -ForegroundColor White
+Write-Host "  停止服务:    wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && docker compose down'" -ForegroundColor White
+Write-Host "  启动服务:    wsl -d Ubuntu -- bash -lc 'cd /opt/supabase/supabase-docker && service docker start && docker compose up -d'" -ForegroundColor White
 Write-Host ""
 Write-Host "注意: WSL2 重启后 Docker 不会自动启动，需手动执行:" -ForegroundColor Red
-Write-Host "  wsl bash -c 'sudo service docker start'" -ForegroundColor Yellow
+Write-Host "  wsl -d Ubuntu -- bash -lc 'service docker start'" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "重要: 请妥善保管部署信息中的密码！" -ForegroundColor Red

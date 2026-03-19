@@ -124,18 +124,34 @@ if ($wslList) {
 }
 
 if (-not $hasUbuntu) {
-    Write-Warn "正在安装 Ubuntu 发行版 (这可能需要几分钟)..."
-    wsl --install -d Ubuntu --no-launch 2>$null
+    Write-Warn "正在安装 Ubuntu 发行版..."
     
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warn "wsl --install 失败，尝试手动下载 Ubuntu..."
-        # 使用微软官方源下载 Ubuntu appx
-        $ubuntuUrl = "https://aka.ms/wslubuntu2204"
-        $ubuntuPath = "$env:TEMP\Ubuntu.appx"
+    # 优先使用清华大学镜像下载 Ubuntu WSL rootfs (约 80MB，比微软源快很多)
+    $ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz"
+    $ubuntuRootfs = "$env:TEMP\ubuntu-wsl.tar.gz"
+    $ubuntuInstallDir = "C:\WSL\Ubuntu"
+    
+    Write-Host "  使用清华大学镜像下载 Ubuntu rootfs..." -ForegroundColor Gray
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    
+    try {
+        Invoke-WebRequest -Uri $ubuntuRootfsUrl -OutFile $ubuntuRootfs -UseBasicParsing
         
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $ubuntuUrl -OutFile $ubuntuPath -UseBasicParsing
-        Add-AppxPackage -Path $ubuntuPath
+        # 创建安装目录
+        if (-not (Test-Path $ubuntuInstallDir)) {
+            New-Item -ItemType Directory -Path $ubuntuInstallDir -Force | Out-Null
+        }
+        
+        # 使用 wsl --import 导入 rootfs
+        wsl --import Ubuntu $ubuntuInstallDir $ubuntuRootfs
+        
+        Write-OK "Ubuntu 已通过 rootfs 导入安装"
+        
+        # 清理下载文件
+        Remove-Item $ubuntuRootfs -Force -ErrorAction SilentlyContinue
+    } catch {
+        Write-Warn "清华镜像下载失败，回退到 wsl --install..."
+        wsl --install -d Ubuntu --no-launch 2>$null
     }
     
     Write-OK "Ubuntu 发行版已安装"

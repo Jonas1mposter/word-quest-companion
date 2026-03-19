@@ -664,12 +664,23 @@ echo -e "部署信息已保存到: ${GRAY}$INSTALL_DIR/deployment-info.txt${NC}"
 echo -e "Windows 端也可查看: ${GRAY}C:\\supabase\\deployment-info.txt${NC}"
 '@
 
-# ---- 将 bash 脚本写入 WSL 临时目录并执行 ----
+# ---- 将 bash 脚本以 UTF-8 无 BOM 写入 Windows 临时文件，再复制到 WSL ----
+$tempScriptPath = "$INSTALL_DIR\deploy-wsl.sh"
+
+# 强制以 UTF-8 无 BOM 编码写入文件（避免 PowerShell 管道编码损坏中文）
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($tempScriptPath, $bashScript, $utf8NoBom)
+
+# 转换 Windows 路径为 WSL 路径
+$wslTempPath = $tempScriptPath -replace '\\', '/'
+$wslTempPath = $wslTempPath -replace '^([A-Za-z]):', { '/mnt/' + $_.Groups[1].Value.ToLower() }
+
 $wslScriptDir = "/tmp/supabase-deploy"
 wsl -d Ubuntu -- bash -lc "mkdir -p '$wslScriptDir'"
+wsl -d Ubuntu -- bash -lc "cp '$wslTempPath' '$wslScriptDir/deploy.sh' && chmod +x '$wslScriptDir/deploy.sh'"
 
-# 通过 stdin 写入脚本，避免文件路径和编码问题
-$bashScript | wsl -d Ubuntu -- bash -lc "cat > '$wslScriptDir/deploy.sh' && chmod +x '$wslScriptDir/deploy.sh'"
+# 修复可能的 Windows 换行符 (CRLF -> LF)
+wsl -d Ubuntu -- bash -lc "sed -i 's/\r$//' '$wslScriptDir/deploy.sh'"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Yellow

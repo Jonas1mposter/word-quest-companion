@@ -187,7 +187,8 @@ if (Test-Path $supabaseDir) {
     Set-Location $supabaseDir
     git pull origin master 2>$null
 } else {
-    git clone --depth 1 https://github.com/supabase/supabase.git "$INSTALL_DIR\supabase-repo"
+    # 使用 GitHub 国内镜像加速克隆
+    git clone --depth 1 https://ghproxy.net/https://github.com/supabase/supabase.git "$INSTALL_DIR\supabase-repo"
     Copy-Item -Recurse "$INSTALL_DIR\supabase-repo\docker" $supabaseDir
     Remove-Item -Recurse -Force "$INSTALL_DIR\supabase-repo" -ErrorAction SilentlyContinue
 }

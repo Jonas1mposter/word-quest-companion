@@ -11,6 +11,7 @@ const cardVariants = cva(
         gaming: "border-primary/20 bg-gradient-to-br from-card via-card to-card shadow-lg shadow-primary/5 relative overflow-hidden",
         glow: "border-primary/30 shadow-lg shadow-primary/10 relative overflow-hidden",
         neon: "border-neon-cyan/30 shadow-lg shadow-neon-cyan/10 relative overflow-hidden",
+        gold: "border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 shadow-lg shadow-amber-500/10 relative overflow-hidden",
       },
     },
     defaultVariants: {

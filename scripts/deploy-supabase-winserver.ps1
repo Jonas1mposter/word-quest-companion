@@ -1,12 +1,13 @@
 #Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-    Win Server 2022 一键部署自托管 Supabase
+    Win Server 2022 部署前置检查与 Supabase 启动脚本
     狄邦单词通 - 后端部署脚本
     
 .DESCRIPTION
-    自动安装 Docker Desktop、Git，并部署完整的自托管 Supabase 实例
-    包含：PostgreSQL、GoTrue (Auth)、PostgREST (API)、Storage、Studio
+    自动安装 Git，检查 Windows 容器前置能力，并在检测到可用 Docker 环境后部署自托管 Supabase。
+    注意：Docker 官方不支持在 Windows Server 2019/2022 上运行 Docker Desktop。
+    Windows Server 建议改用 WSL2 内 Docker Engine 或其他受支持的容器运行时。
     
 .NOTES
     服务器要求: Win Server 2022, 16GB+ RAM
@@ -36,9 +37,54 @@ function Log($msg) {
     Write-Host $msg
 }
 
+function Test-IsWindowsServer {
+    try {
+        return ((Get-CimInstance Win32_OperatingSystem).ProductType -ne 1)
+    } catch {
+        return $true
+    }
+}
+
+function Show-DockerSetupGuidance {
+    Write-Host "" 
+    Write-Warn "Docker 官方不支持在 Windows Server 2019/2022 上运行 Docker Desktop。"
+    Write-Host "请改用以下任一受支持方案后，再重新运行部署脚本：" -ForegroundColor Yellow
+    Write-Host "  方案 A（推荐）: 在 WSL2 的 Ubuntu 内安装 Docker Engine，并从 WSL 内执行部署" -ForegroundColor White
+    Write-Host "    1. wsl --install -d Ubuntu" -ForegroundColor Gray
+    Write-Host "    2. 在 Ubuntu 中执行: curl -fsSL https://get.docker.com | sh" -ForegroundColor Gray
+    Write-Host "    3. 启动 Docker: sudo service docker start" -ForegroundColor Gray
+    Write-Host "  方案 B: 使用 Windows Server 支持的容器运行时（如 Mirantis Container Runtime）" -ForegroundColor White
+    Write-Host "" 
+}
+
+function Wait-ForDocker([int]$TimeoutSeconds = 120) {
+    $waited = 0
+    while ($waited -lt $TimeoutSeconds) {
+        try {
+            docker info 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                return $true
+            }
+        } catch {}
+
+        Start-Sleep -Seconds 5
+        $waited += 5
+        Write-Host "  等待中... ($waited 秒)" -ForegroundColor Gray
+    }
+
+    return $false
+}
+
 # ============================================================
 # 0. 初始化
 # ============================================================
+$IsWindowsServer = Test-IsWindowsServer
+try {
+    $OSCaption = (Get-CimInstance Win32_OperatingSystem).Caption
+} catch {
+    $OSCaption = "Windows"
+}
+
 Write-Host "========================================" -ForegroundColor Magenta
 Write-Host "  狄邦单词通 - Supabase 后端部署脚本" -ForegroundColor Magenta
 Write-Host "  适用于 Windows Server 2022" -ForegroundColor Magenta
@@ -48,6 +94,7 @@ if (-not (Test-Path $INSTALL_DIR)) {
     New-Item -ItemType Directory -Path $INSTALL_DIR -Force | Out-Null
 }
 Log "开始部署..."
+Log "当前系统: $OSCaption"
 
 # ============================================================
 # 1. 检查并启用容器功能 (优先 WSL2，Hyper-V 可选)
@@ -82,14 +129,11 @@ if ($hyperV -and -not $hyperV.Installed) {
 if ($useWSL2) {
     Write-Step "安装 WSL2..."
     try {
-        # 启用 WSL 功能
         dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart 2>$null
         dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart 2>$null
-        
-        # 安装 WSL2
         wsl --install --no-distribution 2>$null
         wsl --set-default-version 2 2>$null
-        
+
         Write-OK "WSL2 已配置"
         Write-Warn ">>> 如果是首次安装 WSL2，可能需要重启服务器后继续 <<<"
     } catch {
@@ -106,73 +150,92 @@ Write-Step "检查 Git..."
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Warn "正在安装 Git..."
-    # 使用淘宝镜像加速下载
     $gitUrl = "https://registry.npmmirror.com/-/binary/git-for-windows/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
     $gitInstaller = "$env:TEMP\git-installer.exe"
-    
+
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Invoke-WebRequest -Uri $gitUrl -OutFile $gitInstaller -UseBasicParsing
-    
+
     Start-Process -Wait -FilePath $gitInstaller -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL"
-    
-    # 刷新 PATH
+
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-    
+
     Write-OK "Git 安装完成"
 } else {
     Write-OK "Git 已安装: $(git --version)"
 }
 
 # ============================================================
-# 3. 安装 Docker Desktop (如果未安装)
+# 3. 验证 Docker 环境
 # ============================================================
 Write-Step "检查 Docker..."
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Warn "正在下载 Docker Desktop..."
-    # 使用阿里云镜像加速下载
-    $dockerUrl = "https://mirrors.aliyun.com/docker-toolbox/windows/docker-for-windows/stable/Docker%20Desktop%20Installer.exe"
-    $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
-    
-    Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstaller -UseBasicParsing
-    
-    Write-Warn "正在安装 Docker Desktop (使用 WSL2 后端，可能需要几分钟)..."
-    Start-Process -Wait -FilePath $dockerInstaller -ArgumentList "install", "--quiet", "--accept-license", "--backend=wsl-2"
-    
-    # 刷新 PATH
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-    
-    Write-OK "Docker Desktop 安装完成"
-    Write-Warn ">>> 如果这是首次安装 Docker，可能需要重启服务器后继续 <<<"
-    Write-Warn ">>> 重启后请重新运行此脚本 <<<"
-    
-    $restart = Read-Host "是否现在重启服务器？(Y/N)"
-    if ($restart -eq "Y" -or $restart -eq "y") {
-        Restart-Computer -Force
-        exit
+if ($IsWindowsServer) {
+    Write-Warn "检测到系统: $OSCaption"
+    Write-Warn "当前脚本不会在 Windows Server 上自动安装 Docker Desktop，以避免官方不支持导致的启动失败。"
+
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Err "未检测到可用的 docker 命令。"
+        Show-DockerSetupGuidance
+        exit 1
+    }
+
+    Write-OK "Docker 已安装: $(docker --version)"
+    Write-Step "等待 Docker 启动..."
+
+    if (-not (Wait-ForDocker -TimeoutSeconds 20)) {
+        Write-Err "检测到 docker 命令，但 daemon 未就绪。"
+
+        $dockerService = Get-Service com.docker.service -ErrorAction SilentlyContinue
+        if ($dockerService) {
+            Write-Host "  com.docker.service: $($dockerService.Status)" -ForegroundColor Gray
+        } else {
+            Write-Host "  com.docker.service: 未安装/不存在" -ForegroundColor Gray
+        }
+
+        Write-Host "  WSL 状态:" -ForegroundColor Gray
+        try {
+            wsl -l -v
+        } catch {
+            Write-Host "  无法获取 WSL 状态，请确认 WSL 已安装" -ForegroundColor Gray
+        }
+
+        Show-DockerSetupGuidance
+        exit 1
     }
 } else {
-    Write-OK "Docker 已安装: $(docker --version)"
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Warn "正在下载 Docker Desktop..."
+        $dockerUrl = "https://mirrors.aliyun.com/docker-toolbox/windows/docker-for-windows/stable/Docker%20Desktop%20Installer.exe"
+        $dockerInstaller = "$env:TEMP\DockerDesktopInstaller.exe"
+
+        Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstaller -UseBasicParsing
+
+        Write-Warn "正在安装 Docker Desktop (使用 WSL2 后端，可能需要几分钟)..."
+        Start-Process -Wait -FilePath $dockerInstaller -ArgumentList "install", "--quiet", "--accept-license", "--backend=wsl-2"
+
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+        Write-OK "Docker Desktop 安装完成"
+        Write-Warn ">>> 如果这是首次安装 Docker，可能需要重启系统后继续 <<<"
+        Write-Warn ">>> 重启后请重新运行此脚本 <<<"
+
+        $restart = Read-Host "是否现在重启系统？(Y/N)"
+        if ($restart -eq "Y" -or $restart -eq "y") {
+            Restart-Computer -Force
+            exit
+        }
+    } else {
+        Write-OK "Docker 已安装: $(docker --version)"
+    }
+
+    Write-Step "等待 Docker 启动..."
+    if (-not (Wait-ForDocker -TimeoutSeconds 120)) {
+        Write-Err "Docker 启动超时，请手动启动 Docker Desktop 后重新运行脚本"
+        exit 1
+    }
 }
 
-# 等待 Docker 启动
-Write-Step "等待 Docker 启动..."
-$maxWait = 120
-$waited = 0
-while ($waited -lt $maxWait) {
-    try {
-        docker info 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) { break }
-    } catch {}
-    Start-Sleep -Seconds 5
-    $waited += 5
-    Write-Host "  等待中... ($waited 秒)" -ForegroundColor Gray
-}
-
-if ($waited -ge $maxWait) {
-    Write-Err "Docker 启动超时，请手动启动 Docker Desktop 后重新运行脚本"
-    exit 1
-}
 Write-OK "Docker 已就绪"
 
 # ============================================================

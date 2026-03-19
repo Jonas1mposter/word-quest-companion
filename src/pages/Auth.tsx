@@ -79,7 +79,29 @@ const Auth = () => {
             (本地模式 - 数据保存在浏览器中)
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-center gap-3 h-11 border-border hover:bg-accent"
+            onClick={handleMicrosoftLogin}
+            disabled={oauthLoading}
+          >
+            <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+              <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+              <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+              <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+            </svg>
+            {oauthLoading ? "正在跳转..." : "使用微软账号登录"}
+          </Button>
+
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">或</span>
+            <Separator className="flex-1" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">邮箱</Label>

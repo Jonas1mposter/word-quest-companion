@@ -15,6 +15,28 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  const handleMicrosoftLogin = async () => {
+    setOauthLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: window.location.origin,
+          scopes: 'email profile openid',
+        },
+      });
+      if (error) {
+        toast.error(error.message || "微软登录失败");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "微软登录失败");
+    } finally {
+      setOauthLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

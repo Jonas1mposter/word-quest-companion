@@ -364,23 +364,33 @@ Write-Step "准备在 WSL2 Ubuntu 内执行部署..."
 $bashScript = @'
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'rc=$?; err "Command failed with exit code ${rc}: ${BASH_COMMAND}"; exit $rc' ERR
+
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export DEBIAN_FRONTEND=${DEBIAN_FRONTEND:-noninteractive}
+export NEEDRESTART_MODE=a
 
 INSTALL_DIR="/opt/supabase"
 LOG_FILE="$INSTALL_DIR/deploy.log"
 SERVER_IP="${SERVER_IP:-localhost}"
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; MAGENTA='\033[0;35m'; GRAY='\033[0;37m'; NC='\033[0m'
+if [ -t 1 ]; then
+  RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+  CYAN='\033[0;36m'; MAGENTA='\033[0;35m'; GRAY='\033[0;37m'; NC='\033[0m'
+else
+  RED=''; GREEN=''; YELLOW=''; CYAN=''; MAGENTA=''; GRAY=''; NC=''
+fi
 
-step()  { echo -e "\n${CYAN}[步骤] $1${NC}"; }
-ok()    { echo -e "${GREEN}[完成] $1${NC}"; }
-warn()  { echo -e "${YELLOW}[警告] $1${NC}"; }
-err()   { echo -e "${RED}[错误] $1${NC}"; }
+step()  { echo -e "\n${CYAN}[STEP] $1${NC}"; }
+ok()    { echo -e "${GREEN}[ OK ] $1${NC}"; }
+warn()  { echo -e "${YELLOW}[WARN] $1${NC}"; }
+err()   { echo -e "${RED}[ERR ] $1${NC}" >&2; }
 
 run_root() {
   if [ "$(id -u)" -eq 0 ]; then "$@"
   elif command -v sudo >/dev/null 2>&1; then sudo "$@"
-  else err "当前不是 root，且系统未安装 sudo：$*"; exit 1; fi
+  else err "Current user is not root and sudo is unavailable: $*"; exit 1; fi
 }
 
 log() {
@@ -396,7 +406,7 @@ gen_key() {
 }
 
 echo -e "\n${MAGENTA}========================================${NC}"
-echo -e "${MAGENTA}  狄邦单词通 - Supabase WSL2 部署${NC}"
+echo -e "${MAGENTA}  WordQuest - Supabase WSL2 Deployment${NC}"
 echo -e "${MAGENTA}========================================${NC}"
 
 run_root mkdir -p "$INSTALL_DIR"
@@ -404,48 +414,52 @@ CURRENT_USER="$(id -un)"
 if [ "$CURRENT_USER" != "root" ]; then
   run_root chown "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
 fi
-log "开始部署... SERVER_IP=$SERVER_IP USER=$CURRENT_USER"
+log "Starting deployment... SERVER_IP=$SERVER_IP USER=$CURRENT_USER"
 
-step "预检查 Ubuntu 环境..."
+step "Checking Ubuntu environment..."
 if ! command -v apt-get >/dev/null 2>&1; then
-  err "当前发行版不是 Ubuntu/Debian，无法继续"; exit 1
+  err "This distribution is not Ubuntu/Debian. Deployment cannot continue."
+  exit 1
 fi
 
-step "安装 Docker Engine..."
+step "Installing Docker Engine..."
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-    ok "Docker Engine 已安装并运行: $(docker --version)"
+    ok "Docker Engine is already available: $(docker --version)"
 else
-    warn "正在安装 Docker Engine..."
+    warn "Installing Docker Engine..."
     run_root apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
-    run_root apt-get update -y
+    run_root apt-get update
     run_root apt-get install -y ca-certificates curl gnupg lsb-release
     run_root install -m 0755 -d /etc/apt/keyrings
     curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | run_root gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
     run_root chmod a+r /etc/apt/keyrings/docker.gpg
     UBUNTU_CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $UBUNTU_CODENAME stable" | run_root tee /etc/apt/sources.list.d/docker.list >/dev/null
-    run_root apt-get update -y
+    run_root apt-get update
     run_root apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     if [ "$CURRENT_USER" != "root" ]; then
       run_root usermod -aG docker "$CURRENT_USER" 2>/dev/null || true
     fi
-    ok "Docker Engine 安装完成"
+    ok "Docker Engine installation completed"
 fi
 
-step "启动 Docker 服务..."
+step "Starting Docker service..."
 run_root service docker start 2>/dev/null || run_root bash -lc 'nohup dockerd >/var/log/dockerd.log 2>&1 &'
 MAX_WAIT=60; WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if docker info >/dev/null 2>&1; then break; fi
     sleep 3; WAITED=$((WAITED + 3))
-    echo -e "${GRAY}  等待 Docker 启动... (${WAITED}秒)${NC}"
+    echo -e "${GRAY}  Waiting for Docker... (${WAITED}s)${NC}"
 done
 if ! docker info >/dev/null 2>&1; then
-    err "Docker 启动失败"; echo "  请检查: service docker status"; exit 1
+    err "Docker failed to start"
+    echo "  Check: service docker status"
+    echo "  Check: cat /var/log/dockerd.log"
+    exit 1
 fi
-ok "Docker 已就绪: $(docker --version)"
+ok "Docker is ready: $(docker --version)"
 
-step "配置 Docker 镜像加速器..."
+step "Configuring Docker registry mirrors..."
 run_root mkdir -p /etc/docker
 cat <<'DAEMON_JSON' | run_root tee /etc/docker/daemon.json >/dev/null
 {
@@ -461,13 +475,13 @@ while [ $WAITED -lt 30 ]; do
     if docker info >/dev/null 2>&1; then break; fi
     sleep 2; WAITED=$((WAITED + 2))
 done
-ok "Docker 镜像加速器已配置"
+ok "Docker registry mirrors configured"
 
-step "下载 Supabase Docker 配置..."
+step "Downloading Supabase Docker config..."
 run_root apt-get install -y git 2>/dev/null || true
 SUPABASE_DIR="$INSTALL_DIR/supabase-docker"
 if [ -d "$SUPABASE_DIR" ]; then
-    warn "已存在 supabase-docker 目录，跳过克隆"
+    warn "supabase-docker already exists, skipping clone"
 else
     REPO_URL="https://ghproxy.net/https://github.com/supabase/supabase.git"
     git clone --depth 1 "$REPO_URL" "$INSTALL_DIR/supabase-repo" 2>/dev/null || \
@@ -475,15 +489,15 @@ else
     cp -r "$INSTALL_DIR/supabase-repo/docker" "$SUPABASE_DIR"
     rm -rf "$INSTALL_DIR/supabase-repo"
 fi
-ok "Supabase Docker 配置已就绪"
+ok "Supabase Docker config is ready"
 
-step "生成安全密钥..."
+step "Generating secrets..."
 JWT_SECRET=$(gen_key 40)
 POSTGRES_PASSWORD=$(gen_key 32)
 DASHBOARD_PASSWORD=$(gen_key 24)
-ok "密钥生成完成"
+ok "Secrets generated"
 
-step "创建环境配置文件..."
+step "Creating environment file..."
 cd "$SUPABASE_DIR"
 [ -f ".env.example" ] && cp .env.example .env 2>/dev/null || true
 
@@ -545,30 +559,30 @@ ENABLE_PHONE_AUTOCONFIRM=false
 ENABLE_EMAIL_SIGNUP=true
 ENABLE_EMAIL_AUTOCONFIRM=true
 ENVEOF
-ok "环境配置文件已创建"
+ok "Environment file created"
 
-step "拉取 Supabase Docker 镜像 (首次需要下载，约 5-15 分钟)..."
-docker compose pull 2>&1 || warn "部分镜像拉取失败，将在启动时重试"
+step "Pulling Supabase Docker images (first run may take 5-15 minutes)..."
+docker compose pull 2>&1 || warn "Some images failed to pull and will be retried during startup"
 
-step "启动 Supabase 容器..."
+step "Starting Supabase containers..."
 docker compose up -d
-ok "Supabase 容器启动中..."
+ok "Supabase containers are starting"
 
-step "等待服务就绪..."
+step "Waiting for API to become ready..."
 MAX_WAIT=180; WAITED=0; HTTP_CODE="000"
 while [ $WAITED -lt $MAX_WAIT ]; do
     HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8000/rest/v1/" 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ]; then break; fi
     sleep 10; WAITED=$((WAITED + 10))
-    echo -e "${GRAY}  等待中... (${WAITED}秒) [HTTP: ${HTTP_CODE}]${NC}"
+    echo -e "${GRAY}  Waiting... (${WAITED}s) [HTTP: ${HTTP_CODE}]${NC}"
 done
 if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "401" ]; then
-    warn "服务可能还在启动中，请稍后手动检查"
+    warn "API may still be starting. You can check it manually later."
 else
-    ok "Supabase API 已就绪"
+    ok "Supabase API is ready"
 fi
 
-step "创建应用数据库表..."
+step "Initializing application database tables..."
 cat > "$SUPABASE_DIR/init.sql" << 'SQLEOF'
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -682,30 +696,30 @@ if [ -n "$DB_CONTAINER" ]; then
     done
     if docker exec "$DB_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
         docker cp "$SUPABASE_DIR/init.sql" "$DB_CONTAINER:/tmp/init.sql"
-        docker exec "$DB_CONTAINER" psql -U postgres -d postgres -f /tmp/init.sql 2>&1 || warn "部分 SQL 语句执行失败（可能表已存在），这通常正常"
-        ok "数据库表初始化完成"
+        docker exec "$DB_CONTAINER" psql -U postgres -d postgres -f /tmp/init.sql 2>&1 || warn "Some SQL statements failed (usually because objects already exist)"
+        ok "Database initialization completed"
     else
-        warn "数据库尚未就绪，请稍后手动执行 SQL 初始化"
+        warn "Database is not ready yet. Run the SQL initialization later if needed."
     fi
 else
-    warn "未找到数据库容器，请确认容器已启动后手动执行 SQL 初始化"
+    warn "Database container not found. Confirm containers are running and initialize SQL manually if needed."
 fi
 
 cat > "$INSTALL_DIR/deployment-info.txt" << INFOEOF
-====== 狄邦单词通 - Supabase 部署信息 ======
-部署时间: $(date '+%Y-%m-%d %H:%M:%S')
-服务器 IP: $SERVER_IP
+====== WordQuest - Supabase Deployment Info ======
+Deployment time: $(date '+%Y-%m-%d %H:%M:%S')
+Server IP: $SERVER_IP
 
 Supabase Studio: http://${SERVER_IP}:3000
-API 端点: http://${SERVER_IP}:8000
-Auth 端点: http://${SERVER_IP}:8000/auth/v1
+API endpoint: http://${SERVER_IP}:8000
+Auth endpoint: http://${SERVER_IP}:8000/auth/v1
 
-Studio 用户名: supabase
-Studio 密码: $DASHBOARD_PASSWORD
-数据库密码: $POSTGRES_PASSWORD
-JWT Secret: $JWT_SECRET
+Studio username: supabase
+Studio password: $DASHBOARD_PASSWORD
+Database password: $POSTGRES_PASSWORD
+JWT secret: $JWT_SECRET
 
-前端配置:
+Frontend config:
 VITE_SUPABASE_URL=http://${SERVER_IP}:8000
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 INFOEOF
@@ -714,10 +728,10 @@ cp "$INSTALL_DIR/deployment-info.txt" /mnt/c/supabase/deployment-info.txt 2>/dev
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}  WSL2 内 Supabase 部署完成!${NC}"
+echo -e "${GREEN}  Supabase deployment inside WSL2 completed${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo -e "部署信息已保存到: ${GRAY}$INSTALL_DIR/deployment-info.txt${NC}"
-echo -e "Windows 端也可查看: ${GRAY}C:\\supabase\\deployment-info.txt${NC}"
+echo -e "Deployment info saved to: ${GRAY}$INSTALL_DIR/deployment-info.txt${NC}"
+echo -e "Windows copy available at: ${GRAY}C:\supabase\deployment-info.txt${NC}"
 '@
 
 # ---- 将 bash 脚本以 UTF-8 无 BOM 写入 Windows 临时文件，再复制到 WSL ----

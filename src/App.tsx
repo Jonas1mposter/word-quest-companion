@@ -9,6 +9,13 @@ import { ThemeProvider } from "next-themes";
 import { initializeNativeApp } from "@/lib/capacitor";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
+import Teacher from "./pages/Teacher";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Support from "./pages/Support";
+import Documents from "./pages/Documents";
+import ProductPPT from "./pages/ProductPPT";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +34,13 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/teacher" element={<Teacher />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/support" element={<Support />} />
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/product-ppt" element={<ProductPPT />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </HashRouter>

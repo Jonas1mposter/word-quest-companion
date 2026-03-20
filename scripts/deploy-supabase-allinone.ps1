@@ -114,6 +114,15 @@ trap {
     Stop-Script -Code 1 -PauseMessage "脚本异常退出，请先查看上方报错，按回车键关闭窗口..."
 }
 
+function Test-WslKernelUpdateNeeded {
+    param([string]$Text)
+
+    $clean = Remove-AnsiText (($Text -replace "`0", "").Trim())
+    if ([string]::IsNullOrWhiteSpace($clean)) { return $false }
+
+    return $clean -match '(?i)aka\.ms/wsl2kernel|wsl2kernel|kernel component|0x800701bc'
+}
+
 function Get-WslErrorMessage {
     param(
         [string]$Text,
@@ -122,6 +131,14 @@ function Get-WslErrorMessage {
 
     $clean = Remove-AnsiText (($Text -replace "`0", "").Trim())
     if ([string]::IsNullOrWhiteSpace($clean)) { return $Fallback }
+
+    if (Test-WslKernelUpdateNeeded -Text $clean) {
+        return "WSL2 内核组件未就绪，请先安装或更新 WSL2 内核（常见错误码: 0x800701bc）。"
+    }
+
+    if ($clean -match '(?i)0x80370102|virtual machine platform|nested virtualization|hyper-v') {
+        return "虚拟化或 Virtual Machine Platform 未完全就绪，请确认 BIOS/宿主机已开启虚拟化后重试。"
+    }
 
     $lines = @($clean -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     if ($lines.Count -eq 0) { return $Fallback }
@@ -156,6 +173,8 @@ function Invoke-UbuntuBashCapture {
     return $result
 }
 
+$script:KernelInstallRequiresRestart = $false
+
 function Install-WslKernelUpdate {
     $kernelUrl = "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi"
     $kernelInstaller = Join-Path $env:TEMP "wsl_update_x64.msi"
@@ -165,20 +184,48 @@ function Install-WslKernelUpdate {
 
     Invoke-WebRequest -Uri $kernelUrl -OutFile $kernelInstaller -UseBasicParsing
     $process = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$kernelInstaller`" /qn /norestart" -Wait -PassThru
-    if ($process.ExitCode -ne 0) {
+    if ($process.ExitCode -notin @(0, 3010)) {
         throw "WSL2 内核安装失败，msiexec 退出码: $($process.ExitCode)"
+    }
+
+    if ($process.ExitCode -eq 3010) {
+        $script:KernelInstallRequiresRestart = $true
+        Write-Warn "WSL2 内核更新已安装，但系统要求重启后再继续。"
+        Log "WSL2 内核更新安装完成，等待重启"
+        return
     }
 
     Write-OK "WSL2 内核更新已安装"
     Log "WSL2 内核更新安装完成"
 }
 
+function Repair-WslKernelIfNeeded {
+    param(
+        [string]$ErrorText,
+        [string]$Context = "当前操作"
+    )
+
+    if (-not (Test-WslKernelUpdateNeeded -Text $ErrorText)) {
+        return $false
+    }
+
+    Write-Warn "$Context 检测到 WSL2 内核缺失，正在自动修复..."
+    Log "$Context 检测到 WSL2 内核缺失"
+    Install-WslKernelUpdate
+
+    if ($script:KernelInstallRequiresRestart) {
+        throw "已安装 WSL2 内核更新，但系统要求先重启 Windows Server，再重新运行脚本。"
+    }
+
+    return $true
+}
+
 function Ensure-Wsl2Ready {
     $result = Invoke-WslCapture -Arguments @('--set-default-version', '2')
-    $needsKernelUpdate = ($result.ExitCode -ne 0) -or ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel')
+    $needsKernelUpdate = ($result.ExitCode -ne 0) -or (Test-WslKernelUpdateNeeded -Text $result.Output)
 
     if ($needsKernelUpdate) {
-        Install-WslKernelUpdate
+        Repair-WslKernelIfNeeded -ErrorText $result.Output -Context '设置 WSL2 默认版本'
         $result = Invoke-WslCapture -Arguments @('--set-default-version', '2')
     }
 
@@ -197,10 +244,10 @@ function Test-UbuntuRegistered {
 
 function Ensure-UbuntuVersion2 {
     $result = Invoke-WslCapture -Arguments @('--set-version', 'Ubuntu', '2')
-    $needsKernelUpdate = ($result.ExitCode -ne 0) -and ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel')
+    $needsKernelUpdate = ($result.ExitCode -ne 0) -and (Test-WslKernelUpdateNeeded -Text $result.Output)
 
     if ($needsKernelUpdate) {
-        Install-WslKernelUpdate
+        Repair-WslKernelIfNeeded -ErrorText $result.Output -Context '切换 Ubuntu 到 WSL2'
         $result = Invoke-WslCapture -Arguments @('--set-version', 'Ubuntu', '2')
     }
 
@@ -224,8 +271,8 @@ function Wait-UbuntuReady {
             return $true
         }
 
-        if ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel') {
-            Install-WslKernelUpdate
+        if (Test-WslKernelUpdateNeeded -Text $result.Output) {
+            Repair-WslKernelIfNeeded -ErrorText $result.Output -Context '启动 Ubuntu'
             Ensure-Wsl2Ready
             if (Test-UbuntuRegistered) {
                 Ensure-UbuntuVersion2
@@ -345,8 +392,7 @@ if (-not $hasUbuntu) {
 
         $importResult = Invoke-WslCapture -Arguments @('--import', 'Ubuntu', $ubuntuInstallDir, $ubuntuRootfs)
         if ($importResult.ExitCode -ne 0) {
-            if ($importResult.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel') {
-                Install-WslKernelUpdate
+            if (Repair-WslKernelIfNeeded -ErrorText $importResult.Output -Context 'Ubuntu rootfs 导入') {
                 $importResult = Invoke-WslCapture -Arguments @('--import', 'Ubuntu', $ubuntuInstallDir, $ubuntuRootfs)
             }
             if ($importResult.ExitCode -ne 0) {
@@ -357,10 +403,18 @@ if (-not $hasUbuntu) {
         Write-OK "Ubuntu 已通过 rootfs 导入安装"
         Remove-Item $ubuntuRootfs -Force -ErrorAction SilentlyContinue
     } catch {
-        Write-Warn "rootfs 导入失败，回退到 wsl --install: $($_.Exception.Message)"
+        $importFailure = Get-WslErrorMessage -Text $_.Exception.Message -Fallback 'Ubuntu rootfs 导入失败'
+        Write-Warn "rootfs 导入失败，回退到 wsl --install: $importFailure"
+        Log "rootfs 导入失败，准备回退到 wsl --install: $importFailure"
+
         $installResult = Invoke-WslCapture -Arguments @('--install', '-d', 'Ubuntu', '--no-launch')
         if ($installResult.ExitCode -ne 0) {
-            throw (Get-WslErrorMessage -Text $installResult.Output -Fallback 'wsl --install 执行失败')
+            if (Repair-WslKernelIfNeeded -ErrorText $installResult.Output -Context 'wsl --install') {
+                $installResult = Invoke-WslCapture -Arguments @('--install', '-d', 'Ubuntu', '--no-launch')
+            }
+            if ($installResult.ExitCode -ne 0) {
+                throw (Get-WslErrorMessage -Text $installResult.Output -Fallback 'wsl --install 执行失败')
+            }
         }
     }
 

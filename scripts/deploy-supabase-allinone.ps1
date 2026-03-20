@@ -974,7 +974,11 @@ $tempScriptPath = "$INSTALL_DIR\deploy-wsl.sh"
 
 # 转换 Windows 路径为 WSL 路径
 $wslTempPath = $tempScriptPath -replace '\\', '/'
-$wslTempPath = $wslTempPath -replace '^([A-Za-z]):', { '/mnt/' + $_.Groups[1].Value.ToLower() }
+if ($wslTempPath -match '^([A-Za-z]):(.*)') {
+    $driveLetter = $Matches[1].ToLower()
+    $restPath = $Matches[2]
+    $wslTempPath = "/mnt/$driveLetter$restPath"
+}
 
 $wslScriptDir = "/tmp/supabase-deploy"
 $wslScriptPath = "$wslScriptDir/deploy.sh"

@@ -71,6 +71,10 @@ $bashScript = @"
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
+echo "[步骤] 启动 Docker 守护进程..."
+sudo service docker start || true
+sleep 3
+
 if command -v node >/dev/null 2>&1; then
     echo "[完成] Node.js 已安装: `$(node --version)"
 else

@@ -114,6 +114,139 @@ trap {
     Stop-Script -Code 1 -PauseMessage "脚本异常退出，请先查看上方报错，按回车键关闭窗口..."
 }
 
+function Get-WslErrorMessage {
+    param(
+        [string]$Text,
+        [string]$Fallback = "WSL 命令失败"
+    )
+
+    $clean = Remove-AnsiText (($Text -replace "`0", "").Trim())
+    if ([string]::IsNullOrWhiteSpace($clean)) { return $Fallback }
+
+    $lines = @($clean -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($lines.Count -eq 0) { return $Fallback }
+
+    return (($lines | Select-Object -First 3) -join " | ")
+}
+
+function Invoke-WslCapture {
+    param([string[]]$Arguments)
+
+    $output = & wsl.exe @Arguments 2>&1
+    $exitCode = $LASTEXITCODE
+    $text = (($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine).Trim()
+
+    [pscustomobject]@{
+        ExitCode = $exitCode
+        Output   = $text
+    }
+}
+
+function Invoke-UbuntuBashCapture {
+    param(
+        [string]$Command,
+        [switch]$AllowFailure
+    )
+
+    $result = Invoke-WslCapture -Arguments @('-d', 'Ubuntu', '--user', 'root', '--', 'bash', '-lc', $Command)
+    if (-not $AllowFailure -and $result.ExitCode -ne 0) {
+        throw (Get-WslErrorMessage -Text $result.Output -Fallback "Ubuntu 命令执行失败")
+    }
+
+    return $result
+}
+
+function Install-WslKernelUpdate {
+    $kernelUrl = "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi"
+    $kernelInstaller = Join-Path $env:TEMP "wsl_update_x64.msi"
+
+    Write-Warn "检测到 WSL2 内核未就绪，正在安装官方内核更新..."
+    Log "开始安装 WSL2 内核更新: $kernelUrl"
+
+    Invoke-WebRequest -Uri $kernelUrl -OutFile $kernelInstaller -UseBasicParsing
+    $process = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$kernelInstaller`" /qn /norestart" -Wait -PassThru
+    if ($process.ExitCode -ne 0) {
+        throw "WSL2 内核安装失败，msiexec 退出码: $($process.ExitCode)"
+    }
+
+    Write-OK "WSL2 内核更新已安装"
+    Log "WSL2 内核更新安装完成"
+}
+
+function Ensure-Wsl2Ready {
+    $result = Invoke-WslCapture -Arguments @('--set-default-version', '2')
+    $needsKernelUpdate = ($result.ExitCode -ne 0) -or ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel')
+
+    if ($needsKernelUpdate) {
+        Install-WslKernelUpdate
+        $result = Invoke-WslCapture -Arguments @('--set-default-version', '2')
+    }
+
+    if ($result.ExitCode -ne 0) {
+        throw (Get-WslErrorMessage -Text $result.Output -Fallback "WSL2 默认版本设置失败")
+    }
+}
+
+function Test-UbuntuRegistered {
+    $result = Invoke-WslCapture -Arguments @('-l', '-q')
+    if ($result.ExitCode -ne 0) { return $false }
+
+    $distros = @($result.Output -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    return $distros -contains 'Ubuntu'
+}
+
+function Ensure-UbuntuVersion2 {
+    $result = Invoke-WslCapture -Arguments @('--set-version', 'Ubuntu', '2')
+    $needsKernelUpdate = ($result.ExitCode -ne 0) -and ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel')
+
+    if ($needsKernelUpdate) {
+        Install-WslKernelUpdate
+        $result = Invoke-WslCapture -Arguments @('--set-version', 'Ubuntu', '2')
+    }
+
+    if ($result.ExitCode -ne 0) {
+        Write-Warn "将 Ubuntu 切换为 WSL2 失败: $(Get-WslErrorMessage -Text $result.Output -Fallback '未知错误')"
+        Log "将 Ubuntu 切换为 WSL2 失败: $(Get-WslErrorMessage -Text $result.Output -Fallback '未知错误')"
+    } else {
+        Write-OK "Ubuntu 已设置为 WSL2"
+    }
+}
+
+function Wait-UbuntuReady {
+    param(
+        [int]$MaxAttempts = 10,
+        [int]$DelaySeconds = 5
+    )
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        $result = Invoke-WslCapture -Arguments @('-d', 'Ubuntu', '--user', 'root', '--', 'bash', '-lc', 'printf READY')
+        if ($result.ExitCode -eq 0 -and $result.Output -match 'READY') {
+            return $true
+        }
+
+        if ($result.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel') {
+            Install-WslKernelUpdate
+            Ensure-Wsl2Ready
+            if (Test-UbuntuRegistered) {
+                Ensure-UbuntuVersion2
+            }
+        }
+
+        if ($attempt -lt $MaxAttempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+
+    return $false
+}
+
+function Get-UbuntuWslIp {
+    $result = Invoke-UbuntuBashCapture -Command 'hostname -I' -AllowFailure
+    if ($result.ExitCode -ne 0) { return $null }
+
+    return (($result.Output -split '\s+') | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+}
+
 # ============================================================
 # 0. 初始化
 # ============================================================
@@ -170,14 +303,12 @@ Write-OK "WSL2 所需 Windows 功能已就绪"
 # 2. 配置 WSL2
 # ============================================================
 Write-Step "配置 WSL2..."
-
 try {
-    wsl --set-default-version 2 2>$null
+    Ensure-Wsl2Ready
     Write-OK "WSL2 已设置为默认版本"
 } catch {
-    Write-Warn "设置 WSL2 默认版本失败，尝试更新 WSL..."
-    wsl --update 2>$null
-    wsl --set-default-version 2 2>$null
+    Write-Err "WSL2 初始化失败: $($_.Exception.Message)"
+    Stop-Script -Code 1 -PauseMessage "WSL2 初始化失败，请查看上方日志后按回车键关闭窗口..."
 }
 
 # ============================================================
@@ -185,73 +316,83 @@ try {
 # ============================================================
 Write-Step "检查 Ubuntu 发行版..."
 
-$hasUbuntu = $false
-
-$testRun = wsl -d Ubuntu -- echo "UBUNTU_EXISTS" 2>$null
-if ($testRun -match "UBUNTU_EXISTS") {
-    $hasUbuntu = $true
-}
-
-if (-not $hasUbuntu -and (Test-Path "C:\WSL\Ubuntu\ext4.vhdx")) {
-    $hasUbuntu = $true
-}
-
-if (-not $hasUbuntu) {
-    $wslRaw = (wsl -l 2>$null | Out-String) -replace '\x00', ''
-    if ($wslRaw -match "Ubuntu") {
-        $hasUbuntu = $true
-    }
-}
+$hasUbuntu = Test-UbuntuRegistered
+$ubuntuInstallDir = "C:\WSL\Ubuntu"
+$ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz"
+$ubuntuRootfs = "$env:TEMP\ubuntu-wsl.tar.gz"
 
 if (-not $hasUbuntu) {
     Write-Warn "正在安装 Ubuntu 发行版..."
-    
-    $ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz"
-    $ubuntuRootfs = "$env:TEMP\ubuntu-wsl.tar.gz"
-    $ubuntuInstallDir = "C:\WSL\Ubuntu"
-    
     Write-Host "  使用清华大学镜像下载 Ubuntu rootfs..." -ForegroundColor Gray
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    
+
     try {
         Invoke-WebRequest -Uri $ubuntuRootfsUrl -OutFile $ubuntuRootfs -UseBasicParsing
-        
+
+        if (Test-Path $ubuntuInstallDir) {
+            $existingItems = Get-ChildItem -Path $ubuntuInstallDir -Force -ErrorAction SilentlyContinue
+            if ($existingItems) {
+                $backupDir = "$ubuntuInstallDir-stale-$(Get-Date -Format 'yyyyMMddHHmmss')"
+                Move-Item -Path $ubuntuInstallDir -Destination $backupDir -Force
+                Write-Warn "检测到旧的 Ubuntu 安装目录，已备份到: $backupDir"
+                Log "旧的 Ubuntu 安装目录已备份到: $backupDir"
+            }
+        }
+
         if (-not (Test-Path $ubuntuInstallDir)) {
             New-Item -ItemType Directory -Path $ubuntuInstallDir -Force | Out-Null
         }
-        
-        wsl --import Ubuntu $ubuntuInstallDir $ubuntuRootfs
+
+        $importResult = Invoke-WslCapture -Arguments @('--import', 'Ubuntu', $ubuntuInstallDir, $ubuntuRootfs)
+        if ($importResult.ExitCode -ne 0) {
+            if ($importResult.Output -match '(?i)aka\.ms/wsl2kernel|kernel component|wsl2kernel') {
+                Install-WslKernelUpdate
+                $importResult = Invoke-WslCapture -Arguments @('--import', 'Ubuntu', $ubuntuInstallDir, $ubuntuRootfs)
+            }
+            if ($importResult.ExitCode -ne 0) {
+                throw (Get-WslErrorMessage -Text $importResult.Output -Fallback 'Ubuntu rootfs 导入失败')
+            }
+        }
+
         Write-OK "Ubuntu 已通过 rootfs 导入安装"
         Remove-Item $ubuntuRootfs -Force -ErrorAction SilentlyContinue
     } catch {
-        Write-Warn "清华镜像下载失败，回退到 wsl --install..."
-        wsl --install -d Ubuntu --no-launch 2>$null
+        Write-Warn "rootfs 导入失败，回退到 wsl --install: $($_.Exception.Message)"
+        $installResult = Invoke-WslCapture -Arguments @('--install', '-d', 'Ubuntu', '--no-launch')
+        if ($installResult.ExitCode -ne 0) {
+            throw (Get-WslErrorMessage -Text $installResult.Output -Fallback 'wsl --install 执行失败')
+        }
     }
-    
+
     Write-OK "Ubuntu 发行版已安装"
-    
-    Write-Step "验证 Ubuntu WSL 可用..."
-    $testResult = wsl -d Ubuntu echo "ok" 2>$null
-    if ($testResult -match "ok") {
-        Write-OK "Ubuntu WSL 启动正常"
-    } else {
-        Write-Warn "Ubuntu WSL 启动测试未通过，可能需要重启服务器后重试"
+    if (Test-UbuntuRegistered) {
+        Ensure-UbuntuVersion2
     }
 } else {
     Write-OK "Ubuntu 已安装"
+    Ensure-UbuntuVersion2
 }
 
-$wslStatus = wsl -l -v 2>$null
-Write-Host "  WSL 发行版状态:" -ForegroundColor Gray
-Write-Host $wslStatus -ForegroundColor Gray
+Write-Step "验证 Ubuntu WSL 可用..."
+if (Wait-UbuntuReady -MaxAttempts 12 -DelaySeconds 5) {
+    Write-OK "Ubuntu WSL 启动正常"
+    Write-Host "  已确认 Ubuntu 可在 WSL2 中启动并执行命令" -ForegroundColor Gray
+} else {
+    $wslListResult = Invoke-WslCapture -Arguments @('-l', '-q')
+    $wslSummary = Get-WslErrorMessage -Text $wslListResult.Output -Fallback '未检测到可用的 Ubuntu 发行版'
+    Write-Err "Ubuntu 已安装，但当前仍无法启动"
+    Write-Host "  当前 WSL 状态: $wslSummary" -ForegroundColor DarkYellow
+    Write-Host "  建议先重启服务器，再重新运行此脚本。" -ForegroundColor DarkYellow
+    Stop-Script -Code 1 -PauseMessage "Ubuntu 当前无法启动，请重启服务器后重试，按回车键关闭窗口..."
+}
 
 # ============================================================
 # 4. 获取服务器 IP
 # ============================================================
-$SERVER_IP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
-    $_.InterfaceAlias -notmatch "Loopback" -and 
-    $_.InterfaceAlias -notmatch "vEthernet" -and 
-    $_.PrefixOrigin -ne "WellKnown" 
+$SERVER_IP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.InterfaceAlias -notmatch "Loopback" -and
+    $_.InterfaceAlias -notmatch "vEthernet" -and
+    $_.PrefixOrigin -ne "WellKnown"
 } | Select-Object -First 1).IPAddress
 if (-not $SERVER_IP) { $SERVER_IP = "localhost" }
 
@@ -310,11 +451,7 @@ try {
 $wslIP = ""
 if ($portProxyReady) {
     try {
-        $wslIPRaw = wsl -d Ubuntu -- hostname -I 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            throw "无法从 Ubuntu 获取 WSL IP"
-        }
-        $wslIP = ((($wslIPRaw | Out-String).Trim() -split '\s+') | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+        $wslIP = Get-UbuntuWslIp
         if (-not $wslIP) {
             throw "Ubuntu 已启动，但未获取到有效 IPv4 地址"
         }

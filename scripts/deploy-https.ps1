@@ -49,6 +49,10 @@ export DEBIAN_FRONTEND=noninteractive
 
 DOMAIN='$DOMAIN'
 
+echo "[步骤] 启动 Docker 守护进程..."
+sudo service docker start || true
+sleep 3
+
 echo "[步骤] 停止旧的前端容器 (如果存在)..."
 docker rm -f wordquest-frontend 2>/dev/null || true
 docker rm -f caddy-proxy 2>/dev/null || true

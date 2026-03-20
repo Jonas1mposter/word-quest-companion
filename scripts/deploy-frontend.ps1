@@ -87,7 +87,7 @@ echo "[完成] npm 镜像已配置"
 
 echo "[步骤] 安装前端依赖..."
 cd '$FRONTEND_WSL'
-npm install 2>&1
+npm install --legacy-peer-deps 2>&1
 echo "[完成] 依赖安装完成"
 
 echo "[步骤] 构建前端..."

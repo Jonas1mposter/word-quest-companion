@@ -300,6 +300,21 @@ DO $$ BEGIN
         CREATE POLICY "Public profiles are viewable" ON public.profiles FOR SELECT USING (true);
     END IF;
 END $$;
+-- 服务端邮箱域名限制：仅允许 @nkcswx.cn 注册
+CREATE OR REPLACE FUNCTION public.check_email_domain()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.email IS NOT NULL AND NEW.email NOT LIKE '%@nkcswx.cn' THEN
+        RAISE EXCEPTION '仅允许 @nkcswx.cn 学校邮箱注册';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+DROP TRIGGER IF EXISTS check_email_domain_trigger ON auth.users;
+CREATE TRIGGER check_email_domain_trigger
+    BEFORE INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.check_email_domain();
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN

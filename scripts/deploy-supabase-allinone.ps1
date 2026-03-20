@@ -369,16 +369,42 @@ Write-Step "检查 Ubuntu 发行版..."
 
 $hasUbuntu = Test-UbuntuRegistered
 $ubuntuInstallDir = "C:\WSL\Ubuntu"
-$ubuntuRootfsUrl = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz"
 $ubuntuRootfs = "$env:TEMP\ubuntu-wsl.tar.gz"
+
+# 多镜像源，按优先级尝试
+$rootfsMirrors = @(
+    @{ Name = "阿里云"; Url = "https://mirrors.aliyun.com/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz" },
+    @{ Name = "清华大学"; Url = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz" },
+    @{ Name = "中科大"; Url = "https://mirrors.ustc.edu.cn/ubuntu-cloud-images/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz" },
+    @{ Name = "官方源"; Url = "https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz" }
+)
 
 if (-not $hasUbuntu) {
     Write-Warn "正在安装 Ubuntu 发行版..."
-    Write-Host "  使用清华大学镜像下载 Ubuntu rootfs..." -ForegroundColor Gray
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+    $downloadOk = $false
+    foreach ($mirror in $rootfsMirrors) {
+        Write-Host "  尝试从 $($mirror.Name) 下载 Ubuntu rootfs..." -ForegroundColor Gray
+        try {
+            Invoke-WebRequest -Uri $mirror.Url -OutFile $ubuntuRootfs -UseBasicParsing -TimeoutSec 120
+            if ((Test-Path $ubuntuRootfs) -and (Get-Item $ubuntuRootfs).Length -gt 10MB) {
+                Write-OK "从 $($mirror.Name) 下载成功"
+                $downloadOk = $true
+                break
+            }
+        } catch {
+            Write-Host "    $($mirror.Name) 下载失败: $($_.Exception.Message -replace '[\r\n]+',' ' | Select-String -Pattern '.{0,80}' | ForEach-Object { $_.Matches.Value })" -ForegroundColor DarkYellow
+        }
+    }
+
+    if (-not $downloadOk) {
+        Write-Err "所有镜像源均下载失败，请检查服务器网络连接"
+        Write-Host "  请确认服务器可以访问外网（尝试: ping mirrors.aliyun.com）" -ForegroundColor Yellow
+        Stop-Script -Code 1 -PauseMessage "网络不可用，按回车键关闭窗口..."
+    }
+
     try {
-        Invoke-WebRequest -Uri $ubuntuRootfsUrl -OutFile $ubuntuRootfs -UseBasicParsing
 
         if (Test-Path $ubuntuInstallDir) {
             $existingItems = Get-ChildItem -Path $ubuntuInstallDir -Force -ErrorAction SilentlyContinue

@@ -43,6 +43,13 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    // 注册时验证邮箱域名
+    if (!isLogin && !email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+      toast.error(`仅允许 @${ALLOWED_EMAIL_DOMAIN} 学校邮箱注册`);
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });

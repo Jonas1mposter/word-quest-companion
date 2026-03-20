@@ -136,6 +136,10 @@ function Get-WslErrorMessage {
         return "WSL2 内核组件未就绪，请先安装或更新 WSL2 内核（常见错误码: 0x800701bc）。"
     }
 
+    if ($clean -match '(?i)0x8000ffff|enablevirtualization') {
+        return "严重错误(0x8000ffff): 硬件虚拟化未开启。请进入 BIOS 开启 Intel VT-x 或 AMD-V；如果是虚拟机，需在宿主机开启嵌套虚拟化(Nested Virtualization)。参考: https://aka.ms/enablevirtualization"
+    }
+
     if ($clean -match '(?i)0x80370102|virtual machine platform|nested virtualization|hyper-v') {
         return "虚拟化或 Virtual Machine Platform 未完全就绪，请确认 BIOS/宿主机已开启虚拟化后重试。"
     }
@@ -404,6 +408,19 @@ if (-not $hasUbuntu) {
         Remove-Item $ubuntuRootfs -Force -ErrorAction SilentlyContinue
     } catch {
         $importFailure = Get-WslErrorMessage -Text $_.Exception.Message -Fallback 'Ubuntu rootfs 导入失败'
+
+        # 如果是虚拟化未开启，直接终止，回退也不会成功
+        if ($importFailure -match '虚拟化未开启|0x8000ffff|enablevirtualization') {
+            Write-Err $importFailure
+            Write-Host ""
+            Write-Host "  === 解决方法 ===" -ForegroundColor White
+            Write-Host "  物理服务器: 进入 BIOS → 找到 Intel VT-x 或 AMD-V → 设为 Enabled → 重启" -ForegroundColor Yellow
+            Write-Host "  虚拟机(Hyper-V): Set-VMProcessor -VMName <名称> -ExposeVirtualizationExtensions `$true" -ForegroundColor Yellow
+            Write-Host "  虚拟机(VMware): 虚拟机设置 → 处理器 → 勾选 '虚拟化 Intel VT-x/EPT'" -ForegroundColor Yellow
+            Write-Host "  云服务器(Azure等): 确认实例类型支持嵌套虚拟化(如 Dv3/Ev3 系列)" -ForegroundColor Yellow
+            Stop-Script -Code 1 -PauseMessage "请开启虚拟化后重新运行脚本，按回车键关闭窗口..."
+        }
+
         Write-Warn "rootfs 导入失败，回退到 wsl --install: $importFailure"
         Log "rootfs 导入失败，准备回退到 wsl --install: $importFailure"
 

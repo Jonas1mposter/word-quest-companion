@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
+const ALLOWED_EMAIL_DOMAIN = "nkcswx.cn";
+
 const Auth = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
@@ -40,6 +42,13 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // 注册时验证邮箱域名
+    if (!isLogin && !email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+      toast.error(`仅允许 @${ALLOWED_EMAIL_DOMAIN} 学校邮箱注册`);
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isLogin) {
@@ -104,15 +113,18 @@ const Auth = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">学校邮箱</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="你的学号@nkcswx.cn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">仅支持 @nkcswx.cn 学校邮箱注册</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>

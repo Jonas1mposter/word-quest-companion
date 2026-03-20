@@ -24,10 +24,66 @@ function Write-OK($msg)   { Write-Host "[完成] $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "[警告] $msg" -ForegroundColor Yellow }
 function Write-Err($msg)  { Write-Host "[错误] $msg" -ForegroundColor Red }
 
+$script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+try {
+    [Console]::InputEncoding = $script:Utf8NoBom
+    [Console]::OutputEncoding = $script:Utf8NoBom
+    $global:OutputEncoding = $script:Utf8NoBom
+} catch {}
+try { chcp 65001 | Out-Null } catch {}
+
+function Append-Utf8Line {
+    param(
+        [string]$Path,
+        [string]$Message
+    )
+    [System.IO.File]::AppendAllText($Path, $Message + [Environment]::NewLine, $script:Utf8NoBom)
+}
+
 function Log($msg) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$timestamp - $msg" | Out-File -Append -FilePath $LOG_FILE
+    Append-Utf8Line -Path $LOG_FILE -Message "$timestamp - $msg"
     Write-Host $msg
+}
+
+function Remove-AnsiText {
+    param([string]$Text)
+    if ($null -eq $Text) { return "" }
+    return [regex]::Replace($Text, ([string][char]27) + '\[[0-9;?]*[ -/]*[@-~]', '')
+}
+
+function Sync-WslLogsToWindows {
+    try {
+        wsl -d Ubuntu -- bash -lc "mkdir -p /mnt/c/supabase; cp /tmp/supabase-deploy/run.log /mnt/c/supabase/wsl-run.log 2>/dev/null || true; cp /opt/supabase/deploy.log /mnt/c/supabase/wsl-deploy.log 2>/dev/null || true" | Out-Null
+    } catch {}
+}
+
+function Show-WslFailureDiagnostics {
+    Sync-WslLogsToWindows
+
+    $runLogPath = Join-Path $INSTALL_DIR "wsl-run.log"
+    $deployLogPath = Join-Path $INSTALL_DIR "wsl-deploy.log"
+
+    if (Test-Path $runLogPath) {
+        Write-Warn "以下是 WSL 执行日志最后 80 行："
+        Get-Content -Path $runLogPath -Encoding UTF8 -Tail 80 | ForEach-Object {
+            $cleanLine = Remove-AnsiText $_
+            if (-not [string]::IsNullOrWhiteSpace($cleanLine)) { Write-Host $cleanLine }
+        }
+    }
+
+    if (Test-Path $deployLogPath) {
+        Write-Warn "以下是 /opt/supabase/deploy.log 最后 80 行："
+        Get-Content -Path $deployLogPath -Encoding UTF8 -Tail 80 | ForEach-Object {
+            $cleanLine = Remove-AnsiText $_
+            if (-not [string]::IsNullOrWhiteSpace($cleanLine)) { Write-Host $cleanLine }
+        }
+    }
+
+    Write-Host "  Windows 日志文件:" -ForegroundColor Gray
+    Write-Host "    $LOG_FILE" -ForegroundColor Gray
+    Write-Host "    $runLogPath" -ForegroundColor Gray
+    Write-Host "    $deployLogPath" -ForegroundColor Gray
 }
 
 function Stop-Script {

@@ -79,7 +79,7 @@ else
     apt-get install -y curl >/dev/null 2>&1
     curl -fsSL https://deb.nodesource.com/setup_20.x 2>/dev/null | bash - >/dev/null 2>&1 || true
     apt-get install -y nodejs >/dev/null 2>&1
-    echo "[完成] Node.js 已安装: \$(node --version)"
+    echo "[完成] Node.js 已安装: `$(node --version)"
 fi
 
 npm config set registry https://registry.npmmirror.com 2>/dev/null || true

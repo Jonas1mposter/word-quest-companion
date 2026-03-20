@@ -119,7 +119,7 @@ server {
     }
 
     location / {
-        try_files \\\$uri \\\$uri/ /index.html;
+        try_files `$uri `$uri/ /index.html;
     }
 }
 NGINXEOF

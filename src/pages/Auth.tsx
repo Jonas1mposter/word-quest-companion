@@ -113,15 +113,18 @@ const Auth = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">学校邮箱</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="你的学号@nkcswx.cn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">仅支持 @nkcswx.cn 学校邮箱注册</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>

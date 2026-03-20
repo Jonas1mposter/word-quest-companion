@@ -408,6 +408,19 @@ if (-not $hasUbuntu) {
         Remove-Item $ubuntuRootfs -Force -ErrorAction SilentlyContinue
     } catch {
         $importFailure = Get-WslErrorMessage -Text $_.Exception.Message -Fallback 'Ubuntu rootfs 导入失败'
+
+        # 如果是虚拟化未开启，直接终止，回退也不会成功
+        if ($importFailure -match '虚拟化未开启|0x8000ffff|enablevirtualization') {
+            Write-Err $importFailure
+            Write-Host ""
+            Write-Host "  === 解决方法 ===" -ForegroundColor White
+            Write-Host "  物理服务器: 进入 BIOS → 找到 Intel VT-x 或 AMD-V → 设为 Enabled → 重启" -ForegroundColor Yellow
+            Write-Host "  虚拟机(Hyper-V): Set-VMProcessor -VMName <名称> -ExposeVirtualizationExtensions `$true" -ForegroundColor Yellow
+            Write-Host "  虚拟机(VMware): 虚拟机设置 → 处理器 → 勾选 '虚拟化 Intel VT-x/EPT'" -ForegroundColor Yellow
+            Write-Host "  云服务器(Azure等): 确认实例类型支持嵌套虚拟化(如 Dv3/Ev3 系列)" -ForegroundColor Yellow
+            Stop-Script -Code 1 -PauseMessage "请开启虚拟化后重新运行脚本，按回车键关闭窗口..."
+        }
+
         Write-Warn "rootfs 导入失败，回退到 wsl --install: $importFailure"
         Log "rootfs 导入失败，准备回退到 wsl --install: $importFailure"
 

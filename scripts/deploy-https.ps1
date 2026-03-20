@@ -58,37 +58,12 @@ mkdir -p /opt/supabase/caddy/data
 mkdir -p /opt/supabase/caddy/config
 
 cat > /opt/supabase/caddy/Caddyfile << CADDYEOF
-\$DOMAIN {
-    # 前端 - 如果有构建好的前端则反向代理到 nginx，否则直接代理 Studio
-    handle /rest/* {
-        reverse_proxy localhost:8000
-    }
-    handle /auth/* {
-        reverse_proxy localhost:8000
-    }
-    handle /storage/* {
-        reverse_proxy localhost:8000
-    }
-    handle /realtime/* {
-        reverse_proxy localhost:8000
-    }
-    handle /functions/* {
-        reverse_proxy localhost:8000
-    }
-
-    # 前端静态文件 (如果 nginx 容器运行在 3080)
-    handle {
-        reverse_proxy localhost:3080 {
-            @notfound status 502 503
-            handle_response @notfound {
-                # 如果前端没部署，回退到 Supabase Studio
-                reverse_proxy localhost:3000
-            }
-        }
-    }
+# API 子域名 - Supabase 后端
+api.\$DOMAIN {
+    reverse_proxy localhost:8000
 }
 
-# Studio 子域名 (可选)
+# Studio 子域名
 studio.\$DOMAIN {
     reverse_proxy localhost:3000
 }

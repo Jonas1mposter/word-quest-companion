@@ -880,18 +880,15 @@ $wslTempPath = $tempScriptPath -replace '\\', '/'
 $wslTempPath = $wslTempPath -replace '^([A-Za-z]):', { '/mnt/' + $_.Groups[1].Value.ToLower() }
 
 $wslScriptDir = "/tmp/supabase-deploy"
+$wslScriptPath = "$wslScriptDir/deploy.sh"
+$wslRunLogPath = "$wslScriptDir/run.log"
 
 try {
-    wsl -d Ubuntu -- bash -lc "mkdir -p '$wslScriptDir'"
-    if ($LASTEXITCODE -ne 0) { throw "无法在 Ubuntu 中创建临时目录" }
-
-    wsl -d Ubuntu -- bash -lc "cp '$wslTempPath' '$wslScriptDir/deploy.sh' && chmod +x '$wslScriptDir/deploy.sh'"
-    if ($LASTEXITCODE -ne 0) { throw "无法将部署脚本复制到 Ubuntu" }
-
-    wsl -d Ubuntu -- bash -lc "sed -i 's/\r$//' '$wslScriptDir/deploy.sh'"
-    if ($LASTEXITCODE -ne 0) { throw "无法修正部署脚本换行符" }
+    Invoke-UbuntuBashCapture -Command "mkdir -p '$wslScriptDir' && rm -f '$wslScriptPath' '$wslRunLogPath'"
+    Invoke-UbuntuBashCapture -Command "cp '$wslTempPath' '$wslScriptPath' && chmod 755 '$wslScriptPath' && sed -i 's/\r$//' '$wslScriptPath'"
 } catch {
     Write-Err "准备 WSL 脚本失败: $($_.Exception.Message)"
+    Show-WslFailureDiagnostics
     Stop-Script -Code 1 -PauseMessage "准备 WSL 脚本失败，请查看上方日志后按回车键关闭窗口..."
 }
 
@@ -902,18 +899,22 @@ Write-Host "  这需要 10-20 分钟，请耐心等待"         -ForegroundColor
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host ""
 
-$deployCommand = "export SERVER_IP='$SERVER_IP'; export DEBIAN_FRONTEND=noninteractive; export NEEDRESTART_MODE=a; export LANG=C.UTF-8; export LC_ALL=C.UTF-8; '$wslScriptDir/deploy.sh' 2>&1 | tee '$wslScriptDir/run.log'; exit `${PIPESTATUS[0]}"
-wsl -d Ubuntu -- bash -lc $deployCommand
-$wslDeployExitCode = $LASTEXITCODE
+$escapedServerIp = $SERVER_IP.Replace("'", "'\''")
+$deployCommand = "export SERVER_IP='$escapedServerIp'; export DEBIAN_FRONTEND=noninteractive; export NEEDRESTART_MODE=a; export LANG=C.UTF-8; export LC_ALL=C.UTF-8; '$wslScriptPath' 2>&1 | tee '$wslRunLogPath'; exit `${PIPESTATUS[0]}"
+$deployResult = Invoke-WslCapture -Arguments @('-d', 'Ubuntu', '--user', 'root', '--', 'bash', '-lc', $deployCommand)
+$wslDeployExitCode = $deployResult.ExitCode
+if (-not [string]::IsNullOrWhiteSpace($deployResult.Output)) {
+    Write-Host $deployResult.Output
+}
 
 Sync-WslLogsToWindows
 
 if ($wslDeployExitCode -ne 0) {
     Write-Err "WSL2 内部署失败，已自动同步日志到 C:\supabase"
     Show-WslFailureDiagnostics
-    Write-Host "  可以手动进入 Ubuntu 排查: wsl -d Ubuntu" -ForegroundColor Gray
+    Write-Host "  可以手动进入 Ubuntu 排查: wsl -d Ubuntu -u root" -ForegroundColor Gray
     Write-Host "  Windows 日志: C:\supabase\wsl-run.log / C:\supabase\wsl-deploy.log" -ForegroundColor Gray
-    Write-Host "  WSL 日志: wsl -d Ubuntu -- bash -lc 'cat /opt/supabase/deploy.log'" -ForegroundColor Gray
+    Write-Host "  WSL 日志: wsl -d Ubuntu --user root -- bash -lc 'cat /opt/supabase/deploy.log'" -ForegroundColor Gray
     Stop-Script -Code 1 -PauseMessage "WSL2 内部署失败，请先查看上方日志后按回车键关闭窗口..."
 }
 

@@ -72,7 +72,7 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 if command -v node >/dev/null 2>&1; then
-    echo "[完成] Node.js 已安装: \$(node --version)"
+    echo "[完成] Node.js 已安装: `$(node --version)"
 else
     echo "[步骤] 安装 Node.js 20.x..."
     apt-get update -y >/dev/null 2>&1

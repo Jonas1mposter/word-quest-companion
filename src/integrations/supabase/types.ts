@@ -133,31 +133,49 @@ export type Database = {
       }
       class_assignments: {
         Row: {
+          assignment_type: string | null
           class_id: string
           class_name: string | null
           created_at: string
+          description: string | null
+          due_date: string | null
           grade: number | null
           id: string
+          is_active: boolean
           profile_id: string
+          target_data: Json | null
           teacher_id: string | null
+          title: string | null
         }
         Insert: {
+          assignment_type?: string | null
           class_id: string
           class_name?: string | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
           grade?: number | null
           id?: string
+          is_active?: boolean
           profile_id: string
+          target_data?: Json | null
           teacher_id?: string | null
+          title?: string | null
         }
         Update: {
+          assignment_type?: string | null
           class_id?: string
           class_name?: string | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
           grade?: number | null
           id?: string
+          is_active?: boolean
           profile_id?: string
+          target_data?: Json | null
           teacher_id?: string | null
+          title?: string | null
         }
         Relationships: [
           {
@@ -242,53 +260,65 @@ export type Database = {
       class_competitions: {
         Row: {
           class_id: string
+          class_name: string | null
           competition_type: string | null
           created_at: string
           description: string | null
           end_date: string | null
           end_time: string | null
+          grade: number | null
           id: string
           is_active: boolean
           name: string
+          reward_coins: number
           reward_data: Json | null
           start_date: string | null
           start_time: string | null
           status: string | null
           target_data: Json | null
+          teacher_id: string | null
           title: string | null
         }
         Insert: {
           class_id: string
+          class_name?: string | null
           competition_type?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           end_time?: string | null
+          grade?: number | null
           id?: string
           is_active?: boolean
           name: string
+          reward_coins?: number
           reward_data?: Json | null
           start_date?: string | null
           start_time?: string | null
           status?: string | null
           target_data?: Json | null
+          teacher_id?: string | null
           title?: string | null
         }
         Update: {
           class_id?: string
+          class_name?: string | null
           competition_type?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           end_time?: string | null
+          grade?: number | null
           id?: string
           is_active?: boolean
           name?: string
+          reward_coins?: number
           reward_data?: Json | null
           start_date?: string | null
           start_time?: string | null
           status?: string | null
           target_data?: Json | null
+          teacher_id?: string | null
           title?: string | null
         }
         Relationships: [
@@ -297,6 +327,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "teacher_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_competitions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

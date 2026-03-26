@@ -82,28 +82,34 @@ export type Database = {
       }
       challenge_rewards: {
         Row: {
+          challenge_type: string
           claimed: boolean
           created_at: string
           id: string
           profile_id: string
+          rank_achieved: number | null
           reward_type: string
           reward_value: number
           season_id: string
         }
         Insert: {
+          challenge_type?: string
           claimed?: boolean
           created_at?: string
           id?: string
           profile_id: string
+          rank_achieved?: number | null
           reward_type?: string
           reward_value?: number
           season_id: string
         }
         Update: {
+          challenge_type?: string
           claimed?: boolean
           created_at?: string
           id?: string
           profile_id?: string
+          rank_achieved?: number | null
           reward_type?: string
           reward_value?: number
           season_id?: string
@@ -128,21 +134,30 @@ export type Database = {
       class_assignments: {
         Row: {
           class_id: string
+          class_name: string | null
           created_at: string
+          grade: number | null
           id: string
           profile_id: string
+          teacher_id: string | null
         }
         Insert: {
           class_id: string
+          class_name?: string | null
           created_at?: string
+          grade?: number | null
           id?: string
           profile_id: string
+          teacher_id?: string | null
         }
         Update: {
           class_id?: string
+          class_name?: string | null
           created_at?: string
+          grade?: number | null
           id?: string
           profile_id?: string
+          teacher_id?: string | null
         }
         Relationships: [
           {
@@ -159,33 +174,58 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "class_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       class_challenges: {
         Row: {
           class_name: string
+          composite_score: number
           created_at: string
+          grade: number
           id: string
           member_count: number
+          rank_position: number | null
           season_id: string
+          total_answered: number
+          total_correct: number
+          total_levels_completed: number
           total_words: number
           total_xp: number
         }
         Insert: {
           class_name: string
+          composite_score?: number
           created_at?: string
+          grade?: number
           id?: string
           member_count?: number
+          rank_position?: number | null
           season_id: string
+          total_answered?: number
+          total_correct?: number
+          total_levels_completed?: number
           total_words?: number
           total_xp?: number
         }
         Update: {
           class_name?: string
+          composite_score?: number
           created_at?: string
+          grade?: number
           id?: string
           member_count?: number
+          rank_position?: number | null
           season_id?: string
+          total_answered?: number
+          total_correct?: number
+          total_levels_completed?: number
           total_words?: number
           total_xp?: number
         }
@@ -202,33 +242,54 @@ export type Database = {
       class_competitions: {
         Row: {
           class_id: string
+          competition_type: string | null
           created_at: string
           description: string | null
           end_date: string | null
+          end_time: string | null
           id: string
           is_active: boolean
           name: string
+          reward_data: Json | null
           start_date: string | null
+          start_time: string | null
+          status: string | null
+          target_data: Json | null
+          title: string | null
         }
         Insert: {
           class_id: string
+          competition_type?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
           id?: string
           is_active?: boolean
           name: string
+          reward_data?: Json | null
           start_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          target_data?: Json | null
+          title?: string | null
         }
         Update: {
           class_id?: string
+          competition_type?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          reward_data?: Json | null
           start_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          target_data?: Json | null
+          title?: string | null
         }
         Relationships: [
           {
@@ -432,35 +493,59 @@ export type Database = {
         Row: {
           challenge_name: string
           completed: boolean
+          composite_score: number
           created_at: string
           current_value: number
+          grade: number
           id: string
+          member_count: number
+          rank_position: number | null
           reward_type: string
           reward_value: number
           season_id: string
           target_value: number
+          total_answered: number
+          total_correct: number
+          total_levels_completed: number
+          total_xp: number
         }
         Insert: {
           challenge_name: string
           completed?: boolean
+          composite_score?: number
           created_at?: string
           current_value?: number
+          grade?: number
           id?: string
+          member_count?: number
+          rank_position?: number | null
           reward_type?: string
           reward_value?: number
           season_id: string
           target_value?: number
+          total_answered?: number
+          total_correct?: number
+          total_levels_completed?: number
+          total_xp?: number
         }
         Update: {
           challenge_name?: string
           completed?: boolean
+          composite_score?: number
           created_at?: string
           current_value?: number
+          grade?: number
           id?: string
+          member_count?: number
+          rank_position?: number | null
           reward_type?: string
           reward_value?: number
           season_id?: string
           target_value?: number
+          total_answered?: number
+          total_correct?: number
+          total_levels_completed?: number
+          total_xp?: number
         }
         Relationships: [
           {
@@ -871,6 +956,7 @@ export type Database = {
           status: string
           subject: string | null
           winner_id: string | null
+          words: Json | null
         }
         Insert: {
           created_at?: string
@@ -886,6 +972,7 @@ export type Database = {
           status?: string
           subject?: string | null
           winner_id?: string | null
+          words?: Json | null
         }
         Update: {
           created_at?: string
@@ -901,6 +988,7 @@ export type Database = {
           status?: string
           subject?: string | null
           winner_id?: string | null
+          words?: Json | null
         }
         Relationships: [
           {
@@ -1213,31 +1301,49 @@ export type Database = {
       }
       seasons: {
         Row: {
+          bonus_multiplier: number | null
           created_at: string
+          description: string | null
           end_date: string | null
           grade: number
+          icon: string | null
           id: string
           is_active: boolean
           name: string
+          primary_color: string | null
+          secondary_color: string | null
           start_date: string | null
+          theme: string | null
         }
         Insert: {
+          bonus_multiplier?: number | null
           created_at?: string
+          description?: string | null
           end_date?: string | null
           grade?: number
+          icon?: string | null
           id?: string
           is_active?: boolean
           name: string
+          primary_color?: string | null
+          secondary_color?: string | null
           start_date?: string | null
+          theme?: string | null
         }
         Update: {
+          bonus_multiplier?: number | null
           created_at?: string
+          description?: string | null
           end_date?: string | null
           grade?: number
+          icon?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
           start_date?: string | null
+          theme?: string | null
         }
         Relationships: []
       }
@@ -1277,18 +1383,21 @@ export type Database = {
         Row: {
           badge_id: string
           earned_at: string
+          equipped_slot: number | null
           id: string
           profile_id: string
         }
         Insert: {
           badge_id: string
           earned_at?: string
+          equipped_slot?: number | null
           id?: string
           profile_id: string
         }
         Update: {
           badge_id?: string
           earned_at?: string
+          equipped_slot?: number | null
           id?: string
           profile_id?: string
         }
@@ -1316,6 +1425,7 @@ export type Database = {
           is_equipped: boolean
           name_card_id: string
           profile_id: string
+          rank_position: number | null
         }
         Insert: {
           earned_at?: string
@@ -1323,6 +1433,7 @@ export type Database = {
           is_equipped?: boolean
           name_card_id: string
           profile_id: string
+          rank_position?: number | null
         }
         Update: {
           earned_at?: string
@@ -1330,6 +1441,7 @@ export type Database = {
           is_equipped?: boolean
           name_card_id?: string
           profile_id?: string
+          rank_position?: number | null
         }
         Relationships: [
           {

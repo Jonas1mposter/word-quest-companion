@@ -84,9 +84,6 @@ const Auth = () => {
           <p className="text-muted-foreground text-sm mt-2">
             {isLogin ? "登录你的账号" : "创建新账号"}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            (本地模式 - 数据保存在浏览器中)
-          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button

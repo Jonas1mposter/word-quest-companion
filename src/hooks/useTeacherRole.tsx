@@ -1,9 +1,31 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useTeacherRole() {
   const { user } = useAuth();
-  const teacherEmails = JSON.parse(localStorage.getItem('wq_teacher_emails') || '[]');
-  const isTeacher = user ? teacherEmails.includes(user.email) : false;
-  
-  return { isTeacher, loading: false };
+  const [isTeacher, setIsTeacher] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      if (!user) {
+        setIsTeacher(false);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'teacher' });
+
+      if (!error) {
+        setIsTeacher(!!data);
+      }
+      setLoading(false);
+    };
+
+    checkRole();
+  }, [user]);
+
+  return { isTeacher, loading };
 }

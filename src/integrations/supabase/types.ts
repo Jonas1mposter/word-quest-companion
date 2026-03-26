@@ -134,7 +134,7 @@ export type Database = {
       class_assignments: {
         Row: {
           assignment_type: string | null
-          class_id: string
+          class_id: string | null
           class_name: string | null
           created_at: string
           description: string | null
@@ -142,14 +142,14 @@ export type Database = {
           grade: number | null
           id: string
           is_active: boolean
-          profile_id: string
+          profile_id: string | null
           target_data: Json | null
           teacher_id: string | null
           title: string | null
         }
         Insert: {
           assignment_type?: string | null
-          class_id: string
+          class_id?: string | null
           class_name?: string | null
           created_at?: string
           description?: string | null
@@ -157,14 +157,14 @@ export type Database = {
           grade?: number | null
           id?: string
           is_active?: boolean
-          profile_id: string
+          profile_id?: string | null
           target_data?: Json | null
           teacher_id?: string | null
           title?: string | null
         }
         Update: {
           assignment_type?: string | null
-          class_id?: string
+          class_id?: string | null
           class_name?: string | null
           created_at?: string
           description?: string | null
@@ -172,7 +172,7 @@ export type Database = {
           grade?: number | null
           id?: string
           is_active?: boolean
-          profile_id?: string
+          profile_id?: string | null
           target_data?: Json | null
           teacher_id?: string | null
           title?: string | null
@@ -259,7 +259,7 @@ export type Database = {
       }
       class_competitions: {
         Row: {
-          class_id: string
+          class_id: string | null
           class_name: string | null
           competition_type: string | null
           created_at: string
@@ -269,7 +269,7 @@ export type Database = {
           grade: number | null
           id: string
           is_active: boolean
-          name: string
+          name: string | null
           reward_coins: number
           reward_data: Json | null
           start_date: string | null
@@ -280,7 +280,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
-          class_id: string
+          class_id?: string | null
           class_name?: string | null
           competition_type?: string | null
           created_at?: string
@@ -290,7 +290,7 @@ export type Database = {
           grade?: number | null
           id?: string
           is_active?: boolean
-          name: string
+          name?: string | null
           reward_coins?: number
           reward_data?: Json | null
           start_date?: string | null
@@ -301,7 +301,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
-          class_id?: string
+          class_id?: string | null
           class_name?: string | null
           competition_type?: string | null
           created_at?: string
@@ -311,7 +311,7 @@ export type Database = {
           grade?: number | null
           id?: string
           is_active?: boolean
-          name?: string
+          name?: string | null
           reward_coins?: number
           reward_data?: Json | null
           start_date?: string | null

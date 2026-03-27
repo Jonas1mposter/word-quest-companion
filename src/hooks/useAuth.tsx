@@ -134,9 +134,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to avoid potential deadlock with Supabase auth
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
-            // Auto-sync grade from email for existing users
-            if (p && session.user.email) {
-              const detectedGrade = detectGradeFromEmail(session.user.email);
+            if (p) {
+              // Try Azure AD group-based grade detection first (using provider_token)
+              let detectedGrade: number | null = null;
+              if (session.provider_token) {
+                detectedGrade = await detectGradeFromAzureGroups(session.provider_token);
+              }
+              // Fallback to email-based detection
+              if (!detectedGrade && session.user.email) {
+                detectedGrade = detectGradeFromEmail(session.user.email);
+              }
               if (detectedGrade && p.grade !== detectedGrade) {
                 const { data: updated } = await supabase
                   .from("profiles")

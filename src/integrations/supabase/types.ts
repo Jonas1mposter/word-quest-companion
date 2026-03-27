@@ -412,6 +412,7 @@ export type Database = {
       friend_battle_invites: {
         Row: {
           created_at: string
+          expires_at: string | null
           id: string
           match_id: string | null
           receiver_id: string
@@ -420,6 +421,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           match_id?: string | null
           receiver_id: string
@@ -428,6 +430,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           match_id?: string | null
           receiver_id?: string
@@ -720,6 +723,72 @@ export type Database = {
           name?: string
           order_index?: number
           unit?: number
+        }
+        Relationships: []
+      }
+      match_answers: {
+        Row: {
+          answer: string | null
+          answered_at: string
+          id: string
+          is_correct: boolean
+          match_id: string
+          player_id: string
+          question_index: number
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string
+          id?: string
+          is_correct?: boolean
+          match_id: string
+          player_id: string
+          question_index: number
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string
+          id?: string
+          is_correct?: boolean
+          match_id?: string
+          player_id?: string
+          question_index?: number
+        }
+        Relationships: []
+      }
+      match_queue: {
+        Row: {
+          created_at: string
+          elo_rating: number
+          grade: number
+          id: string
+          match_id: string | null
+          match_type: string
+          profile_id: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          elo_rating?: number
+          grade?: number
+          id?: string
+          match_id?: string | null
+          match_type?: string
+          profile_id: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          elo_rating?: number
+          grade?: number
+          id?: string
+          match_id?: string | null
+          match_type?: string
+          profile_id?: string
+          status?: string
+          subject?: string | null
         }
         Relationships: []
       }
@@ -1416,6 +1485,106 @@ export type Database = {
           },
         ]
       }
+      team_join_requests: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          status: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          status?: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          status?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_join_requests_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          joined_at: string
+          profile_id: string
+          role: string
+          team_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          profile_id: string
+          role?: string
+          team_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          profile_id?: string
+          role?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          avatar_url: string | null
+          captain_id: string
+          created_at: string
+          description: string | null
+          id: string
+          max_members: number
+          name: string
+          total_wins: number
+          total_xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          captain_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_members?: number
+          name: string
+          total_wins?: number
+          total_xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          captain_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_members?: number
+          name?: string
+          total_wins?: number
+          total_xp?: number
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -1739,6 +1908,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_match: {
+        Args: {
+          _elo_rating: number
+          _grade: number
+          _match_type: string
+          _profile_id: string
+          _subject?: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -14,7 +14,7 @@ const Auth = () => {
         provider: 'azure',
         options: {
           redirectTo: window.location.origin + '/callback',
-          scopes: 'email profile openid',
+          scopes: 'email profile openid GroupMember.Read.All',
         },
       });
       if (error) {

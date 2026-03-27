@@ -65,6 +65,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
+  const detectGradeFromAzureGroups = async (providerToken: string): Promise<number | null> => {
+    try {
+      const response = await fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
+        headers: { 'Authorization': `Bearer ${providerToken}` }
+      });
+      if (!response.ok) {
+        console.warn('Graph API groups fetch failed:', response.status);
+        return null;
+      }
+      const data = await response.json();
+      if (data.value) {
+        for (const group of data.value) {
+          const name = (group.displayName || '').toLowerCase();
+          if (name.includes('grade_8')) return 8;
+          if (name.includes('grade_7')) return 7;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Azure AD groups:', err);
+    }
+    return null;
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")

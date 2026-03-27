@@ -33,6 +33,7 @@ const App = () => {
             <HashRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/callback" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/teacher" element={<Teacher />} />

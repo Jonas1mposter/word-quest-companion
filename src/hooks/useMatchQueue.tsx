@@ -23,7 +23,7 @@ export const useMatchQueue = ({
   const [isQueued, setIsQueued] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
 
   // Clean up on unmount

@@ -67,7 +67,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   const [matchEnded, setMatchEnded] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);
 

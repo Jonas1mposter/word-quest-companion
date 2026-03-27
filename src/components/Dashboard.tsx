@@ -526,14 +526,7 @@ const Dashboard = ({
       {/* Reconnect Dialog */}
       {activeMatch && (
         <ReconnectDialog
-          open={true}
-          matchType={activeMatch.type}
-          opponentName={activeMatch.opponentName}
-          opponentAvatar={activeMatch.opponentAvatar}
-          myScore={activeMatch.myScore}
-          opponentScore={activeMatch.opponentScore}
-          currentQuestion={activeMatch.currentQuestion}
-          timeRemaining={activeMatch.timeRemaining}
+          activeMatch={activeMatch}
           onReconnect={handleReconnect}
           onDismiss={handleDismissReconnect}
         />

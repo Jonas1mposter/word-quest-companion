@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 
 const K_FACTOR = 32;
 
@@ -50,14 +51,11 @@ export const useEloSystem = () => {
   ) => {
     const result = calculateEloChange(playerElo, opponentElo, playerWon, isDraw, isNewPlayer);
     
-    // Update in localStorage
-    const profiles = JSON.parse(localStorage.getItem('wq_profiles') || '[]');
-    const idx = profiles.findIndex((p: any) => p.id === profileId);
-    if (idx >= 0) {
-      const field = isFreeMatch ? 'elo_free' : 'elo_rating';
-      profiles[idx][field] = result.newPlayerElo;
-      localStorage.setItem('wq_profiles', JSON.stringify(profiles));
-    }
+    const field = isFreeMatch ? 'elo_free' : 'elo_rating';
+    await supabase
+      .from('profiles')
+      .update({ [field]: result.newPlayerElo })
+      .eq('id', profileId);
     
     return result;
   }, []);
@@ -66,8 +64,22 @@ export const useEloSystem = () => {
     return [];
   }, []);
 
-  const getWinStreak = useCallback(async () => {
-    return 0;
+  const getWinStreak = useCallback(async (profileId: string) => {
+    const { data } = await supabase
+      .from('ranked_matches')
+      .select('winner_id')
+      .eq('status', 'completed')
+      .or(`player1_id.eq.${profileId},player2_id.eq.${profileId}`)
+      .order('ended_at', { ascending: false })
+      .limit(10);
+
+    if (!data) return 0;
+    let streak = 0;
+    for (const m of data) {
+      if (m.winner_id === profileId) streak++;
+      else break;
+    }
+    return streak;
   }, []);
 
   return {

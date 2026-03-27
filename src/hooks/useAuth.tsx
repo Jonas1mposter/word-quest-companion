@@ -58,6 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const detectGradeFromEmail = (email: string): number | null => {
+    const lower = email.toLowerCase();
+    if (lower.includes('grade_8')) return 8;
+    if (lower.includes('grade_7')) return 7;
+    return null;
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")

@@ -65,6 +65,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
+  const detectGradeFromAzureGroups = async (providerToken: string): Promise<number | null> => {
+    try {
+      const response = await fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
+        headers: { 'Authorization': `Bearer ${providerToken}` }
+      });
+      if (!response.ok) {
+        console.warn('Graph API groups fetch failed:', response.status);
+        return null;
+      }
+      const data = await response.json();
+      if (data.value) {
+        for (const group of data.value) {
+          const name = (group.displayName || '').toLowerCase();
+          if (name.includes('grade_8')) return 8;
+          if (name.includes('grade_7')) return 7;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Azure AD groups:', err);
+    }
+    return null;
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -111,9 +134,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to avoid potential deadlock with Supabase auth
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
-            // Auto-sync grade from email for existing users
-            if (p && session.user.email) {
-              const detectedGrade = detectGradeFromEmail(session.user.email);
+            if (p) {
+              // Try Azure AD group-based grade detection first (using provider_token)
+              let detectedGrade: number | null = null;
+              if (session.provider_token) {
+                detectedGrade = await detectGradeFromAzureGroups(session.provider_token);
+              }
+              // Fallback to email-based detection
+              if (!detectedGrade && session.user.email) {
+                detectedGrade = detectGradeFromEmail(session.user.email);
+              }
               if (detectedGrade && p.grade !== detectedGrade) {
                 const { data: updated } = await supabase
                   .from("profiles")

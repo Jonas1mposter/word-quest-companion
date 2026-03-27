@@ -58,6 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const detectGradeFromEmail = (email: string): number | null => {
+    const lower = email.toLowerCase();
+    if (lower.includes('grade_8')) return 8;
+    if (lower.includes('grade_7')) return 7;
+    return null;
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -104,6 +111,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to avoid potential deadlock with Supabase auth
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
+            // Auto-sync grade from email for existing users
+            if (p && session.user.email) {
+              const detectedGrade = detectGradeFromEmail(session.user.email);
+              if (detectedGrade && p.grade !== detectedGrade) {
+                const { data: updated } = await supabase
+                  .from("profiles")
+                  .update({ grade: detectedGrade })
+                  .eq("id", p.id)
+                  .select()
+                  .single();
+                if (updated) {
+                  setProfile(updated as Profile);
+                  setLoading(false);
+                  return;
+                }
+              }
+            }
             setProfile(p);
             setLoading(false);
           }, 0);

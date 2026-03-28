@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gradeAutoDetected, setGradeAutoDetected] = useState(true);
 
   const detectGradeFromEmail = (email: string): number | null => {
     const lower = email.toLowerCase();

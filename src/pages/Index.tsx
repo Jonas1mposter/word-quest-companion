@@ -3,19 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { seedWordsIfNeeded } from "@/lib/seedData";
 import Dashboard from "@/components/Dashboard";
-import GradeSelector from "@/components/GradeSelector";
+import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, gradeAutoDetected } = useAuth();
   const navigate = useNavigate();
   const [grade, setGrade] = useState<7 | 8>(7);
+  const [showGradeDialog, setShowGradeDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  // Show grade selection dialog if auto-detection failed
+  useEffect(() => {
+    if (!loading && profile && !gradeAutoDetected) {
+      setShowGradeDialog(true);
+    }
+  }, [loading, profile, gradeAutoDetected]);
 
   // Seed word data on first load
   useEffect(() => {
@@ -42,7 +50,15 @@ const Index = () => {
 
   if (!user || !profile) return null;
 
-  return <Dashboard grade={grade} />;
+  return (
+    <>
+      <Dashboard grade={grade} />
+      <GradeSelectionDialog
+        open={showGradeDialog}
+        onClose={() => setShowGradeDialog(false)}
+      />
+    </>
+  );
 };
 
 export default Index;

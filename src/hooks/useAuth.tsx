@@ -146,18 +146,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (!detectedGrade && session.user.email) {
                 detectedGrade = detectGradeFromEmail(session.user.email);
               }
-              if (detectedGrade && p.grade !== detectedGrade) {
-                const { data: updated } = await supabase
-                  .from("profiles")
-                  .update({ grade: detectedGrade })
-                  .eq("id", p.id)
-                  .select()
-                  .single();
-                if (updated) {
-                  setProfile(updated as Profile);
-                  setLoading(false);
-                  return;
+              if (detectedGrade) {
+                setGradeAutoDetected(true);
+                if (p.grade !== detectedGrade) {
+                  const { data: updated } = await supabase
+                    .from("profiles")
+                    .update({ grade: detectedGrade })
+                    .eq("id", p.id)
+                    .select()
+                    .single();
+                  if (updated) {
+                    setProfile(updated as Profile);
+                    setLoading(false);
+                    return;
+                  }
                 }
+              } else {
+                setGradeAutoDetected(false);
               }
             }
             setProfile(p);

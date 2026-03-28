@@ -180,32 +180,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
             if (p) {
-              // Try Azure AD group-based grade detection first (using provider_token)
-              let detectedGrade: number | null = null;
+              const updates: Record<string, any> = {};
+
               if (session.provider_token) {
-                detectedGrade = await detectGradeFromAzureGroups(session.provider_token);
-              }
-              // Fallback to email-based detection
-              if (!detectedGrade && session.user.email) {
-                detectedGrade = detectGradeFromEmail(session.user.email);
-              }
-              if (detectedGrade) {
-                setGradeAutoDetected(true);
-                if (p.grade !== detectedGrade) {
-                  const { data: updated } = await supabase
-                    .from("profiles")
-                    .update({ grade: detectedGrade })
-                    .eq("id", p.id)
-                    .select()
-                    .single();
-                  if (updated) {
-                    setProfile(updated as Profile);
-                    setLoading(false);
-                    return;
+                // Fetch displayName + grade from Graph API
+                const { displayName, grade: detectedGrade } = await fetchGraphProfile(session.provider_token);
+
+                // Sync display name (only if current username looks auto-generated)
+                if (displayName && (p.username === p.user_id.split('-')[0] || p.username.startsWith('user_') || p.username === session.user.email?.split('@')[0])) {
+                  updates.username = displayName;
+                }
+
+                // Sync avatar if user doesn't have one yet
+                if (!p.avatar_url) {
+                  const avatarUrl = await fetchGraphAvatar(session.provider_token);
+                  if (avatarUrl) {
+                    updates.avatar_url = avatarUrl;
+                  }
+                }
+
+                // Grade detection from Azure groups
+                if (detectedGrade) {
+                  setGradeAutoDetected(true);
+                  if (p.grade !== detectedGrade) {
+                    updates.grade = detectedGrade;
+                  }
+                } else {
+                  // Fallback to email-based detection
+                  const emailGrade = session.user.email ? detectGradeFromEmail(session.user.email) : null;
+                  if (emailGrade) {
+                    setGradeAutoDetected(true);
+                    if (p.grade !== emailGrade) updates.grade = emailGrade;
+                  } else {
+                    setGradeAutoDetected(false);
                   }
                 }
               } else {
-                setGradeAutoDetected(false);
+                // No provider token, fallback to email
+                const emailGrade = session.user.email ? detectGradeFromEmail(session.user.email) : null;
+                if (emailGrade) {
+                  setGradeAutoDetected(true);
+                  if (p.grade !== emailGrade) updates.grade = emailGrade;
+                } else {
+                  setGradeAutoDetected(false);
+                }
+              }
+
+              // Apply all updates in one query
+              if (Object.keys(updates).length > 0) {
+                const { data: updated } = await supabase
+                  .from("profiles")
+                  .update(updates)
+                  .eq("id", p.id)
+                  .select()
+                  .single();
+                if (updated) {
+                  setProfile(updated as Profile);
+                  setLoading(false);
+                  return;
+                }
               }
             }
             setProfile(p);

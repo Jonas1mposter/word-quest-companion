@@ -46,6 +46,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  gradeAutoDetected: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gradeAutoDetected, setGradeAutoDetected] = useState(true);
 
   const detectGradeFromEmail = (email: string): number | null => {
     const lower = email.toLowerCase();
@@ -144,18 +146,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (!detectedGrade && session.user.email) {
                 detectedGrade = detectGradeFromEmail(session.user.email);
               }
-              if (detectedGrade && p.grade !== detectedGrade) {
-                const { data: updated } = await supabase
-                  .from("profiles")
-                  .update({ grade: detectedGrade })
-                  .eq("id", p.id)
-                  .select()
-                  .single();
-                if (updated) {
-                  setProfile(updated as Profile);
-                  setLoading(false);
-                  return;
+              if (detectedGrade) {
+                setGradeAutoDetected(true);
+                if (p.grade !== detectedGrade) {
+                  const { data: updated } = await supabase
+                    .from("profiles")
+                    .update({ grade: detectedGrade })
+                    .eq("id", p.id)
+                    .select()
+                    .single();
+                  if (updated) {
+                    setProfile(updated as Profile);
+                    setLoading(false);
+                    return;
+                  }
                 }
+              } else {
+                setGradeAutoDetected(false);
               }
             }
             setProfile(p);
@@ -192,7 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, gradeAutoDetected, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

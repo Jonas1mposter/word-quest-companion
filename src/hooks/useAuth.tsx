@@ -67,27 +67,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
-  const detectGradeFromAzureGroups = async (providerToken: string): Promise<number | null> => {
+  const fetchGraphProfile = async (providerToken: string): Promise<{ displayName: string | null; grade: number | null }> => {
+    let displayName: string | null = null;
+    let grade: number | null = null;
+
     try {
-      const response = await fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
+      // Fetch basic profile info
+      const meRes = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName', {
         headers: { 'Authorization': `Bearer ${providerToken}` }
       });
-      if (!response.ok) {
-        console.warn('Graph API groups fetch failed:', response.status);
-        return null;
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        displayName = meData.displayName || null;
       }
-      const data = await response.json();
-      if (data.value) {
-        for (const group of data.value) {
-          const name = (group.displayName || '').toLowerCase();
-          if (name.includes('grade_8')) return 8;
-          if (name.includes('grade_7')) return 7;
+
+      // Fetch group memberships for grade detection
+      const groupsRes = await fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
+        headers: { 'Authorization': `Bearer ${providerToken}` }
+      });
+      if (groupsRes.ok) {
+        const groupsData = await groupsRes.json();
+        if (groupsData.value) {
+          for (const group of groupsData.value) {
+            const name = (group.displayName || '').toLowerCase();
+            if (name.includes('grade_8')) { grade = 8; break; }
+            if (name.includes('grade_7')) { grade = 7; break; }
+          }
         }
+      } else {
+        console.warn('Graph API groups fetch failed:', groupsRes.status);
       }
     } catch (err) {
-      console.error('Error fetching Azure AD groups:', err);
+      console.error('Error fetching Graph API data:', err);
     }
-    return null;
+
+    return { displayName, grade };
+  };
+
+  const fetchGraphAvatar = async (providerToken: string): Promise<string | null> => {
+    try {
+      const photoRes = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+        headers: { 'Authorization': `Bearer ${providerToken}` }
+      });
+      if (!photoRes.ok) return null;
+
+      const blob = await photoRes.blob();
+      if (blob.size === 0) return null;
+
+      // Upload to Supabase storage
+      const fileName = `microsoft_${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        console.warn('Avatar upload failed:', uploadError);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      return urlData.publicUrl;
+    } catch (err) {
+      console.warn('Error fetching Graph avatar:', err);
+      return null;
+    }
   };
 
   const fetchProfile = async (userId: string) => {

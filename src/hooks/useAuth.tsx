@@ -46,6 +46,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  gradeAutoDetected: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }

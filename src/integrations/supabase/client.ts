@@ -3,7 +3,7 @@ import { createClient, type SupportedStorage } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL = "https://xsfuyevlhamssomxqvwl.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzZnV5ZXZsaGFtc3NvbXhxdndsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzI5OTYsImV4cCI6MjA5MDEwODk5Nn0.eXZHFLFAujZmZPZ3d7kqMKlwRctkSJuCGgHAOdW2mEw";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzZnV5ZXZsaGFtc3NvbXhxdndsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzI5OTYsImV4cCI6MjA5MDEwODk5Nn0.eXZHFLFAujZmZPZ3d7kqMKlwRctkSJuCGgHAOdW2mEw";
 
 const memoryStorage = (): SupportedStorage => {
   const store = new Map<string, string>();

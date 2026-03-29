@@ -172,6 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
+        const isSignIn = event === 'SIGNED_IN';
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -182,7 +183,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (p) {
               const updates: Record<string, any> = {};
 
-              if (session.provider_token) {
+              if (isSignIn && session.provider_token) {
                 // Fetch displayName + grade from Graph API
                 const { displayName, grade: detectedGrade } = await fetchGraphProfile(session.provider_token);
 
@@ -215,7 +216,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setGradeAutoDetected(false);
                   }
                 }
-              } else {
+              } else if (isSignIn) {
                 // No provider token, fallback to email
                 const emailGrade = session.user.email ? detectGradeFromEmail(session.user.email) : null;
                 if (emailGrade) {
@@ -225,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   setGradeAutoDetected(false);
                 }
               }
+              // On non-SIGNED_IN events (token refresh etc.), keep gradeAutoDetected as-is
 
               // Apply all updates in one query
               if (Object.keys(updates).length > 0) {

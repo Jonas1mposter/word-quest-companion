@@ -12,6 +12,10 @@ const Index = () => {
   const [grade, setGrade] = useState<7 | 8>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
 
+  const hasResolvedGradeSelection = profile
+    ? localStorage.getItem(`grade-selection-resolved:${profile.id}`) === "1"
+    : false;
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -20,10 +24,13 @@ const Index = () => {
 
   // Show grade selection dialog if auto-detection failed
   useEffect(() => {
-    if (!loading && profile && !gradeAutoDetected) {
+    if (!loading && profile && !gradeAutoDetected && !hasResolvedGradeSelection) {
       setShowGradeDialog(true);
+      return;
     }
-  }, [loading, profile, gradeAutoDetected]);
+
+    setShowGradeDialog(false);
+  }, [loading, profile, gradeAutoDetected, hasResolvedGradeSelection]);
 
   // Seed word data on first load
   useEffect(() => {

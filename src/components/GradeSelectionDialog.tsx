@@ -16,6 +16,8 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
   const [selectedGrade, setSelectedGrade] = useState<7 | 8 | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const getGradeSelectionStorageKey = (profileId: string) => `grade-selection-resolved:${profileId}`;
+
   const handleConfirm = async () => {
     if (!selectedGrade || !profile) return;
     setSaving(true);
@@ -27,6 +29,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
 
       if (error) throw error;
 
+      localStorage.setItem(getGradeSelectionStorageKey(profile.id), "1");
       await refreshProfile();
       toast.success(`已设置为 ${selectedGrade} 年级`);
       onClose();

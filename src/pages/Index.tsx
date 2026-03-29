@@ -12,9 +12,15 @@ const Index = () => {
   const [grade, setGrade] = useState<7 | 8>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
 
-  const hasResolvedGradeSelection = profile
-    ? localStorage.getItem(`grade-selection-resolved:${profile.id}`) === "1"
-    : false;
+  const hasResolvedGradeSelection = (() => {
+    if (!profile || typeof window === "undefined") return false;
+
+    try {
+      return window.localStorage.getItem(`grade-selection-resolved:${profile.id}`) === "1";
+    } catch {
+      return false;
+    }
+  })();
 
   useEffect(() => {
     if (!loading && !user) {

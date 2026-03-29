@@ -29,7 +29,11 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
 
       if (error) throw error;
 
-      localStorage.setItem(getGradeSelectionStorageKey(profile.id), "1");
+      try {
+        window.localStorage.setItem(getGradeSelectionStorageKey(profile.id), "1");
+      } catch {
+        // Ignore storage errors in restricted mobile browsers
+      }
       await refreshProfile();
       toast.success(`已设置为 ${selectedGrade} 年级`);
       onClose();

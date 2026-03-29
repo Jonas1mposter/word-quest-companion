@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "next-themes";
 import SpeechSpeedSelector from "@/components/SpeechSpeedSelector";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 
@@ -37,6 +36,29 @@ const defaultSettings: GameSettings = {
 };
 const STORAGE_KEY = "game-settings";
 
+const canUseLocalStorage = () => {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const testKey = "__settings_storage_test__";
+    window.localStorage.setItem(testKey, testKey);
+    window.localStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const getStoredValue = (key: string) => {
+  if (!canUseLocalStorage()) return null;
+  return window.localStorage.getItem(key);
+};
+
+const setStoredValue = (key: string, value: string) => {
+  if (!canUseLocalStorage()) return;
+  window.localStorage.setItem(key, value);
+};
+
 // Class options by grade
 const classOptions: Record<number, string[]> = {
   7: ["7A1", "7A2", "7B", "7C", "7D", "7E"],
@@ -46,7 +68,7 @@ export const SettingsSheet = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
-  const { theme, setTheme } = useTheme();
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const {
     user,
     profile,
@@ -93,7 +115,7 @@ export const SettingsSheet = () => {
 
   // Load settings from localStorage on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem(STORAGE_KEY);
+    const savedSettings = getStoredValue(STORAGE_KEY);
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
@@ -105,6 +127,9 @@ export const SettingsSheet = () => {
         console.error("Failed to parse settings:", e);
       }
     }
+
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
   }, []);
 
   // Load user's class from profile
@@ -121,7 +146,7 @@ export const SettingsSheet = () => {
       [key]: value
     };
     setSettings(newSettings);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+    setStoredValue(STORAGE_KEY, JSON.stringify(newSettings));
 
     // Play a subtle feedback sound if sound is enabled
     if (key !== "soundEnabled" && settings.soundEnabled) {

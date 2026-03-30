@@ -55,7 +55,6 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
   const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
@@ -64,9 +63,13 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
   const [options, setOptions] = useState<string[]>([]);
   const [wordOptions, setWordOptions] = useState<string[]>([]);
   const [quizType, setQuizType] = useState<BattleQuizType>("meaning");
-  const [matchEnded, setMatchEnded] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
-  
+
+  const myScoreRef = useRef(0);
+  const [myScoreDisplay, setMyScoreDisplay] = useState(0);
+  const matchEndedRef = useRef(false);
+  const answeringRef = useRef(false);
+  const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);

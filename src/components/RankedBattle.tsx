@@ -235,44 +235,6 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
     return () => clearTimeout(timer);
   }, [phase, countdown]);
 
-  // Handle answer
-  const handleAnswer = useCallback(async (isCorrect: boolean) => {
-    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
-    answeringRef.current = true;
-
-    try {
-      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
-      myScoreRef.current = newScore;
-      setMyScoreDisplay(newScore);
-      setComboCount(prev => isCorrect ? prev + 1 : 0);
-      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
-      setTimeout(() => setAnswerAnimation(null), 500);
-
-      await Promise.all([
-        supabase.from('match_answers').insert({
-          match_id: matchData.id,
-          player_id: profile.id,
-          question_index: currentQuestion,
-          answer: isCorrect ? 'correct' : 'wrong',
-          is_correct: isCorrect,
-        }),
-        supabase.from('ranked_matches').update({
-          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
-        }).eq('id', matchData.id),
-      ]);
-
-      const nextQ = currentQuestion + 1;
-      if (nextQ >= matchData.words.length) {
-        endMatch();
-      } else {
-        setCurrentQuestion(nextQ);
-        generateOptions(matchData.words, nextQ);
-      }
-    } finally {
-      answeringRef.current = false;
-    }
-  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
-
   // End match
   const endMatch = useCallback(async () => {
     if (!profile || matchEndedRef.current) return;
@@ -329,6 +291,44 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
     }
     setPhase("result");
   }, [matchData, profile, opponentProfile, updateEloAfterMatch, sounds]);
+
+  // Handle answer
+  const handleAnswer = useCallback(async (isCorrect: boolean) => {
+    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+    answeringRef.current = true;
+
+    try {
+      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
+      myScoreRef.current = newScore;
+      setMyScoreDisplay(newScore);
+      setComboCount(prev => isCorrect ? prev + 1 : 0);
+      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
+      setTimeout(() => setAnswerAnimation(null), 500);
+
+      await Promise.all([
+        supabase.from('match_answers').insert({
+          match_id: matchData.id,
+          player_id: profile.id,
+          question_index: currentQuestion,
+          answer: isCorrect ? 'correct' : 'wrong',
+          is_correct: isCorrect,
+        }),
+        supabase.from('ranked_matches').update({
+          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
+        }).eq('id', matchData.id),
+      ]);
+
+      const nextQ = currentQuestion + 1;
+      if (nextQ >= matchData.words.length) {
+        endMatch();
+      } else {
+        setCurrentQuestion(nextQ);
+        generateOptions(matchData.words, nextQ);
+      }
+    } finally {
+      answeringRef.current = false;
+    }
+  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
 
   // Handle cancel
   const handleCancel = async () => {

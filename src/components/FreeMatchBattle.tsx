@@ -334,8 +334,9 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
 
   if (phase === "result") {
     const finalScore = myScoreRef.current;
-    const isWinner = matchData?.winner_id === profile.id;
-    const isDraw = !matchData?.winner_id;
+    const winnerId = winnerIdRef.current;
+    const isWinner = winnerId === profile.id;
+    const isDraw = winnerId === null;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card variant="glow" className="max-w-md w-full p-8 text-center">

@@ -152,10 +152,11 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
         filter: `id=eq.${matchId}`,
       }, (payload) => {
         const updated = payload.new as any;
-        if (updated.status === 'completed') {
-          setMatchEnded(true);
+        if (updated.winner_id) winnerIdRef.current = updated.winner_id;
+        if (updated.status === 'completed' && !matchEndedRef.current) {
+          matchEndedRef.current = true;
+          setPhase("result");
         }
-        // Update scores from match
         if (isPlayer1Ref.current) {
           setOpponentScore(updated.player2_score);
         } else {

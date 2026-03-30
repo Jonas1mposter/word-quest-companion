@@ -275,79 +275,60 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
 
   // End match
   const endMatch = useCallback(async () => {
-    if (!matchData || !profile || matchEnded) return;
-    setMatchEnded(true);
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (!profile || matchEndedRef.current) return;
+    matchEndedRef.current = true;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
-    // Determine winner
-    const finalMyScore = myScore;
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const { data: finalMatch } = await supabase.from('ranked_matches').select('*').eq('id', matchData?.id).single();
+    if (!finalMatch) { setPhase("result"); return; }
+
+    const currentScore = myScoreRef.current;
+    const p1Score = isPlayer1Ref.current ? currentScore : finalMatch.player1_score;
+    const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : currentScore;
+
     let winnerId: string | null = null;
-    
-    // Wait a moment for final scores to sync
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Get final match state
-    const { data: finalMatch } = await supabase
-      .from('ranked_matches')
-      .select('*')
-      .eq('id', matchData.id)
-      .single();
+    if (p1Score > p2Score) winnerId = finalMatch.player1_id;
+    else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+    winnerIdRef.current = winnerId;
 
-    if (finalMatch) {
-      const p1Score = isPlayer1Ref.current ? finalMyScore : finalMatch.player1_score;
-      const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : finalMyScore;
-      
-      if (p1Score > p2Score) winnerId = finalMatch.player1_id;
-      else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
-    }
-
-    // Update match
-    await supabase
-      .from('ranked_matches')
-      .update({
+    if (isPlayer1Ref.current) {
+      await supabase.from('ranked_matches').update({
         status: 'completed',
         ended_at: new Date().toISOString(),
         winner_id: winnerId,
-        [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: finalMyScore,
-      })
-      .eq('id', matchData.id);
-
-    // Update ELO
-    const opponentElo = opponentProfile?.elo_rating || 1000;
-    const playerWon = winnerId === profile.id;
-    const isDraw = winnerId === null;
-    
-    await updateEloAfterMatch(
-      profile.id,
-      profile.elo_rating,
-      opponentElo,
-      playerWon,
-      isDraw,
-      false,
-      false
-    );
-
-    // Update win/loss
-    if (playerWon) {
-      await supabase
-        .from('profiles')
-        .update({ wins: (profile.wins || 0) + 1 })
-        .eq('id', profile.id);
-      sounds.playVictory();
-    } else if (!isDraw) {
-      await supabase
-        .from('profiles')
-        .update({ losses: (profile.losses || 0) + 1 })
-        .eq('id', profile.id);
-      sounds.playDefeat();
+        player1_score: currentScore,
+      }).eq('id', finalMatch.id);
+    } else {
+      await supabase.from('ranked_matches').update({
+        player2_score: currentScore,
+      }).eq('id', finalMatch.id);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { data: recheck } = await supabase.from('ranked_matches').select('*').eq('id', finalMatch.id).single();
+      if (recheck && recheck.status !== 'completed') {
+        await supabase.from('ranked_matches').update({
+          status: 'completed',
+          ended_at: new Date().toISOString(),
+          winner_id: winnerId,
+        }).eq('id', finalMatch.id);
+      }
     }
 
+    const playerWon = winnerId === profile.id;
+    const isDraw = winnerId === null;
+    const opponentElo = opponentProfile?.elo_rating || 1000;
+    await updateEloAfterMatch(profile.id, profile.elo_rating, opponentElo, playerWon, isDraw, false, false);
+
+    if (playerWon) {
+      await supabase.from('profiles').update({ wins: (profile.wins || 0) + 1 }).eq('id', profile.id);
+      sounds.playVictory();
+    } else if (!isDraw) {
+      await supabase.from('profiles').update({ losses: (profile.losses || 0) + 1 }).eq('id', profile.id);
+      sounds.playDefeat();
+    }
     setPhase("result");
-  }, [matchData, profile, myScore, opponentProfile, matchEnded, updateEloAfterMatch, sounds]);
+  }, [matchData, profile, opponentProfile, updateEloAfterMatch, sounds]);
 
   // Handle cancel
   const handleCancel = async () => {

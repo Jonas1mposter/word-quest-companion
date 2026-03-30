@@ -11,6 +11,9 @@ interface UseMatchQueueOptions {
   onMatchFound: (matchId: string, opponentId: string) => void;
 }
 
+const MAX_SEARCH_TIME_SECONDS = 60;
+const POLL_INTERVAL_MS = 3000;
+
 export const useMatchQueue = ({
   profileId,
   grade,
@@ -25,23 +28,57 @@ export const useMatchQueue = ({
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
+  const matchFoundRef = useRef(false);
+  const onMatchFoundRef = useRef(onMatchFound);
+  onMatchFoundRef.current = onMatchFound;
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
-    };
+  const cleanup = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
   }, []);
+
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  const handleMatchResolved = useCallback(async (matchId: string) => {
+    if (matchFoundRef.current) return; // prevent double-fire
+    matchFoundRef.current = true;
+    cleanup();
+
+    const { data: match } = await supabase
+      .from('ranked_matches')
+      .select('player1_id, player2_id')
+      .eq('id', matchId)
+      .single();
+
+    if (match && profileId) {
+      const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
+      setIsSearching(false);
+      setIsQueued(false);
+      onMatchFoundRef.current(matchId, opponentId!);
+    } else {
+      // match lookup failed, reset state
+      matchFoundRef.current = false;
+      setIsSearching(false);
+      setIsQueued(false);
+    }
+  }, [profileId, cleanup]);
 
   const joinQueue = useCallback(async () => {
     if (!profileId || !enabled) return null;
     setError(null);
     setIsSearching(true);
     setIsQueued(true);
+    matchFoundRef.current = false;
 
     try {
-      // Call the find_match function
       const { data, error: rpcError } = await supabase.rpc('find_match', {
         _profile_id: profileId,
         _grade: grade,
@@ -53,26 +90,11 @@ export const useMatchQueue = ({
       if (rpcError) throw rpcError;
 
       if (data) {
-        // Match found immediately!
-        const matchId = data as string;
-        // Get opponent info
-        const { data: match } = await supabase
-          .from('ranked_matches')
-          .select('player1_id, player2_id')
-          .eq('id', matchId)
-          .single();
-        
-        if (match) {
-          const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
-          setIsSearching(false);
-          setIsQueued(false);
-          onMatchFound(matchId, opponentId!);
-        }
-        return matchId;
+        await handleMatchResolved(data as string);
+        return data as string;
       }
 
-      // No immediate match - we're in the queue. Subscribe for updates.
-      // Listen for our queue entry being matched
+      // No immediate match — subscribe for real-time updates
       const channel = supabase
         .channel(`match-queue-${profileId}`)
         .on('postgres_changes', {
@@ -83,60 +105,50 @@ export const useMatchQueue = ({
         }, async (payload) => {
           const entry = payload.new as any;
           if (entry.status === 'matched' && entry.match_id) {
-            const { data: match } = await supabase
-              .from('ranked_matches')
-              .select('player1_id, player2_id')
-              .eq('id', entry.match_id)
-              .single();
-            
-            if (match) {
-              const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
-              setIsSearching(false);
-              setIsQueued(false);
-              if (channelRef.current) supabase.removeChannel(channelRef.current);
-              if (pollingRef.current) clearInterval(pollingRef.current);
-              onMatchFound(entry.match_id, opponentId!);
-            }
+            await handleMatchResolved(entry.match_id);
           }
         })
         .subscribe();
 
       channelRef.current = channel;
 
-      // Also poll find_match every 3 seconds to expand search
+      // Poll with the SAME elo (don't inflate), let the server-side function handle range
       let pollCount = 0;
       pollingRef.current = setInterval(async () => {
         pollCount++;
+        if (matchFoundRef.current) return;
+
+        // Auto-cancel after timeout
+        if (pollCount * (POLL_INTERVAL_MS / 1000) >= MAX_SEARCH_TIME_SECONDS) {
+          cleanup();
+          setIsSearching(false);
+          setIsQueued(false);
+          setError('匹配超时，请重试');
+          // Clean up queue entry
+          await supabase
+            .from('match_queue')
+            .delete()
+            .eq('profile_id', profileId)
+            .eq('status', 'searching');
+          return;
+        }
+
         try {
           const { data: pollData } = await supabase.rpc('find_match', {
             _profile_id: profileId,
             _grade: grade,
             _match_type: matchType,
-            _elo_rating: Math.min(3000, eloRating + pollCount * 50), // Widen range over time
+            _elo_rating: eloRating, // use real elo, not inflated
             _subject: subject,
           });
 
-          if (pollData) {
-            const matchId = pollData as string;
-            const { data: match } = await supabase
-              .from('ranked_matches')
-              .select('player1_id, player2_id')
-              .eq('id', matchId)
-              .single();
-            
-            if (match) {
-              const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
-              setIsSearching(false);
-              setIsQueued(false);
-              if (pollingRef.current) clearInterval(pollingRef.current);
-              if (channelRef.current) supabase.removeChannel(channelRef.current);
-              onMatchFound(matchId, opponentId!);
-            }
+          if (pollData && !matchFoundRef.current) {
+            await handleMatchResolved(pollData as string);
           }
-        } catch (e) {
+        } catch {
           // Ignore polling errors
         }
-      }, 3000);
+      }, POLL_INTERVAL_MS);
 
       return null;
     } catch (err: any) {
@@ -146,17 +158,10 @@ export const useMatchQueue = ({
       setIsQueued(false);
       return null;
     }
-  }, [profileId, grade, matchType, eloRating, enabled, subject, onMatchFound]);
+  }, [profileId, grade, matchType, eloRating, enabled, subject, handleMatchResolved, cleanup]);
 
   const leaveQueue = useCallback(async () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    cleanup();
 
     if (profileId) {
       await supabase
@@ -168,7 +173,7 @@ export const useMatchQueue = ({
 
     setIsQueued(false);
     setIsSearching(false);
-  }, [profileId]);
+  }, [profileId, cleanup]);
 
   return {
     isQueued,

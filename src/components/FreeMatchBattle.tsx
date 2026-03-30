@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, Globe, Loader2, Trophy, XCircle, Timer, Zap } from "lucide-react";
+import { ChevronLeft, Globe, Trophy, XCircle, Timer, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchQueue } from "@/hooks/useMatchQueue";
 import { useEloSystem } from "@/hooks/useEloSystem";
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./battle/BattleQuizCard";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
-import { toast } from "sonner";
 
 interface FreeMatchBattleProps {
   onBack: () => void;
@@ -50,12 +49,11 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   const { profile } = useAuth();
   const { updateEloAfterMatch } = useEloSystem();
   const sounds = useMatchSounds();
-  
+
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
   const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
@@ -64,9 +62,13 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   const [options, setOptions] = useState<string[]>([]);
   const [wordOptions, setWordOptions] = useState<string[]>([]);
   const [quizType, setQuizType] = useState<BattleQuizType>("meaning");
-  const [matchEnded, setMatchEnded] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
 
+  // Use refs for values accessed in callbacks to avoid stale closures
+  const myScoreRef = useRef(0);
+  const [myScoreDisplay, setMyScoreDisplay] = useState(0);
+  const matchEndedRef = useRef(false);
+  const answeringRef = useRef(false); // guard against double-answering
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);
@@ -99,7 +101,10 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const updated = payload.new as any;
-        if (updated.status === 'completed') setMatchEnded(true);
+        if (updated.status === 'completed' && !matchEndedRef.current) {
+          matchEndedRef.current = true;
+          setPhase("result");
+        }
         if (isPlayer1Ref.current) setOpponentScore(updated.player2_score);
         else setOpponentScore(updated.player1_score);
       })
@@ -114,7 +119,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
     setTimeout(() => loadMatch(matchId), 1000);
   }, [loadMatch, sounds]);
 
-  const { joinQueue, leaveQueue } = useMatchQueue({
+  const { joinQueue, leaveQueue, error: queueError } = useMatchQueue({
     profileId: profile?.id || null,
     grade: profile?.grade || 7,
     matchType: 'free',
@@ -128,7 +133,11 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
     if (!profile) return;
     if (initialMatchId) { loadMatch(initialMatchId); }
     else { cancelPlayerStaleMatches(profile.id, profile.grade).then(() => joinQueue()); }
-    return () => { leaveQueue(); if (channelRef.current) supabase.removeChannel(channelRef.current); if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      leaveQueue();
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [profile?.id]);
 
   useEffect(() => {
@@ -150,36 +159,56 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
     return () => clearTimeout(timer);
   }, [phase, countdown]);
 
-  const handleAnswer = useCallback(async (isCorrect: boolean) => {
-    if (!matchData || !profile || matchEnded) return;
-    const newScore = isCorrect ? myScore + 1 : myScore;
-    setMyScore(newScore);
-    setComboCount(isCorrect ? comboCount + 1 : 0);
-    setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
-    setTimeout(() => setAnswerAnimation(null), 500);
-    await supabase.from('match_answers').insert({ match_id: matchData.id, player_id: profile.id, question_index: currentQuestion, answer: isCorrect ? 'correct' : 'wrong', is_correct: isCorrect });
-    await supabase.from('ranked_matches').update({ [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore }).eq('id', matchData.id);
-    const nextQ = currentQuestion + 1;
-    if (nextQ >= matchData.words.length) { endMatch(); } else { setCurrentQuestion(nextQ); generateOptions(matchData.words, nextQ); }
-  }, [matchData, profile, currentQuestion, myScore, comboCount, matchEnded, generateOptions]);
-
   const endMatch = useCallback(async () => {
-    if (!matchData || !profile || matchEnded) return;
-    setMatchEnded(true);
+    if (!profile || matchEndedRef.current) return;
+    matchEndedRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const { data: finalMatch } = await supabase.from('ranked_matches').select('*').eq('id', matchData.id).single();
+
+    // Small delay to let last answer sync
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const { data: finalMatch } = await supabase.from('ranked_matches').select('*').eq('id', matchData?.id).single();
+    if (!finalMatch) { setPhase("result"); return; }
+
+    const currentScore = myScoreRef.current;
+    const p1Score = isPlayer1Ref.current ? currentScore : finalMatch.player1_score;
+    const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : currentScore;
+
     let winnerId: string | null = null;
-    if (finalMatch) {
-      const p1Score = isPlayer1Ref.current ? myScore : finalMatch.player1_score;
-      const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : myScore;
-      if (p1Score > p2Score) winnerId = finalMatch.player1_id;
-      else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+    if (p1Score > p2Score) winnerId = finalMatch.player1_id;
+    else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+
+    // Only player1 writes the final result to avoid race condition
+    if (isPlayer1Ref.current) {
+      await supabase.from('ranked_matches').update({
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+        winner_id: winnerId,
+        player1_score: currentScore,
+      }).eq('id', finalMatch.id);
+    } else {
+      // Player2 only updates their own score
+      await supabase.from('ranked_matches').update({
+        player2_score: currentScore,
+      }).eq('id', finalMatch.id);
+      // Wait a bit for player1 to finalize
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Re-read to get the final state
+      const { data: recheck } = await supabase.from('ranked_matches').select('*').eq('id', finalMatch.id).single();
+      if (recheck && recheck.status !== 'completed') {
+        // Player1 didn't finalize yet, player2 takes over
+        await supabase.from('ranked_matches').update({
+          status: 'completed',
+          ended_at: new Date().toISOString(),
+          winner_id: winnerId,
+        }).eq('id', finalMatch.id);
+      }
     }
-    await supabase.from('ranked_matches').update({ status: 'completed', ended_at: new Date().toISOString(), winner_id: winnerId, [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: myScore }).eq('id', matchData.id);
+
     const playerWon = winnerId === profile.id;
     const isDraw = winnerId === null;
     await updateEloAfterMatch(profile.id, profile.elo_free, opponentProfile?.elo_free || 1000, playerWon, isDraw, false, true);
+
     if (playerWon) {
       await supabase.from('profiles').update({ free_match_wins: (profile.free_match_wins || 0) + 1 }).eq('id', profile.id);
       sounds.playVictory();
@@ -188,7 +217,45 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
       sounds.playDefeat();
     }
     setPhase("result");
-  }, [matchData, profile, myScore, opponentProfile, matchEnded, updateEloAfterMatch, sounds]);
+  }, [matchData, profile, opponentProfile, updateEloAfterMatch, sounds]);
+
+  const handleAnswer = useCallback(async (isCorrect: boolean) => {
+    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+    answeringRef.current = true;
+
+    try {
+      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
+      myScoreRef.current = newScore;
+      setMyScoreDisplay(newScore);
+      setComboCount(prev => isCorrect ? prev + 1 : 0);
+      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
+      setTimeout(() => setAnswerAnimation(null), 500);
+
+      // Fire DB writes in parallel
+      await Promise.all([
+        supabase.from('match_answers').insert({
+          match_id: matchData.id,
+          player_id: profile.id,
+          question_index: currentQuestion,
+          answer: isCorrect ? 'correct' : 'wrong',
+          is_correct: isCorrect,
+        }),
+        supabase.from('ranked_matches').update({
+          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
+        }).eq('id', matchData.id),
+      ]);
+
+      const nextQ = currentQuestion + 1;
+      if (nextQ >= matchData.words.length) {
+        endMatch();
+      } else {
+        setCurrentQuestion(nextQ);
+        generateOptions(matchData.words, nextQ);
+      }
+    } finally {
+      answeringRef.current = false;
+    }
+  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
 
   if (!profile) {
     return (
@@ -210,7 +277,8 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
           </div>
           <h2 className="text-2xl font-gaming mb-2">自由匹配中...</h2>
           <p className="text-muted-foreground mb-2">自由服 · ELO {profile.elo_free}</p>
-          <p className="text-sm text-muted-foreground mb-6">搜索时间: {searchTime}秒</p>
+          <p className="text-sm text-muted-foreground mb-2">搜索时间: {searchTime}秒</p>
+          {queueError && <p className="text-sm text-destructive mb-2">{queueError}</p>}
           <Button variant="outline" onClick={async () => { await leaveQueue(); onBack(); }}><XCircle className="w-4 h-4 mr-2" />取消匹配</Button>
         </div>
       </div>
@@ -246,7 +314,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2"><Badge variant="default">{profile.username}</Badge><span className="text-2xl font-gaming text-neon-cyan">{myScore}</span></div>
+            <div className="flex items-center gap-2"><Badge variant="default">{profile.username}</Badge><span className="text-2xl font-gaming text-neon-cyan">{myScoreDisplay}</span></div>
             <div className="flex items-center gap-2"><Timer className="w-4 h-4" /><span className={cn("font-mono text-lg", timeLeft <= 30 && "text-destructive animate-pulse")}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span></div>
             <div className="flex items-center gap-2"><span className="text-2xl font-gaming text-neon-blue">{opponentScore}</span><Badge variant="secondary">{opponentProfile?.username || '对手'}</Badge></div>
           </div>
@@ -262,6 +330,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   }
 
   if (phase === "result") {
+    const finalScore = myScoreRef.current;
     const isWinner = matchData?.winner_id === profile.id;
     const isDraw = !matchData?.winner_id;
     return (
@@ -270,7 +339,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
           {isDraw ? <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" /> : isWinner ? <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-bounce" /> : <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />}
           <h2 className="text-3xl font-gaming mb-2">{isDraw ? '平局！' : isWinner ? '胜利！' : '失败'}</h2>
           <div className="flex items-center justify-center gap-8 my-6">
-            <div className="text-center"><p className="text-sm text-muted-foreground">{profile.username}</p><p className="text-4xl font-gaming text-neon-cyan">{myScore}</p></div>
+            <div className="text-center"><p className="text-sm text-muted-foreground">{profile.username}</p><p className="text-4xl font-gaming text-neon-cyan">{finalScore}</p></div>
             <span className="text-2xl text-muted-foreground">:</span>
             <div className="text-center"><p className="text-sm text-muted-foreground">{opponentProfile?.username || '对手'}</p><p className="text-4xl font-gaming text-neon-blue">{opponentScore}</p></div>
           </div>

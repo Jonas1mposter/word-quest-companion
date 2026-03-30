@@ -488,8 +488,10 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
 
   // Result phase
   if (phase === "result") {
-    const isWinner = matchData?.winner_id === profile.id;
-    const isDraw = !matchData?.winner_id;
+    const finalScore = myScoreRef.current;
+    const winnerId = winnerIdRef.current;
+    const isWinner = winnerId === profile.id;
+    const isDraw = winnerId === null;
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">

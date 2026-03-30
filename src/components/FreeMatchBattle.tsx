@@ -179,6 +179,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
     let winnerId: string | null = null;
     if (p1Score > p2Score) winnerId = finalMatch.player1_id;
     else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+    winnerIdRef.current = winnerId;
 
     // Only player1 writes the final result to avoid race condition
     if (isPlayer1Ref.current) {

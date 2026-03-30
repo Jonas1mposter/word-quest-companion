@@ -55,7 +55,6 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
   const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
@@ -64,9 +63,13 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
   const [options, setOptions] = useState<string[]>([]);
   const [wordOptions, setWordOptions] = useState<string[]>([]);
   const [quizType, setQuizType] = useState<BattleQuizType>("meaning");
-  const [matchEnded, setMatchEnded] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
-  
+
+  const myScoreRef = useRef(0);
+  const [myScoreDisplay, setMyScoreDisplay] = useState(0);
+  const matchEndedRef = useRef(false);
+  const answeringRef = useRef(false);
+  const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);
@@ -149,10 +152,11 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
         filter: `id=eq.${matchId}`,
       }, (payload) => {
         const updated = payload.new as any;
-        if (updated.status === 'completed') {
-          setMatchEnded(true);
+        if (updated.winner_id) winnerIdRef.current = updated.winner_id;
+        if (updated.status === 'completed' && !matchEndedRef.current) {
+          matchEndedRef.current = true;
+          setPhase("result");
         }
-        // Update scores from match
         if (isPlayer1Ref.current) {
           setOpponentScore(updated.player2_score);
         } else {
@@ -231,119 +235,100 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
     return () => clearTimeout(timer);
   }, [phase, countdown]);
 
-  // Handle answer
-  const handleAnswer = useCallback(async (isCorrect: boolean) => {
-    if (!matchData || !profile || matchEnded) return;
-
-    const newScore = isCorrect ? myScore + 1 : myScore;
-    const newCombo = isCorrect ? comboCount + 1 : 0;
-    
-    setMyScore(newScore);
-    setComboCount(newCombo);
-    setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
-    setTimeout(() => setAnswerAnimation(null), 500);
-
-    // Record answer
-    await supabase.from('match_answers').insert({
-      match_id: matchData.id,
-      player_id: profile.id,
-      question_index: currentQuestion,
-      answer: isCorrect ? 'correct' : 'wrong',
-      is_correct: isCorrect,
-    });
-
-    // Update match score
-    const scoreField = isPlayer1Ref.current ? 'player1_score' : 'player2_score';
-    await supabase
-      .from('ranked_matches')
-      .update({ [scoreField]: newScore })
-      .eq('id', matchData.id);
-
-    // Next question
-    const nextQ = currentQuestion + 1;
-    if (nextQ >= matchData.words.length) {
-      endMatch();
-    } else {
-      setCurrentQuestion(nextQ);
-      generateOptions(matchData.words, nextQ);
-    }
-  }, [matchData, profile, currentQuestion, myScore, comboCount, matchEnded, generateOptions]);
-
   // End match
   const endMatch = useCallback(async () => {
-    if (!matchData || !profile || matchEnded) return;
-    setMatchEnded(true);
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (!profile || matchEndedRef.current) return;
+    matchEndedRef.current = true;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
-    // Determine winner
-    const finalMyScore = myScore;
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const { data: finalMatch } = await supabase.from('ranked_matches').select('*').eq('id', matchData?.id).single();
+    if (!finalMatch) { setPhase("result"); return; }
+
+    const currentScore = myScoreRef.current;
+    const p1Score = isPlayer1Ref.current ? currentScore : finalMatch.player1_score;
+    const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : currentScore;
+
     let winnerId: string | null = null;
-    
-    // Wait a moment for final scores to sync
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Get final match state
-    const { data: finalMatch } = await supabase
-      .from('ranked_matches')
-      .select('*')
-      .eq('id', matchData.id)
-      .single();
+    if (p1Score > p2Score) winnerId = finalMatch.player1_id;
+    else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+    winnerIdRef.current = winnerId;
 
-    if (finalMatch) {
-      const p1Score = isPlayer1Ref.current ? finalMyScore : finalMatch.player1_score;
-      const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : finalMyScore;
-      
-      if (p1Score > p2Score) winnerId = finalMatch.player1_id;
-      else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
-    }
-
-    // Update match
-    await supabase
-      .from('ranked_matches')
-      .update({
+    if (isPlayer1Ref.current) {
+      await supabase.from('ranked_matches').update({
         status: 'completed',
         ended_at: new Date().toISOString(),
         winner_id: winnerId,
-        [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: finalMyScore,
-      })
-      .eq('id', matchData.id);
-
-    // Update ELO
-    const opponentElo = opponentProfile?.elo_rating || 1000;
-    const playerWon = winnerId === profile.id;
-    const isDraw = winnerId === null;
-    
-    await updateEloAfterMatch(
-      profile.id,
-      profile.elo_rating,
-      opponentElo,
-      playerWon,
-      isDraw,
-      false,
-      false
-    );
-
-    // Update win/loss
-    if (playerWon) {
-      await supabase
-        .from('profiles')
-        .update({ wins: (profile.wins || 0) + 1 })
-        .eq('id', profile.id);
-      sounds.playVictory();
-    } else if (!isDraw) {
-      await supabase
-        .from('profiles')
-        .update({ losses: (profile.losses || 0) + 1 })
-        .eq('id', profile.id);
-      sounds.playDefeat();
+        player1_score: currentScore,
+      }).eq('id', finalMatch.id);
+    } else {
+      await supabase.from('ranked_matches').update({
+        player2_score: currentScore,
+      }).eq('id', finalMatch.id);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { data: recheck } = await supabase.from('ranked_matches').select('*').eq('id', finalMatch.id).single();
+      if (recheck && recheck.status !== 'completed') {
+        await supabase.from('ranked_matches').update({
+          status: 'completed',
+          ended_at: new Date().toISOString(),
+          winner_id: winnerId,
+        }).eq('id', finalMatch.id);
+      }
     }
 
+    const playerWon = winnerId === profile.id;
+    const isDraw = winnerId === null;
+    const opponentElo = opponentProfile?.elo_rating || 1000;
+    await updateEloAfterMatch(profile.id, profile.elo_rating, opponentElo, playerWon, isDraw, false, false);
+
+    if (playerWon) {
+      await supabase.from('profiles').update({ wins: (profile.wins || 0) + 1 }).eq('id', profile.id);
+      sounds.playVictory();
+    } else if (!isDraw) {
+      await supabase.from('profiles').update({ losses: (profile.losses || 0) + 1 }).eq('id', profile.id);
+      sounds.playDefeat();
+    }
     setPhase("result");
-  }, [matchData, profile, myScore, opponentProfile, matchEnded, updateEloAfterMatch, sounds]);
+  }, [matchData, profile, opponentProfile, updateEloAfterMatch, sounds]);
+
+  // Handle answer
+  const handleAnswer = useCallback(async (isCorrect: boolean) => {
+    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+    answeringRef.current = true;
+
+    try {
+      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
+      myScoreRef.current = newScore;
+      setMyScoreDisplay(newScore);
+      setComboCount(prev => isCorrect ? prev + 1 : 0);
+      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
+      setTimeout(() => setAnswerAnimation(null), 500);
+
+      await Promise.all([
+        supabase.from('match_answers').insert({
+          match_id: matchData.id,
+          player_id: profile.id,
+          question_index: currentQuestion,
+          answer: isCorrect ? 'correct' : 'wrong',
+          is_correct: isCorrect,
+        }),
+        supabase.from('ranked_matches').update({
+          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
+        }).eq('id', matchData.id),
+      ]);
+
+      const nextQ = currentQuestion + 1;
+      if (nextQ >= matchData.words.length) {
+        endMatch();
+      } else {
+        setCurrentQuestion(nextQ);
+        generateOptions(matchData.words, nextQ);
+      }
+    } finally {
+      answeringRef.current = false;
+    }
+  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
 
   // Handle cancel
   const handleCancel = async () => {
@@ -458,7 +443,7 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Badge variant="default">{profile.username}</Badge>
-              <span className="text-2xl font-gaming text-primary">{myScore}</span>
+              <span className="text-2xl font-gaming text-primary">{myScoreDisplay}</span>
             </div>
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-muted-foreground" />
@@ -503,8 +488,10 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
 
   // Result phase
   if (phase === "result") {
-    const isWinner = matchData?.winner_id === profile.id;
-    const isDraw = !matchData?.winner_id;
+    const finalScore = myScoreRef.current;
+    const winnerId = winnerIdRef.current;
+    const isWinner = winnerId === profile.id;
+    const isDraw = winnerId === null;
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -524,7 +511,7 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">{profile.username}</p>
-              <p className="text-4xl font-gaming text-primary">{myScore}</p>
+              <p className="text-4xl font-gaming text-primary">{finalScore}</p>
             </div>
             <span className="text-2xl text-muted-foreground">:</span>
             <div className="text-center">

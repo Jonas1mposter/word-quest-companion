@@ -102,6 +102,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const updated = payload.new as any;
+        if (updated.winner_id) winnerIdRef.current = updated.winner_id;
         if (updated.status === 'completed' && !matchEndedRef.current) {
           matchEndedRef.current = true;
           setPhase("result");

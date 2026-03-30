@@ -69,6 +69,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   const [myScoreDisplay, setMyScoreDisplay] = useState(0);
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false); // guard against double-answering
+  const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);

@@ -511,7 +511,7 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">{profile.username}</p>
-              <p className="text-4xl font-gaming text-primary">{myScore}</p>
+              <p className="text-4xl font-gaming text-primary">{finalScore}</p>
             </div>
             <span className="text-2xl text-muted-foreground">:</span>
             <div className="text-center">

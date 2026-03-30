@@ -134,11 +134,25 @@ export const useMatchQueue = ({
         }
 
         try {
+          // First check if we've already been matched (e.g. realtime event was missed)
+          const { data: queueEntry } = await supabase
+            .from('match_queue')
+            .select('status, match_id')
+            .eq('profile_id', profileId)
+            .eq('status', 'matched')
+            .maybeSingle();
+
+          if (queueEntry?.match_id && !matchFoundRef.current) {
+            await handleMatchResolved(queueEntry.match_id);
+            return;
+          }
+
+          // Then try to find a new match
           const { data: pollData } = await supabase.rpc('find_match', {
             _profile_id: profileId,
             _grade: grade,
             _match_type: matchType,
-            _elo_rating: eloRating, // use real elo, not inflated
+            _elo_rating: eloRating,
             _subject: subject,
           });
 

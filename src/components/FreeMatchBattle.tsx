@@ -69,6 +69,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
   const [myScoreDisplay, setMyScoreDisplay] = useState(0);
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false); // guard against double-answering
+  const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const isPlayer1Ref = useRef(false);
@@ -101,6 +102,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const updated = payload.new as any;
+        if (updated.winner_id) winnerIdRef.current = updated.winner_id;
         if (updated.status === 'completed' && !matchEndedRef.current) {
           matchEndedRef.current = true;
           setPhase("result");
@@ -177,6 +179,7 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
     let winnerId: string | null = null;
     if (p1Score > p2Score) winnerId = finalMatch.player1_id;
     else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
+    winnerIdRef.current = winnerId;
 
     // Only player1 writes the final result to avoid race condition
     if (isPlayer1Ref.current) {
@@ -331,8 +334,9 @@ const FreeMatchBattle = ({ onBack, initialMatchId, subject = "mixed" }: FreeMatc
 
   if (phase === "result") {
     const finalScore = myScoreRef.current;
-    const isWinner = matchData?.winner_id === profile.id;
-    const isDraw = !matchData?.winner_id;
+    const winnerId = winnerIdRef.current;
+    const isWinner = winnerId === profile.id;
+    const isDraw = winnerId === null;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card variant="glow" className="max-w-md w-full p-8 text-center">

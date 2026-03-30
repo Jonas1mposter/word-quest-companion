@@ -237,41 +237,41 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
 
   // Handle answer
   const handleAnswer = useCallback(async (isCorrect: boolean) => {
-    if (!matchData || !profile || matchEnded) return;
+    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+    answeringRef.current = true;
 
-    const newScore = isCorrect ? myScore + 1 : myScore;
-    const newCombo = isCorrect ? comboCount + 1 : 0;
-    
-    setMyScore(newScore);
-    setComboCount(newCombo);
-    setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
-    setTimeout(() => setAnswerAnimation(null), 500);
+    try {
+      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
+      myScoreRef.current = newScore;
+      setMyScoreDisplay(newScore);
+      setComboCount(prev => isCorrect ? prev + 1 : 0);
+      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
+      setTimeout(() => setAnswerAnimation(null), 500);
 
-    // Record answer
-    await supabase.from('match_answers').insert({
-      match_id: matchData.id,
-      player_id: profile.id,
-      question_index: currentQuestion,
-      answer: isCorrect ? 'correct' : 'wrong',
-      is_correct: isCorrect,
-    });
+      await Promise.all([
+        supabase.from('match_answers').insert({
+          match_id: matchData.id,
+          player_id: profile.id,
+          question_index: currentQuestion,
+          answer: isCorrect ? 'correct' : 'wrong',
+          is_correct: isCorrect,
+        }),
+        supabase.from('ranked_matches').update({
+          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
+        }).eq('id', matchData.id),
+      ]);
 
-    // Update match score
-    const scoreField = isPlayer1Ref.current ? 'player1_score' : 'player2_score';
-    await supabase
-      .from('ranked_matches')
-      .update({ [scoreField]: newScore })
-      .eq('id', matchData.id);
-
-    // Next question
-    const nextQ = currentQuestion + 1;
-    if (nextQ >= matchData.words.length) {
-      endMatch();
-    } else {
-      setCurrentQuestion(nextQ);
-      generateOptions(matchData.words, nextQ);
+      const nextQ = currentQuestion + 1;
+      if (nextQ >= matchData.words.length) {
+        endMatch();
+      } else {
+        setCurrentQuestion(nextQ);
+        generateOptions(matchData.words, nextQ);
+      }
+    } finally {
+      answeringRef.current = false;
     }
-  }, [matchData, profile, currentQuestion, myScore, comboCount, matchEnded, generateOptions]);
+  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
 
   // End match
   const endMatch = useCallback(async () => {

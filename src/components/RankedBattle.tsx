@@ -443,7 +443,7 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Badge variant="default">{profile.username}</Badge>
-              <span className="text-2xl font-gaming text-primary">{myScore}</span>
+              <span className="text-2xl font-gaming text-primary">{myScoreDisplay}</span>
             </div>
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-muted-foreground" />

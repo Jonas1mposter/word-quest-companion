@@ -22,7 +22,7 @@ interface BattleQuizCardProps {
   quizType: BattleQuizType;
   options: string[]; // For multiple choice types
   wordOptions: string[]; // Word options for reverse type
-  onAnswer: (isCorrect: boolean) => void;
+  onAnswer: (isCorrect: boolean, answer: string) => void;
   disabled?: boolean;
   answerAnimation?: 'correct' | 'wrong' | null;
   comboCount?: number; // Current combo count for combo sound effects
@@ -88,7 +88,7 @@ const BattleQuizCard = ({
     }
 
     setTimeout(() => {
-      onAnswer(isCorrect);
+      onAnswer(isCorrect, option);
     }, 600);
   };
 
@@ -115,7 +115,7 @@ const BattleQuizCard = ({
     }
 
     setTimeout(() => {
-      onAnswer(isCorrect);
+      onAnswer(isCorrect, userInput.trim());
     }, 600);
   };
 

@@ -220,27 +220,17 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
     }
   };
 
-  // 扣除能量（仅在开始测验阶段时扣除一次）
-  const deductEnergy = async (): Promise<boolean> => {
-    if (!profile || energyDeducted) return true;
-    
-    const energyCost = 1;
-    if (profile.energy < energyCost) {
+  // 能量扣除已合并到 complete-level（关卡结算时由服务端原子扣除）。
+  // 这里保留接口签名，但仅在能量不足时弹窗，扣减由结算函数完成。
+  const ensureEnergy = (): boolean => {
+    if (!profile) return false;
+    if (energyDeducted) return true;
+    if (profile.energy < 1) {
       setShowEnergyDialog(true);
       return false;
     }
-    
-    const { error } = await supabase
-      .from("profiles")
-      .update({ energy: profile.energy - energyCost })
-      .eq("id", profile.id);
-    
-    if (!error) {
-      setEnergyDeducted(true);
-      await refreshProfile();
-      return true;
-    }
-    return false;
+    setEnergyDeducted(true);
+    return true;
   };
 
   // 处理退出

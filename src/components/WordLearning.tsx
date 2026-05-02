@@ -365,102 +365,37 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
       haptics.warning();
     }
     
+    // 占位显示（最终值以服务端返回为准）
     const baseXp = 5;
     const bonusXp = Math.floor(accuracy * 5);
     const baseCoins = 2;
     const bonusCoins = accuracy === 1 ? 3 : Math.floor(accuracy * 2);
-    
     setXpEarned(baseXp + bonusXp);
     setCoinsEarned(baseCoins + bonusCoins);
     setShowResult(true);
 
     if (profile) {
       try {
-        // Calculate stars based on actual final correct count
-        const stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
-
-        // 检查是否是字母关卡格式
         const letterMatch = levelId.match(/^([A-Z])-(\d+)$/);
-        
-        if (!letterMatch) {
-          // 旧的关卡格式才更新 level_progress
-          const { data: existingProgress } = await supabase
-            .from("level_progress")
-            .select("*")
-            .eq("profile_id", profile.id)
-            .eq("level_id", levelId)
-            .maybeSingle();
+        const { data, error } = await supabase.functions.invoke("complete-level", {
+          body: {
+            levelId,
+            levelName,
+            totalWords: words.length,
+            correctCount: finalCorrect,
+            maxCombo,
+            isLetterLevel: !!letterMatch,
+          },
+        });
 
-          if (existingProgress) {
-            await supabase
-              .from("level_progress")
-              .update({
-                status: "completed",
-                stars: Math.max(existingProgress.stars, stars),
-                best_score: Math.max(existingProgress.best_score, Math.round(accuracy * 100)),
-                attempts: existingProgress.attempts + 1,
-                completed_at: new Date().toISOString(),
-              })
-              .eq("id", existingProgress.id);
-          } else {
-            await supabase
-              .from("level_progress")
-              .insert({
-                profile_id: profile.id,
-                level_id: levelId,
-                status: "completed",
-                stars,
-                best_score: Math.round(accuracy * 100),
-                attempts: 1,
-                completed_at: new Date().toISOString(),
-              });
+        if (error || (data && data.error)) {
+          console.error("complete-level failed", error || data?.error);
+        } else if (data) {
+          setXpEarned(data.xpGained ?? baseXp + bonusXp);
+          setCoinsEarned(data.coinsGained ?? baseCoins + bonusCoins);
+          if (data.leveledUp) {
+            toast.success(`🎉 升级了！现在是 Lv.${data.newLevel}！`);
           }
-        }
-        // 字母关卡的进度已经通过 learning_progress 更新了
-
-        // Save combo record if achieved 3+ combo
-        if (maxCombo >= 3) {
-          // Check if this is a new personal best
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("max_combo")
-            .eq("id", profile.id)
-            .single();
-          
-          const currentMax = profileData?.max_combo || 0;
-          
-          // Insert combo record
-          await supabase
-            .from("combo_records")
-            .insert({
-              profile_id: profile.id,
-              combo_count: maxCombo,
-              mode: "learning",
-              level_name: levelName,
-            });
-          
-          // Update profile max_combo if this is a new record
-          if (maxCombo > currentMax) {
-            await supabase
-              .from("profiles")
-              .update({ max_combo: maxCombo })
-              .eq("id", profile.id);
-          }
-        }
-
-        // Update profile with level up logic
-        const totalXpGained = baseXp + bonusXp;
-        const levelUpResult = await updateProfileWithXp(
-          profile.id,
-          profile.level,
-          profile.xp,
-          profile.xp_to_next_level,
-          totalXpGained,
-          { coins: profile.coins + baseCoins + bonusCoins }
-        );
-
-        if (levelUpResult.leveledUp) {
-          toast.success(`🎉 升级了！现在是 Lv.${levelUpResult.newLevel}！`);
         }
 
         // Update daily quest progress

@@ -174,28 +174,13 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
     if (!reward || !profileId) return;
 
     try {
-      // Mark as claimed
-      await supabase
-        .from("challenge_rewards")
-        .update({ claimed: true })
-        .eq("id", rewardId);
-
-      // Apply reward based on type
-      if (reward.reward_type === "coins") {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("coins")
-          .eq("id", profileId)
-          .single();
-
-        if (profile) {
-          await supabase
-            .from("profiles")
-            .update({ coins: profile.coins + reward.reward_value })
-            .eq("id", profileId);
-        }
+      const { data, error } = await supabase.functions.invoke("claim-challenge-reward", {
+        body: { rewardId },
+      });
+      if (error || (data && data.error)) {
+        toast.error("领取失败");
+        return;
       }
-
       toast.success(`成功领取 ${reward.reward_value} ${reward.reward_type === 'coins' ? '狄邦豆' : '点奖励'}！`);
       fetchChallengeData();
     } catch (error) {

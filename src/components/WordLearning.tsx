@@ -244,10 +244,8 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
   };
 
   const handleCorrect = async () => {
-    // 在第一次答题时扣除能量
     if (!energyDeducted && phase === "quiz") {
-      const success = await deductEnergy();
-      if (!success) return; // 能量不足，不继续
+      if (!ensureEnergy()) return;
     }
     
     const newCorrectCount = correctCount + 1;
@@ -301,10 +299,8 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
   };
 
   const handleIncorrect = async () => {
-    // 在第一次答题时扣除能量
     if (!energyDeducted && phase === "quiz") {
-      const success = await deductEnergy();
-      if (!success) return; // 能量不足，不继续
+      if (!ensureEnergy()) return;
     }
     
     const newIncorrectCount = incorrectCount + 1;

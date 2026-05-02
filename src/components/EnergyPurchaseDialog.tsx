@@ -15,12 +15,12 @@ interface EnergyPurchaseDialogProps {
   onPurchaseSuccess: () => void;
 }
 
-// Energy purchase options
+// Energy purchase options. `id` matches the server's PACKAGES map.
 const ENERGY_OPTIONS = [
-  { energy: 1, cost: 10, label: "+1 能量" },
-  { energy: 3, cost: 25, label: "+3 能量" },
-  { energy: 5, cost: 40, label: "+5 能量" },
-  { energy: 10, cost: 70, label: "+10 能量" },
+  { id: "1", energy: 1, cost: 10, label: "+1 能量" },
+  { id: "3", energy: 3, cost: 25, label: "+3 能量" },
+  { id: "5", energy: 5, cost: 40, label: "+5 能量" },
+  { id: "10", energy: 10, cost: 70, label: "+10 能量" },
 ];
 
 const EnergyPurchaseDialog = ({
@@ -34,8 +34,7 @@ const EnergyPurchaseDialog = ({
 }: EnergyPurchaseDialogProps) => {
   const [purchasing, setPurchasing] = useState(false);
 
-  const handlePurchase = async (energyAmount: number, cost: number) => {
-    // Check if user has enough coins
+  const handlePurchase = async (packageId: string, energyAmount: number, cost: number) => {
     if (coins < cost) {
       toast.error("狄邦豆不足", {
         description: `需要 ${cost} 狄邦豆，你只有 ${coins} 狄邦豆`,
@@ -43,26 +42,16 @@ const EnergyPurchaseDialog = ({
       return;
     }
 
-    // Check if energy would exceed max
-    const newEnergy = Math.min(currentEnergy + energyAmount, maxEnergy + energyAmount);
-    
     setPurchasing(true);
-    
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          energy: newEnergy,
-          coins: coins - cost,
-        })
-        .eq("id", profileId);
-
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("purchase-energy", {
+        body: { packageId },
+      });
+      if (error || (data && data.error)) throw new Error(error?.message || data?.error || "purchase failed");
 
       toast.success("购买成功！", {
         description: `获得 ${energyAmount} 点能量`,
       });
-      
       onPurchaseSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -119,7 +108,7 @@ const EnergyPurchaseDialog = ({
                       : "opacity-50 cursor-not-allowed"
                   }`}
                   disabled={!canAfford || purchasing}
-                  onClick={() => handlePurchase(option.energy, option.cost)}
+                  onClick={() => handlePurchase(option.id, option.energy, option.cost)}
                 >
                   <div className="flex items-center gap-1 text-neon-cyan font-gaming">
                     <Zap className="w-4 h-4" />

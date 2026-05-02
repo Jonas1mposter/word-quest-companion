@@ -144,34 +144,21 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
 
   const handlePurchasePremium = async () => {
     if (!profileId || !userPass || !season || !profile) return;
-    
+
     if (profile.coins < PREMIUM_COST) {
       toast.error(`狄邦豆不足！需要 ${PREMIUM_COST} 豆`);
       return;
     }
 
     setPurchasing(true);
-
     try {
-      // Deduct coins
-      const { error: coinError } = await supabase
-        .from("profiles")
-        .update({ coins: profile.coins - PREMIUM_COST })
-        .eq("id", profileId);
-
-      if (coinError) throw coinError;
-
-      // Upgrade to premium
-      const { error: passError } = await supabase
-        .from("user_season_pass")
-        .update({ 
-          is_premium: true, 
-          purchased_at: new Date().toISOString() 
-        })
-        .eq("id", userPass.id);
-
-      if (passError) throw passError;
-
+      const { data, error } = await supabase.functions.invoke("purchase-season-pass", {
+        body: { passId: userPass.id },
+      });
+      if (error || (data && data.error)) {
+        toast.error("购买失败，请重试");
+        return;
+      }
       setUserPass({ ...userPass, is_premium: true });
       refreshProfile();
       toast.success("成功解锁高级赛季手册！");
@@ -186,50 +173,27 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
 
   const handleClaimReward = async (item: SeasonPassItem) => {
     if (!profileId || !userPass) return;
-    
-    // Check if already claimed
     if (claimedRewards.has(item.id)) {
       toast.error("已经领取过了");
       return;
     }
-
-    // Check level requirement
     if (userPass.current_level < item.level) {
       toast.error(`需要达到等级 ${item.level} 才能领取`);
       return;
     }
-
-    // Check premium requirement
     if (item.is_premium && !userPass.is_premium) {
       toast.error("需要解锁高级版才能领取");
       return;
     }
 
     try {
-      // Record claimed reward
-      const { error: claimError } = await supabase
-        .from("user_pass_rewards")
-        .insert({
-          profile_id: profileId,
-          season_pass_item_id: item.id,
-        });
-
-      if (claimError) throw claimError;
-
-      // Give reward based on type
-      if (item.reward_type === "coins" && profile) {
-        await supabase
-          .from("profiles")
-          .update({ coins: profile.coins + item.reward_value })
-          .eq("id", profileId);
-      } else if (item.reward_type === "energy" && profile) {
-        await supabase
-          .from("profiles")
-          .update({ energy: Math.min(profile.energy + item.reward_value, profile.max_energy) })
-          .eq("id", profileId);
+      const { data, error } = await supabase.functions.invoke("claim-pass-reward", {
+        body: { itemId: item.id },
+      });
+      if (error || (data && data.error)) {
+        toast.error(data?.error === "Already claimed" ? "已经领取过了" : "领取失败，请重试");
+        return;
       }
-      // Other reward types would need additional handling
-
       setClaimedRewards(new Set([...claimedRewards, item.id]));
       refreshProfile();
       toast.success(`成功领取：${item.name}`);

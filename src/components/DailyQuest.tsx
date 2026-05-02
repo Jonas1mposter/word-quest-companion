@@ -89,77 +89,17 @@ const DailyQuest = ({ onQuestUpdate }: DailyQuestProps) => {
     if (!profile || quest.claimed) return;
 
     try {
-      const today = new Date().toISOString().split("T")[0];
-
-      // First check if already claimed to prevent double claiming
-      const { data: existingProgress } = await supabase
-        .from("user_quest_progress")
-        .select("claimed")
-        .eq("profile_id", profile.id)
-        .eq("quest_id", quest.id)
-        .eq("quest_date", today)
-        .maybeSingle();
-
-      if (existingProgress?.claimed) {
-        toast.error("奖励已领取过了");
-        await fetchQuests(); // Refresh to sync UI
+      const { data, error } = await supabase.functions.invoke("claim-quest-reward", {
+        body: { questId: quest.id },
+      });
+      if (error || (data && data.error)) {
+        toast.error(data?.error === "Already claimed" ? "奖励已领取过了" : "领取奖励失败");
+        await fetchQuests();
         return;
       }
 
-      // Update quest progress as claimed - use update if exists, insert if not
-      const { data: existingRecord } = await supabase
-        .from("user_quest_progress")
-        .select("id")
-        .eq("profile_id", profile.id)
-        .eq("quest_id", quest.id)
-        .eq("quest_date", today)
-        .maybeSingle();
-
-      let updateError;
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
-          .from("user_quest_progress")
-          .update({
-            completed: true,
-            claimed: true,
-          })
-          .eq("id", existingRecord.id);
-        updateError = error;
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from("user_quest_progress")
-          .insert({
-            profile_id: profile.id,
-            quest_id: quest.id,
-            quest_date: today,
-            progress: quest.progress,
-            completed: true,
-            claimed: true,
-          });
-        updateError = error;
-      }
-
-      if (updateError) throw updateError;
-
-      // Add reward to profile
-      const updates: Record<string, number> = {};
-      if (quest.reward_type === "xp") {
-        updates.xp = profile.xp + quest.reward_amount;
-      } else if (quest.reward_type === "coins") {
-        updates.coins = profile.coins + quest.reward_amount;
-      } else if (quest.reward_type === "energy") {
-        updates.energy = Math.min(profile.max_energy, profile.energy + quest.reward_amount);
-      }
-
-      await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", profile.id);
-
       toast.success(`获得 ${quest.reward_amount} ${getRewardLabel(quest.reward_type)}！`);
-      
+
       await refreshProfile();
       await fetchQuests();
       onQuestUpdate?.();

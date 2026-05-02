@@ -398,70 +398,17 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
           }
         }
 
-        // Update daily quest progress
-        const today = new Date().toISOString().split("T")[0];
-        
-        // Find learn quest
-        const { data: learnQuest } = await supabase
-          .from("daily_quests")
-          .select("*")
-          .eq("quest_type", "learn")
-          .single();
-
-        if (learnQuest) {
-          const { data: questProgress } = await supabase
-            .from("user_quest_progress")
-            .select("*")
-            .eq("profile_id", profile.id)
-            .eq("quest_id", learnQuest.id)
-            .eq("quest_date", today)
-            .maybeSingle();
-
-          const newProgress = (questProgress?.progress || 0) + 1;
-          const completed = newProgress >= learnQuest.target;
-
-          await supabase
-            .from("user_quest_progress")
-            .upsert({
-              profile_id: profile.id,
-              quest_id: learnQuest.id,
-              quest_date: today,
-              progress: newProgress,
-              completed,
-              claimed: questProgress?.claimed || false,
-            });
-        }
-
-        // Find words quest
-        const { data: wordsQuest } = await supabase
-          .from("daily_quests")
-          .select("*")
-          .eq("quest_type", "words")
-          .single();
-
-        if (wordsQuest) {
-          const { data: questProgress } = await supabase
-            .from("user_quest_progress")
-            .select("*")
-            .eq("profile_id", profile.id)
-            .eq("quest_id", wordsQuest.id)
-            .eq("quest_date", today)
-            .maybeSingle();
-
-          const newProgress = (questProgress?.progress || 0) + finalCorrect;
-          const completed = newProgress >= wordsQuest.target;
-
-          await supabase
-            .from("user_quest_progress")
-            .upsert({
-              profile_id: profile.id,
-              quest_id: wordsQuest.id,
-              quest_date: today,
-              progress: newProgress,
-              completed,
-              claimed: questProgress?.claimed || false,
-            });
-        }
+        // Update daily quest progress (server-side)
+        await Promise.all([
+          supabase.functions.invoke("increment-quest-progress", {
+            body: { questType: "learn", amount: 1 },
+          }),
+          finalCorrect > 0
+            ? supabase.functions.invoke("increment-quest-progress", {
+                body: { questType: "words", amount: finalCorrect },
+              })
+            : Promise.resolve(),
+        ]);
 
         await refreshProfile();
       } catch (error) {

@@ -235,90 +235,64 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
     return () => clearTimeout(timer);
   }, [phase, countdown]);
 
-  // End match
+  // End match — server authoritative via process-match.
   const endMatch = useCallback(async () => {
     if (!profile || matchEndedRef.current) return;
     matchEndedRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
+    // Brief delay so the last submit-answer can land before the server tallies.
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const { data: finalMatch } = await supabase.from('ranked_matches').select('*').eq('id', matchData?.id).single();
-    if (!finalMatch) { setPhase("result"); return; }
+    if (!matchData?.id) { setPhase("result"); return; }
 
-    const currentScore = myScoreRef.current;
-    const p1Score = isPlayer1Ref.current ? currentScore : finalMatch.player1_score;
-    const p2Score = isPlayer1Ref.current ? finalMatch.player2_score : currentScore;
-
-    let winnerId: string | null = null;
-    if (p1Score > p2Score) winnerId = finalMatch.player1_id;
-    else if (p2Score > p1Score) winnerId = finalMatch.player2_id;
-    winnerIdRef.current = winnerId;
-
-    if (isPlayer1Ref.current) {
-      await supabase.from('ranked_matches').update({
-        status: 'completed',
-        ended_at: new Date().toISOString(),
-        winner_id: winnerId,
-        player1_score: currentScore,
-      }).eq('id', finalMatch.id);
-    } else {
-      await supabase.from('ranked_matches').update({
-        player2_score: currentScore,
-      }).eq('id', finalMatch.id);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const { data: recheck } = await supabase.from('ranked_matches').select('*').eq('id', finalMatch.id).single();
-      if (recheck && recheck.status !== 'completed') {
-        await supabase.from('ranked_matches').update({
-          status: 'completed',
-          ended_at: new Date().toISOString(),
-          winner_id: winnerId,
-        }).eq('id', finalMatch.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('process-match', {
+        body: { matchId: matchData.id },
+      });
+      if (error || (data && data.error)) {
+        console.error('process-match failed', error || data?.error);
+      } else if (data) {
+        winnerIdRef.current = data.winnerId ?? null;
       }
+    } catch (e) {
+      console.error('process-match exception', e);
     }
 
-    const playerWon = winnerId === profile.id;
+    const winnerId = winnerIdRef.current;
     const isDraw = winnerId === null;
-    const opponentElo = opponentProfile?.elo_rating || 1000;
-    await updateEloAfterMatch(profile.id, profile.elo_rating, opponentElo, playerWon, isDraw, false, false);
-
-    if (playerWon) {
-      await supabase.from('profiles').update({ wins: (profile.wins || 0) + 1 }).eq('id', profile.id);
-      sounds.playVictory();
-    } else if (!isDraw) {
-      await supabase.from('profiles').update({ losses: (profile.losses || 0) + 1 }).eq('id', profile.id);
-      sounds.playDefeat();
-    }
+    if (winnerId === profile.id) sounds.playVictory();
+    else if (!isDraw) sounds.playDefeat();
     setPhase("result");
-  }, [matchData, profile, opponentProfile, updateEloAfterMatch, sounds]);
+  }, [matchData, profile, sounds]);
 
-  // Handle answer
-  const handleAnswer = useCallback(async (isCorrect: boolean) => {
+  // Handle answer — server validates correctness via submit-answer.
+  const handleAnswer = useCallback(async (clientCorrect: boolean, answer: string) => {
     if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
     answeringRef.current = true;
 
     try {
-      const newScore = isCorrect ? myScoreRef.current + 1 : myScoreRef.current;
-      myScoreRef.current = newScore;
-      setMyScoreDisplay(newScore);
-      setComboCount(prev => isCorrect ? prev + 1 : 0);
-      setAnswerAnimation(isCorrect ? 'correct' : 'wrong');
+      const questionIdx = currentQuestion;
+      const { data, error } = await supabase.functions.invoke('submit-answer', {
+        body: {
+          matchId: matchData.id,
+          questionIndex: questionIdx,
+          answer,
+          quizType,
+        },
+      });
+
+      const serverCorrect = !error && data && !data.error ? !!data.isCorrect : clientCorrect;
+      if (serverCorrect) {
+        const newScore = myScoreRef.current + 1;
+        myScoreRef.current = newScore;
+        setMyScoreDisplay(newScore);
+      }
+      setComboCount(prev => serverCorrect ? prev + 1 : 0);
+      setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
       setTimeout(() => setAnswerAnimation(null), 500);
 
-      await Promise.all([
-        supabase.from('match_answers').insert({
-          match_id: matchData.id,
-          player_id: profile.id,
-          question_index: currentQuestion,
-          answer: isCorrect ? 'correct' : 'wrong',
-          is_correct: isCorrect,
-        }),
-        supabase.from('ranked_matches').update({
-          [isPlayer1Ref.current ? 'player1_score' : 'player2_score']: newScore,
-        }).eq('id', matchData.id),
-      ]);
-
-      const nextQ = currentQuestion + 1;
+      const nextQ = questionIdx + 1;
       if (nextQ >= matchData.words.length) {
         endMatch();
       } else {
@@ -328,7 +302,7 @@ const RankedBattle = ({ onBack, initialMatchId, subject = "mixed" }: RankedBattl
     } finally {
       answeringRef.current = false;
     }
-  }, [matchData, profile, currentQuestion, generateOptions, endMatch]);
+  }, [matchData, profile, currentQuestion, quizType, generateOptions, endMatch]);
 
   // Handle cancel
   const handleCancel = async () => {

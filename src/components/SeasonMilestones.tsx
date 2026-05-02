@@ -73,8 +73,13 @@ const SeasonMilestones = ({ seasonId, profileId }: SeasonMilestonesProps) => {
         setMilestones(milestonesData);
       }
 
-      // Fetch user progress if logged in
+      // Sync milestone progress server-side, then fetch
       if (profileId) {
+        try {
+          await supabase.functions.invoke("sync-milestone-progress", { body: { seasonId } });
+        } catch (e) {
+          console.error("sync-milestone-progress failed", e);
+        }
         const { data: progressData } = await supabase
           .from("user_season_milestones")
           .select("*")
@@ -85,9 +90,6 @@ const SeasonMilestones = ({ seasonId, profileId }: SeasonMilestonesProps) => {
           progressData.forEach(p => progressMap.set(p.milestone_id, p));
           setUserProgress(progressMap);
         }
-
-        // Calculate and update progress for each milestone
-        await calculateAndUpdateProgress(milestonesData || []);
       }
     } catch (error) {
       console.error("Error fetching milestones:", error);
@@ -180,25 +182,10 @@ const SeasonMilestones = ({ seasonId, profileId }: SeasonMilestonesProps) => {
     if (!progress?.completed || progress.claimed) return;
 
     try {
-      // Mark as claimed
-      await supabase
-        .from("user_season_milestones")
-        .update({ claimed: true, claimed_at: new Date().toISOString() })
-        .eq("profile_id", profileId)
-        .eq("milestone_id", milestone.id);
-
-      // Apply reward
-      if (milestone.reward_type === "coins") {
-        await supabase
-          .from("profiles")
-          .update({ coins: profile.coins + milestone.reward_value })
-          .eq("id", profileId);
-      } else if (milestone.reward_type === "energy") {
-        await supabase
-          .from("profiles")
-          .update({ energy: Math.min(profile.energy + milestone.reward_value, profile.max_energy) })
-          .eq("id", profileId);
-      }
+      const { error: fnError } = await supabase.functions.invoke("claim-milestone-reward", {
+        body: { milestoneId: milestone.id },
+      });
+      if (fnError) throw fnError;
 
       toast.success(`成功领取 ${milestone.reward_value} ${milestone.reward_type === 'coins' ? '狄邦豆' : '能量'}！`);
       

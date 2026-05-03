@@ -1,161 +1,37 @@
-import { useState, useEffect, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { BadgeIcon } from "@/components/ui/badge-icon";
-import { 
-  User, Award, Crown, Coins, Swords, TrendingUp, 
-  BookOpen, Flame, Star, Check, X, Palette, Upload, Loader2, Trash2, Pencil,
-  ChevronUp, Shield
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-interface BadgeData {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  category: string;
-  rarity: string;
-  equipped_slot?: number | null;
-}
-
-interface NameCardData {
-  id: string;
-  name: string;
-  description: string;
-  background_gradient: string;
-  icon: string;
-  category: string;
-  rarity: string;
-  is_equipped: boolean;
-  is_owned: boolean;
-  rank_position?: number | null;
-}
-
-// 名片解锁条件映射
-const getUnlockCondition = (card: NameCardData): string => {
-  if (card.category === 'leaderboard_wins') return '排位胜利榜前10名';
-  if (card.category === 'leaderboard_xp') return '经验值榜前10名';
-  if (card.category === 'leaderboard_coins') return '狄邦豆榜前10名';
-  if (card.category === 'special') return '内测用户专属';
-  // 从description中提取解锁条件
-  if (card.description?.includes('解锁')) return card.description;
-  return card.description || '特殊方式获取';
-};
-
-// 稀有度颜色
-const rarityColors: Record<string, string> = {
-  common: 'text-gray-400',
-  rare: 'text-blue-400',
-  epic: 'text-purple-400',
-  legendary: 'text-yellow-400',
-  mythology: 'text-red-400',
-};
-
-const rarityLabels: Record<string, string> = {
-  common: '普通',
-  rare: '稀有',
-  epic: '史诗',
-  legendary: '传说',
-  mythology: '神话',
-};
-
-
-// 预设背景选项
-const backgroundOptions = [
-  { id: "default", gradient: "from-primary/20 via-accent/10 to-primary/20", name: "默认" },
-  { id: "sunset", gradient: "from-orange-500/30 via-pink-500/20 to-purple-500/30", name: "日落" },
-  { id: "ocean", gradient: "from-blue-500/30 via-cyan-500/20 to-teal-500/30", name: "海洋" },
-  { id: "forest", gradient: "from-green-500/30 via-emerald-500/20 to-lime-500/30", name: "森林" },
-  { id: "galaxy", gradient: "from-purple-600/40 via-indigo-500/30 to-blue-600/40", name: "星空" },
-  { id: "fire", gradient: "from-red-500/40 via-orange-500/30 to-yellow-500/40", name: "烈焰" },
-  { id: "aurora", gradient: "from-green-400/30 via-blue-500/30 to-purple-500/30", name: "极光" },
-  { id: "gold", gradient: "from-yellow-400/40 via-amber-500/30 to-orange-400/40", name: "黄金" },
-];
-
-// 段位配置 - 与 RankedBattle.tsx 保持一致
-type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "champion";
-
-const RANK_CONFIG: Record<RankTier, {
-  starsToPromote: number;
-  starsLostOnLose: number;
-  protectionStars: number;
-}> = {
-  bronze: { starsToPromote: 30, starsLostOnLose: 0, protectionStars: 0 },
-  silver: { starsToPromote: 40, starsLostOnLose: 1, protectionStars: 0 },
-  gold: { starsToPromote: 50, starsLostOnLose: 1, protectionStars: 1 },
-  platinum: { starsToPromote: 50, starsLostOnLose: 1, protectionStars: 0 },
-  diamond: { starsToPromote: 60, starsLostOnLose: 2, protectionStars: 0 },
-  champion: { starsToPromote: 999, starsLostOnLose: 2, protectionStars: 0 },
-};
-
-const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond", "champion"];
-
-const tierNames: Record<RankTier, string> = {
-  bronze: "青铜",
-  silver: "白银",
-  gold: "黄金",
-  platinum: "铂金",
-  diamond: "钻石",
-  champion: "狄邦巅峰",
-};
-
-const tierColors: Record<RankTier, { gradient: string; text: string; bg: string }> = {
-  bronze: { gradient: "from-amber-700 to-amber-900", text: "text-amber-500", bg: "bg-amber-500/20" },
-  silver: { gradient: "from-gray-300 to-gray-500", text: "text-gray-400", bg: "bg-gray-400/20" },
-  gold: { gradient: "from-yellow-400 to-amber-500", text: "text-yellow-500", bg: "bg-yellow-500/20" },
-  platinum: { gradient: "from-cyan-300 to-cyan-500", text: "text-cyan-400", bg: "bg-cyan-400/20" },
-  diamond: { gradient: "from-blue-300 to-purple-400", text: "text-blue-400", bg: "bg-blue-400/20" },
-  champion: { gradient: "from-purple-500 to-pink-500", text: "text-purple-400", bg: "bg-purple-400/20" },
-};
-
-interface BestRecords {
-  bestWinStreak: number;
-  bestRankTier: RankTier;
-  bestRankStars: number;
-}
+import { backgroundOptions, BadgeData, NameCardData, RankTier } from "./profile-card/constants";
+import { useProfileCardData } from "./profile-card/useProfileCardData";
+import { BackgroundPicker } from "./profile-card/BackgroundPicker";
+import { BadgeSlots } from "./profile-card/BadgeSlots";
+import { RankProgressSection } from "./profile-card/RankProgressSection";
+import { BestRecordsSection } from "./profile-card/BestRecordsSection";
+import { ProfileFooterSection } from "./profile-card/ProfileFooterSection";
 
 const ProfileCard = () => {
   const { profile, user, refreshProfile } = useAuth();
-  const [userBadges, setUserBadges] = useState<BadgeData[]>([]);
-  const [allNameCards, setAllNameCards] = useState<NameCardData[]>([]);
-  const [userNameCards, setUserNameCards] = useState<NameCardData[]>([]);
-  const [equippedBadges, setEquippedBadges] = useState<(BadgeData | null)[]>([null, null, null]);
-  const [equippedNameCard, setEquippedNameCard] = useState<NameCardData | null>(null);
-  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
-  const [nameCardDialogOpen, setNameCardDialogOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<number>(0);
+  const {
+    userBadges, equippedBadges,
+    allNameCards, userNameCards, equippedNameCard,
+    bestRecords,
+    refetchBadges, refetchNameCards,
+  } = useProfileCardData(profile);
+
   const [bgDialogOpen, setBgDialogOpen] = useState(false);
-  const [profileEditDialogOpen, setProfileEditDialogOpen] = useState(false);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [editUsername, setEditUsername] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [bestRecords, setBestRecords] = useState<BestRecords>({
-    bestWinStreak: 0,
-    bestRankTier: "bronze",
-    bestRankStars: 0,
-  });
-
-  // 背景状态
   const [backgroundType, setBackgroundType] = useState<string>("gradient");
   const [backgroundValue, setBackgroundValue] = useState<string>("default");
 
   useEffect(() => {
-    if (profile?.id) {
-      fetchUserBadges();
-      fetchUserNameCards();
-      fetchBestRecords();
+    if (profile) {
       setEditUsername(profile.username);
-      // 加载用户保存的背景设置
       if ((profile as any).background_type) {
         setBackgroundType((profile as any).background_type);
         setBackgroundValue((profile as any).background_value || "default");
@@ -163,270 +39,49 @@ const ProfileCard = () => {
     }
   }, [profile?.id]);
 
-  const fetchBestRecords = async () => {
-    if (!profile?.id) return;
+  if (!profile) return null;
 
-    try {
-      // Fetch all completed matches to calculate best win streak
-      const { data: matches, error } = await supabase
-        .from("ranked_matches")
-        .select("winner_id, created_at")
-        .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching matches for best records:", error);
-        return;
-      }
-
-      // Calculate best win streak
-      let bestWinStreak = 0;
-      let currentStreak = 0;
-
-      if (matches) {
-        // Sort by date ascending to count streaks properly
-        const sortedMatches = [...matches].sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-
-        for (const match of sortedMatches) {
-          if (match.winner_id === profile.id) {
-            currentStreak++;
-            bestWinStreak = Math.max(bestWinStreak, currentStreak);
-          } else {
-            currentStreak = 0;
-          }
-        }
-      }
-
-      // Current rank is the "best" if we don't track historical best
-      // For now, use current rank as best (could be extended with historical tracking)
-      const currentTier = (profile.rank_tier || "bronze") as RankTier;
-      const currentStars = profile.rank_stars || 0;
-
-      setBestRecords({
-        bestWinStreak,
-        bestRankTier: currentTier,
-        bestRankStars: currentStars,
-      });
-    } catch (err) {
-      console.error("Error in fetchBestRecords:", err);
-    }
-  };
-
-  const fetchUserBadges = async () => {
-    const { data, error } = await supabase
-      .from("user_badges")
-      .select(`
-        badge_id,
-        equipped_slot,
-        badges (id, name, description, icon, category, rarity)
-      `)
-      .eq("profile_id", profile!.id);
-
-    if (data) {
-      const badges: BadgeData[] = data.map((ub: any) => ({
-        ...ub.badges,
-        equipped_slot: ub.equipped_slot,
-      }));
-      setUserBadges(badges);
-
-      const equipped: (BadgeData | null)[] = [null, null, null];
-      badges.forEach((b) => {
-        if (b.equipped_slot !== null && b.equipped_slot >= 0 && b.equipped_slot < 3) {
-          equipped[b.equipped_slot] = b;
-        }
-      });
-      setEquippedBadges(equipped);
-    }
-  };
-
-  const fetchUserNameCards = async () => {
-    // 获取所有名片
-    const { data: allCards } = await supabase
-      .from("name_cards")
-      .select("*")
-      .order("created_at");
-
-    // 获取用户拥有的名片
-    const { data: ownedCards } = await supabase
-      .from("user_name_cards")
-      .select(`
-        name_card_id,
-        is_equipped,
-        rank_position,
-        name_cards (id, name, description, background_gradient, icon, category, rarity)
-      `)
-      .eq("profile_id", profile!.id);
-
-    const ownedCardIds = new Set(ownedCards?.map((c: any) => c.name_card_id) || []);
-    const ownedCardsMap = new Map(ownedCards?.map((c: any) => [c.name_card_id, c]) || []);
-
-    if (allCards) {
-      const cards: NameCardData[] = allCards.map((card: any) => {
-        const owned = ownedCardsMap.get(card.id) as any;
-        return {
-          ...card,
-          is_equipped: owned?.is_equipped || false,
-          is_owned: ownedCardIds.has(card.id),
-          rank_position: owned?.rank_position || null,
-        };
-      });
-      setAllNameCards(cards);
-      
-      const userOwned = cards.filter(c => c.is_owned);
-      setUserNameCards(userOwned);
-      const equipped = userOwned.find((c) => c.is_equipped);
-      setEquippedNameCard(equipped || null);
-    }
-  };
-
-  const handleEquipBadge = async (badge: BadgeData, slot: number) => {
-    const currentBadge = equippedBadges[slot];
-    if (currentBadge) {
-      await supabase
-        .from("user_badges")
-        .update({ equipped_slot: null })
-        .eq("profile_id", profile!.id)
-        .eq("badge_id", currentBadge.id);
-    }
-
-    const existingSlot = equippedBadges.findIndex((b) => b?.id === badge.id);
-    if (existingSlot !== -1 && existingSlot !== slot) {
-      await supabase
-        .from("user_badges")
-        .update({ equipped_slot: null })
-        .eq("profile_id", profile!.id)
-        .eq("badge_id", badge.id);
-    }
-
-    await supabase
-      .from("user_badges")
-      .update({ equipped_slot: slot })
-      .eq("profile_id", profile!.id)
-      .eq("badge_id", badge.id);
-
-    fetchUserBadges();
-    setBadgeDialogOpen(false);
-    toast.success("勋章已装备");
-  };
-
-  const handleUnequipBadge = async (slot: number) => {
-    const badge = equippedBadges[slot];
-    if (badge) {
-      await supabase
-        .from("user_badges")
-        .update({ equipped_slot: null })
-        .eq("profile_id", profile!.id)
-        .eq("badge_id", badge.id);
-      
-      fetchUserBadges();
-      toast.success("勋章已卸下");
-    }
-  };
-
-  const handleEquipNameCard = async (card: NameCardData) => {
-    await supabase
-      .from("user_name_cards")
-      .update({ is_equipped: false })
-      .eq("profile_id", profile!.id);
-
-    await supabase
-      .from("user_name_cards")
-      .update({ is_equipped: true })
-      .eq("profile_id", profile!.id)
-      .eq("name_card_id", card.id);
-
-    fetchUserNameCards();
-    setNameCardDialogOpen(false);
-    toast.success("名片已装备");
-  };
-
-  const handleUnequipNameCard = async () => {
-    await supabase
-      .from("user_name_cards")
-      .update({ is_equipped: false })
-      .eq("profile_id", profile!.id);
-
-    fetchUserNameCards();
-    setNameCardDialogOpen(false);
-    toast.success("名片已卸下");
-  };
-
+  // === Background handlers ===
   const handleSelectGradient = async (bgId: string) => {
     setBackgroundType("gradient");
     setBackgroundValue(bgId);
     setBgDialogOpen(false);
-
-    // 保存到数据库
-    await supabase
-      .from("profiles")
-      .update({ 
-        background_type: "gradient", 
-        background_value: bgId 
-      })
-      .eq("id", profile!.id);
-
-    const bg = backgroundOptions.find(b => b.id === bgId);
+    await supabase.from("profiles")
+      .update({ background_type: "gradient", background_value: bgId })
+      .eq("id", profile.id);
+    const bg = backgroundOptions.find((b) => b.id === bgId);
     toast.success(`已切换为${bg?.name || "默认"}背景`);
   };
 
   const handleUploadBackground = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0 || !user) {
-      return;
-    }
-
+    if (!event.target.files || event.target.files.length === 0 || !user) return;
     const file = event.target.files[0];
-    const fileExt = file.name.split('.').pop()?.toLowerCase();
-    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-    if (!fileExt || !allowedExts.includes(fileExt)) {
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const allowed = ["jpg", "jpeg", "png", "gif", "webp"];
+    if (!fileExt || !allowed.includes(fileExt)) {
       toast.error("请上传 JPG、PNG、GIF 或 WebP 格式的图片");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error("图片大小不能超过 5MB");
       return;
     }
-
     setUploading(true);
-
     try {
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      // 删除旧的背景图片
       if (backgroundType === "image" && backgroundValue) {
-        const oldPath = backgroundValue.split('/profile-backgrounds/')[1];
-        if (oldPath) {
-          await supabase.storage.from('profile-backgrounds').remove([oldPath]);
-        }
+        const oldPath = backgroundValue.split("/profile-backgrounds/")[1];
+        if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
       }
-
-      // 上传新背景
       const uploadResult = await supabase.storage
-        .from('profile-backgrounds')
+        .from("profile-backgrounds")
         .upload(fileName, file, { upsert: true }) as any;
-
       if (uploadResult?.error) throw uploadResult.error;
-
-      // 获取公共 URL
-      const { data: urlData } = supabase.storage
-        .from('profile-backgrounds')
-        .getPublicUrl(fileName);
-
+      const { data: urlData } = supabase.storage.from("profile-backgrounds").getPublicUrl(fileName);
       const newBgUrl = urlData.publicUrl;
-
-      // 更新 profile
-      await supabase
-        .from('profiles')
-        .update({ 
-          background_type: 'image', 
-          background_value: newBgUrl 
-        })
-        .eq('id', profile!.id);
-
+      await supabase.from("profiles")
+        .update({ background_type: "image", background_value: newBgUrl })
+        .eq("id", profile.id);
       setBackgroundType("image");
       setBackgroundValue(newBgUrl);
       setBgDialogOpen(false);
@@ -441,46 +96,78 @@ const ProfileCard = () => {
 
   const handleRemoveCustomBackground = async () => {
     if (backgroundType === "image" && backgroundValue) {
-      const oldPath = backgroundValue.split('/profile-backgrounds/')[1];
-      if (oldPath) {
-        await supabase.storage.from('profile-backgrounds').remove([oldPath]);
-      }
+      const oldPath = backgroundValue.split("/profile-backgrounds/")[1];
+      if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
     }
-
-    await supabase
-      .from('profiles')
-      .update({ 
-        background_type: 'gradient', 
-        background_value: 'default' 
-      })
-      .eq('id', profile!.id);
-
+    await supabase.from("profiles")
+      .update({ background_type: "gradient", background_value: "default" })
+      .eq("id", profile.id);
     setBackgroundType("gradient");
     setBackgroundValue("default");
     toast.success("已恢复默认背景");
   };
 
-  const handleSaveProfile = async () => {
-    if (!editUsername.trim()) {
-      toast.error("用户名不能为空");
-      return;
+  // === Badge handlers ===
+  const handleEquipBadge = async (badge: BadgeData, slot: number) => {
+    const currentBadge = equippedBadges[slot];
+    if (currentBadge) {
+      await supabase.from("user_badges")
+        .update({ equipped_slot: null })
+        .eq("profile_id", profile.id).eq("badge_id", currentBadge.id);
     }
-    if (editUsername.trim().length > 20) {
-      toast.error("用户名不能超过20个字符");
-      return;
+    const existingSlot = equippedBadges.findIndex((b) => b?.id === badge.id);
+    if (existingSlot !== -1 && existingSlot !== slot) {
+      await supabase.from("user_badges")
+        .update({ equipped_slot: null })
+        .eq("profile_id", profile.id).eq("badge_id", badge.id);
     }
+    await supabase.from("user_badges")
+      .update({ equipped_slot: slot })
+      .eq("profile_id", profile.id).eq("badge_id", badge.id);
+    refetchBadges();
+    toast.success("勋章已装备");
+  };
 
+  const handleUnequipBadge = async (slot: number) => {
+    const badge = equippedBadges[slot];
+    if (badge) {
+      await supabase.from("user_badges")
+        .update({ equipped_slot: null })
+        .eq("profile_id", profile.id).eq("badge_id", badge.id);
+      refetchBadges();
+      toast.success("勋章已卸下");
+    }
+  };
+
+  // === Name card handlers ===
+  const handleEquipNameCard = async (card: NameCardData) => {
+    await supabase.from("user_name_cards")
+      .update({ is_equipped: false }).eq("profile_id", profile.id);
+    await supabase.from("user_name_cards")
+      .update({ is_equipped: true })
+      .eq("profile_id", profile.id).eq("name_card_id", card.id);
+    refetchNameCards();
+    toast.success("名片已装备");
+  };
+
+  const handleUnequipNameCard = async () => {
+    await supabase.from("user_name_cards")
+      .update({ is_equipped: false }).eq("profile_id", profile.id);
+    refetchNameCards();
+    toast.success("名片已卸下");
+  };
+
+  // === Profile edit ===
+  const handleSaveProfile = async () => {
+    if (!editUsername.trim()) { toast.error("用户名不能为空"); return; }
+    if (editUsername.trim().length > 20) { toast.error("用户名不能超过20个字符"); return; }
     setSavingProfile(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: editUsername.trim() })
-        .eq('id', profile!.id);
-
+      const { error } = await supabase.from("profiles")
+        .update({ username: editUsername.trim() }).eq("id", profile.id);
       if (error) throw error;
-
       await refreshProfile();
-      setProfileEditDialogOpen(false);
+      setProfileEditOpen(false);
       toast.success("个人信息已更新");
     } catch (error: any) {
       console.error("Error updating profile:", error);
@@ -490,638 +177,65 @@ const ProfileCard = () => {
     }
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case "common": return "text-gray-400";
-      case "rare": return "text-blue-400";
-      case "epic": return "text-purple-400";
-      case "legendary": return "text-amber-400";
-      case "mythology": return "text-red-500";
-      case "hidden": return "text-violet-400";
-      default: return "text-gray-400";
-    }
-  };
+  const backgroundStyle = backgroundType === "image" && backgroundValue
+    ? { backgroundImage: `url(${backgroundValue})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : {};
 
-  const getRarityBorderStyle = (rarity: string) => {
-    switch (rarity) {
-      case "mythology": 
-        return { 
-          borderColor: "#ef4444",
-          background: "linear-gradient(135deg, #ef4444 0%, #be123c 50%, #b91c1c 100%)",
-          boxShadow: "0 0 15px rgba(239, 68, 68, 0.5)"
-        };
-      case "hidden": 
-        return { 
-          borderColor: "#8b5cf6",
-          background: "linear-gradient(135deg, #f43f5e 0%, #f59e0b 25%, #10b981 50%, #06b6d4 75%, #8b5cf6 100%)",
-          boxShadow: "0 0 15px rgba(139, 92, 246, 0.5)"
-        };
-      case "legendary":
-        return {
-          borderColor: "#f59e0b",
-          background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
-          boxShadow: "0 0 10px rgba(245, 158, 11, 0.4)"
-        };
-      case "epic":
-        return {
-          borderColor: "#a855f7",
-          background: "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)",
-          boxShadow: "0 0 8px rgba(168, 85, 247, 0.3)"
-        };
-      case "rare":
-        return {
-          borderColor: "#3b82f6",
-          background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-          boxShadow: "0 0 6px rgba(59, 130, 246, 0.3)"
-        };
-      default:
-        return {
-          borderColor: "#9ca3af",
-          background: "linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)"
-        };
-    }
-  };
+  const gradientClass = backgroundType === "gradient"
+    ? backgroundOptions.find((b) => b.id === backgroundValue)?.gradient || backgroundOptions[0].gradient
+    : "";
 
-  // Convert Tailwind gradient classes to CSS gradient for name cards
-  const getNameCardGradientStyle = (gradientClasses: string) => {
-    if (gradientClasses.startsWith('linear-gradient') || gradientClasses.startsWith('radial-gradient')) {
-      return gradientClasses;
-    }
-    
-    const colorMap: Record<string, string> = {
-      'amber-500': '#f59e0b', 'amber-600': '#d97706', 'amber-400': '#fbbf24',
-      'yellow-400': '#facc15', 'yellow-500': '#eab308',
-      'purple-600': '#9333ea', 'purple-500': '#a855f7',
-      'pink-500': '#ec4899', 'pink-600': '#db2777',
-      'cyan-500': '#06b6d4', 'cyan-600': '#0891b2',
-      'blue-500': '#3b82f6', 'blue-600': '#2563eb',
-      'indigo-600': '#4f46e5', 'indigo-500': '#6366f1',
-      'red-500': '#ef4444', 'red-600': '#dc2626',
-      'green-500': '#22c55e', 'green-600': '#16a34a',
-      'orange-500': '#f97316', 'orange-600': '#ea580c',
-    };
-    
-    const fromMatch = gradientClasses.match(/from-([a-z]+-\d+)/);
-    const viaMatch = gradientClasses.match(/via-([a-z]+-\d+)/);
-    const toMatch = gradientClasses.match(/to-([a-z]+-\d+)/);
-    
-    const fromColor = fromMatch ? colorMap[fromMatch[1]] || '#8b5cf6' : '#8b5cf6';
-    const viaColor = viaMatch ? colorMap[viaMatch[1]] : null;
-    const toColor = toMatch ? colorMap[toMatch[1]] || '#ec4899' : '#ec4899';
-    
-    if (viaColor) {
-      return `linear-gradient(135deg, ${fromColor} 0%, ${viaColor} 50%, ${toColor} 100%)`;
-    }
-    return `linear-gradient(135deg, ${fromColor} 0%, ${toColor} 100%)`;
-  };
-
-  const getBackgroundStyle = () => {
-    if (backgroundType === "image" && backgroundValue) {
-      return {
-        backgroundImage: `url(${backgroundValue})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      };
-    }
-    return {};
-  };
-
-  const getBackgroundGradient = () => {
-    if (backgroundType === "gradient") {
-      const bg = backgroundOptions.find(b => b.id === backgroundValue);
-      return bg?.gradient || backgroundOptions[0].gradient;
-    }
-    return "";
-  };
-
-  if (!profile) return null;
+  const rankTier = (profile.rank_tier || "bronze") as RankTier;
 
   return (
     <Card variant="gaming" className="overflow-hidden">
-      {/* 背景区域 - 可自定义 */}
-      <div 
+      <div
         className={cn(
           "h-48 relative flex items-center justify-center",
-          backgroundType === "gradient" && `bg-gradient-to-br ${getBackgroundGradient()}`
+          backgroundType === "gradient" && `bg-gradient-to-br ${gradientClass}`
         )}
-        style={getBackgroundStyle()}
+        style={backgroundStyle}
       >
-        {/* 自定义背景按钮 */}
-        <Dialog open={bgDialogOpen} onOpenChange={setBgDialogOpen}>
-          <DialogTrigger asChild>
-            <button className="absolute top-3 right-3 p-2 rounded-full bg-background/50 backdrop-blur-sm hover:bg-background/70 transition-all">
-              <Palette className="w-4 h-4 text-foreground/70" />
-            </button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>自定义背景</DialogTitle>
-            </DialogHeader>
-            
-            {/* 上传自定义图片 */}
-            <div className="space-y-3">
-              <div className="text-sm font-medium text-muted-foreground">上传图片</div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleUploadBackground}
-                className="hidden"
-                disabled={uploading}
-              />
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      上传中...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      选择图片
-                    </>
-                  )}
-                </Button>
-                {backgroundType === "image" && (
-                  <Button 
-                    variant="destructive" 
-                    size="icon"
-                    onClick={handleRemoveCustomBackground}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">支持 JPG、PNG、GIF、WebP，最大 5MB</p>
-            </div>
-
-            {/* 预设渐变背景 */}
-            <div className="space-y-3 mt-4">
-              <div className="text-sm font-medium text-muted-foreground">预设背景</div>
-              <div className="grid grid-cols-2 gap-3">
-                {backgroundOptions.map((bg) => (
-                  <button
-                    key={bg.id}
-                    className={cn(
-                      "h-16 rounded-lg bg-gradient-to-br transition-all",
-                      bg.gradient,
-                      backgroundType === "gradient" && backgroundValue === bg.id 
-                        ? "ring-2 ring-primary ring-offset-2 ring-offset-background" 
-                        : "hover:opacity-80"
-                    )}
-                    onClick={() => handleSelectGradient(bg.id)}
-                  >
-                    <span className="text-sm font-medium text-foreground/80 drop-shadow-md">{bg.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        
-        {/* 勋章区域 - 覆盖在图片底部 */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-1/2">
-          <div className="flex justify-center gap-4">
-            {[0, 1, 2].map((slot) => {
-              const badge = equippedBadges[slot];
-              return (
-                <Dialog 
-                  key={slot} 
-                  open={badgeDialogOpen && selectedSlot === slot} 
-                  onOpenChange={(open) => {
-                    setBadgeDialogOpen(open);
-                    if (open) setSelectedSlot(slot);
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <button
-                      className={cn(
-                        "w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all shadow-lg overflow-hidden",
-                        !badge && "border-dashed border-muted-foreground/50 bg-background/90 hover:border-primary/50"
-                      )}
-                      style={badge ? {
-                        ...getRarityBorderStyle(badge.rarity),
-                        borderWidth: "2px"
-                      } : undefined}
-                    >
-                      {badge ? (
-                        <BadgeIcon icon={badge.icon} className="w-7 h-7 text-white drop-shadow-md" />
-                      ) : (
-                        <Award className="w-5 h-5 text-muted-foreground/50" />
-                      )}
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {badge ? "更换勋章" : "选择勋章"} - 槽位 {slot + 1}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-3 max-h-[60vh] overflow-y-auto">
-                      {badge && (
-                        <Button 
-                          variant="outline" 
-                          className="w-full" 
-                          onClick={() => {
-                            handleUnequipBadge(slot);
-                            setBadgeDialogOpen(false);
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          卸下当前勋章
-                        </Button>
-                      )}
-                      {userBadges.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-8">
-                          暂无勋章，完成成就可获得勋章
-                        </div>
-                      ) : (
-                        userBadges
-                          .filter((b) => !equippedBadges.some((e) => e?.id === b.id) || b.id === badge?.id)
-                          .map((b) => {
-                            return (
-                              <Card
-                                key={b.id}
-                                className={cn(
-                                  "cursor-pointer transition-all hover:bg-secondary/50",
-                                  b.id === badge?.id && "ring-2 ring-primary"
-                                )}
-                                onClick={() => handleEquipBadge(b, slot)}
-                              >
-                                <CardContent className="p-4 flex items-center gap-3">
-                                  <div className={cn(
-                                    "w-12 h-12 rounded-full flex items-center justify-center",
-                                    "bg-gradient-to-br from-primary/20 to-accent/20"
-                                  )}>
-                                    <BadgeIcon icon={b.icon} className={cn("w-6 h-6", getRarityColor(b.rarity))} />
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="font-semibold">{b.name}</div>
-                                    <div className="text-sm text-muted-foreground">{b.description}</div>
-                                  </div>
-                                  <Badge variant="outline" className={getRarityColor(b.rarity)}>
-                                    {b.rarity}
-                                  </Badge>
-                                </CardContent>
-                              </Card>
-                            );
-                          })
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              );
-            })}
-          </div>
-        </div>
+        <BackgroundPicker
+          open={bgDialogOpen}
+          onOpenChange={setBgDialogOpen}
+          backgroundType={backgroundType}
+          backgroundValue={backgroundValue}
+          uploading={uploading}
+          onSelectGradient={handleSelectGradient}
+          onUpload={handleUploadBackground}
+          onRemoveCustom={handleRemoveCustomBackground}
+        />
+        <BadgeSlots
+          equippedBadges={equippedBadges}
+          userBadges={userBadges}
+          onEquip={handleEquipBadge}
+          onUnequip={handleUnequipBadge}
+        />
       </div>
 
-      {/* 间隔区域给勋章留空间 */}
       <div className="h-12" />
 
-      {/* 段位进度条区域 */}
       {profile.rank_tier && (
-        <div className="px-4 py-3 border-t border-border/50">
-          {(() => {
-            const currentTier = (profile.rank_tier || "bronze") as RankTier;
-            const currentStars = profile.rank_stars || 0;
-            const config = RANK_CONFIG[currentTier];
-            const tierIndex = TIER_ORDER.indexOf(currentTier);
-            const nextTier = tierIndex < TIER_ORDER.length - 1 ? TIER_ORDER[tierIndex + 1] : null;
-            const progressPercent = currentTier === "champion" 
-              ? 100 
-              : Math.min((currentStars / config.starsToPromote) * 100, 100);
-            
-            return (
-              <div className="space-y-2">
-                {/* 段位标题行 */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br",
-                      tierColors[currentTier].gradient
-                    )}>
-                      {currentTier === "champion" ? (
-                        <Crown className="w-4 h-4 text-white" />
-                      ) : (
-                        <Shield className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <div className={cn("font-gaming text-sm", tierColors[currentTier].text)}>
-                        {tierNames[currentTier]}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {currentStars} / {config.starsToPromote} 星
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* 下一段位预览 */}
-                  {nextTier && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <ChevronUp className="w-3 h-3" />
-                      <span>下一段位:</span>
-                      <span className={cn("font-gaming", tierColors[nextTier].text)}>
-                        {tierNames[nextTier]}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {currentTier === "champion" && (
-                    <Badge variant="gold" className="text-xs">
-                      <Crown className="w-3 h-3 mr-1" />
-                      最高段位
-                    </Badge>
-                  )}
-                </div>
-                
-                {/* 进度条 */}
-                <div className="relative">
-                  <div className="h-3 bg-secondary/50 rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500 bg-gradient-to-r",
-                        tierColors[currentTier].gradient
-                      )}
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                  
-                  {/* 星星标记 - 仅显示部分关键节点 */}
-                  {currentTier !== "champion" && (
-                    <div className="absolute inset-0 flex items-center">
-                      {[0.25, 0.5, 0.75].map((pos) => (
-                        <div 
-                          key={pos}
-                          className="absolute top-1/2 -translate-y-1/2"
-                          style={{ left: `${pos * 100}%` }}
-                        >
-                          <div className={cn(
-                            "w-1 h-1 rounded-full",
-                            progressPercent >= pos * 100 ? "bg-white/80" : "bg-muted-foreground/30"
-                          )} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* 段位规则提示 */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    {config.starsLostOnLose > 0 ? (
-                      <span>失败扣 {config.starsLostOnLose} 星</span>
-                    ) : (
-                      <span className="text-success">失败不扣星</span>
-                    )}
-                    {config.protectionStars > 0 && (
-                      <>
-                        <span className="text-muted-foreground/50">•</span>
-                        <span className="text-accent">{config.protectionStars} 星保护</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-accent fill-accent" />
-                    <span>胜利 +1 星</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+        <RankProgressSection rankTier={rankTier} rankStars={profile.rank_stars || 0} />
       )}
 
-      {/* 最佳记录区域 */}
-      <div className="px-4 py-3 border-t border-border/50">
-        <div className="flex items-center gap-2 mb-3">
-          <Star className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-muted-foreground">历史最佳</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {/* 最高连胜 */}
-          <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Flame className="w-4 h-4 text-success" />
-              <span className="text-xs text-muted-foreground">最高连胜</span>
-            </div>
-            <div className="text-xl font-gaming text-success">{bestRecords.bestWinStreak}</div>
-          </div>
+      <BestRecordsSection bestRecords={bestRecords} />
 
-          {/* 最高段位 */}
-          <div className={cn(
-            "p-3 rounded-lg border",
-            tierColors[bestRecords.bestRankTier].bg,
-            `border-${bestRecords.bestRankTier === 'bronze' ? 'amber' : bestRecords.bestRankTier === 'silver' ? 'gray' : bestRecords.bestRankTier === 'gold' ? 'yellow' : bestRecords.bestRankTier === 'platinum' ? 'cyan' : bestRecords.bestRankTier === 'diamond' ? 'blue' : 'purple'}-500/20`
-          )}>
-            <div className="flex items-center gap-2 mb-1">
-              <Crown className="w-4 h-4" style={{ color: tierColors[bestRecords.bestRankTier].text.replace('text-', '').replace('-400', '').replace('-500', '') }} />
-              <span className="text-xs text-muted-foreground">最高段位</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={cn("text-lg font-gaming", tierColors[bestRecords.bestRankTier].text)}>
-                {tierNames[bestRecords.bestRankTier]}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {bestRecords.bestRankStars}星
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 底部区域：用户名 + 名片区 */}
-      <div className="border-t border-border/50">
-        <div className="flex">
-          {/* 用户名区域 - 可编辑 */}
-          <Dialog open={profileEditDialogOpen} onOpenChange={(open) => {
-            setProfileEditDialogOpen(open);
-            if (open) setEditUsername(profile.username);
-          }}>
-            <DialogTrigger asChild>
-              <div className="flex-1 p-4 flex items-center gap-2 cursor-pointer hover:bg-secondary/30 transition-all">
-                <div className="font-gaming text-lg">{profile.username}</div>
-                <Pencil className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </DialogTrigger>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>编辑个人信息</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">用户名</Label>
-                  <Input
-                    id="username"
-                    value={editUsername}
-                    onChange={(e) => setEditUsername(e.target.value)}
-                    placeholder="输入用户名"
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-muted-foreground">最多20个字符</p>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setProfileEditDialogOpen(false)}>
-                    取消
-                  </Button>
-                  <Button onClick={handleSaveProfile} disabled={savingProfile}>
-                    {savingProfile ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        保存中...
-                      </>
-                    ) : (
-                      "保存"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* 名片区域 */}
-          <Dialog open={nameCardDialogOpen} onOpenChange={setNameCardDialogOpen}>
-            <DialogTrigger asChild>
-              <div 
-                className={cn(
-                  "flex-1 p-4 cursor-pointer border-l border-border/50 hover:bg-secondary/30 transition-all",
-                  equippedNameCard && "relative overflow-hidden"
-                )}
-                style={equippedNameCard ? {
-                  background: getNameCardGradientStyle(equippedNameCard.background_gradient),
-                } : undefined}
-              >
-                <div className="flex items-center gap-2 relative z-10">
-                  {equippedNameCard ? (
-                    <>
-                      <BadgeIcon icon={equippedNameCard.icon || "Award"} className="w-6 h-6 text-white" />
-                      <div>
-                        <div className="text-sm font-gaming text-white">{equippedNameCard.name}</div>
-                        {equippedNameCard.rank_position && (
-                          <div className="text-xs text-white/80">#{equippedNameCard.rank_position}</div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Award className="w-5 h-5 text-primary" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">名片区</div>
-                        <div className="text-sm text-muted-foreground">可佩戴自己获得的名片</div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>选择名片</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-1">
-                {equippedNameCard && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={handleUnequipNameCard}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    卸下当前名片
-                  </Button>
-                )}
-                
-                {/* 已拥有的名片 */}
-                {userNameCards.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground font-medium">已获得 ({userNameCards.length})</div>
-                    {userNameCards.map((card) => {
-                      const isCustomGradient = card.background_gradient?.startsWith('linear-gradient');
-                      return (
-                        <Card
-                          key={card.id}
-                          className={cn(
-                            "cursor-pointer transition-all hover:scale-[1.02]",
-                            !isCustomGradient && `bg-gradient-to-r ${card.background_gradient}`,
-                            card.is_equipped && "ring-2 ring-white"
-                          )}
-                          style={isCustomGradient ? { background: card.background_gradient } : undefined}
-                          onClick={() => handleEquipNameCard(card)}
-                        >
-                          <CardContent className="p-4 flex items-center gap-3 text-white">
-                            <BadgeIcon icon={card.icon || "Award"} className="w-8 h-8" />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-gaming text-lg">{card.name}</span>
-                                <Badge variant="outline" className={cn("text-xs border-white/30", rarityColors[card.rarity])}>
-                                  {rarityLabels[card.rarity] || card.rarity}
-                                </Badge>
-                              </div>
-                              <div className="text-sm opacity-80">{card.description}</div>
-                            </div>
-                            {card.rank_position && (
-                              <Badge variant="secondary">第{card.rank_position}名</Badge>
-                            )}
-                            {card.is_equipped && <Check className="w-6 h-6" />}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* 未解锁的名片 */}
-                {allNameCards.filter(c => !c.is_owned).length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <div className="text-sm text-muted-foreground font-medium">未解锁</div>
-                    {allNameCards.filter(c => !c.is_owned).map((card) => {
-                      const isCustomGradient = card.background_gradient?.startsWith('linear-gradient');
-                      return (
-                        <Card
-                          key={card.id}
-                          className="transition-all opacity-60 grayscale relative overflow-hidden"
-                          style={isCustomGradient ? { background: card.background_gradient } : undefined}
-                        >
-                          {!isCustomGradient && (
-                            <div className={cn("absolute inset-0 bg-gradient-to-r", card.background_gradient)} />
-                          )}
-                          <CardContent className="p-4 flex items-center gap-3 text-white relative z-10">
-                            <BadgeIcon icon={card.icon || "Award"} className="w-8 h-8 opacity-50" />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-gaming text-lg">{card.name}</span>
-                                <Badge variant="outline" className={cn("text-xs border-white/30", rarityColors[card.rarity])}>
-                                  {rarityLabels[card.rarity] || card.rarity}
-                                </Badge>
-                              </div>
-                              <div className="text-sm opacity-60 flex items-center gap-1">
-                                <Shield className="w-3 h-3" />
-                                {getUnlockCondition(card)}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {allNameCards.length === 0 && (
-                  <div className="text-center text-muted-foreground py-8">
-                    加载名片中...
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+      <ProfileFooterSection
+        username={profile.username}
+        equippedNameCard={equippedNameCard}
+        userNameCards={userNameCards}
+        allNameCards={allNameCards}
+        editUsername={editUsername}
+        setEditUsername={setEditUsername}
+        profileEditOpen={profileEditOpen}
+        setProfileEditOpen={setProfileEditOpen}
+        savingProfile={savingProfile}
+        onSaveProfile={handleSaveProfile}
+        onEquipNameCard={handleEquipNameCard}
+        onUnequipNameCard={handleUnequipNameCard}
+      />
     </Card>
   );
 };

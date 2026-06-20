@@ -139,6 +139,9 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
         setCurrentIndex(prev => prev + 1);
       } else {
         setPhase("result");
+        if (profile) {
+          queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
+        }
       }
     }, 1500);
   };

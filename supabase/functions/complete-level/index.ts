@@ -110,6 +110,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 自动判定徽章解锁
+    await admin.rpc("award_badges_for_profile", { p_id: profile.id });
+
+
     return json({
       ok: true,
       xpGained,

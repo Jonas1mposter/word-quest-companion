@@ -62,6 +62,7 @@ interface Word {
 
 const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningProps) => {
   const { profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const sounds = useMatchSounds();
   const [words, setWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(true);

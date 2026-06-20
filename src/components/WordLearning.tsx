@@ -413,6 +413,10 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
         ]);
 
         await refreshProfile();
+        // 失效关卡解锁所需的学习进度缓存，确保返回关卡列表能看到下一关解锁
+        queryClient.invalidateQueries({ queryKey: ["learning-progress", profile.id] });
+        queryClient.invalidateQueries({ queryKey: ["math-learning-progress", profile.id] });
+        queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
       } catch (error) {
         console.error("Error finishing level:", error);
       }

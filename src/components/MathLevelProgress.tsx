@@ -94,7 +94,7 @@ const MathLevelProgress = ({ onSelectLevel }: MathLevelProgressProps) => {
       .forEach((topic) => {
         const words = topicGroups[topic];
         const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-        const isUnlocked = previousUnlocked;
+        const isUnlocked = true;
 
         units.push({
           topic,
@@ -130,24 +130,13 @@ const MathLevelProgress = ({ onSelectLevel }: MathLevelProgressProps) => {
     return subLevels;
   };
 
-  const getSubLevelStatus = (words: MathWord[], topicUnlocked: boolean, subLevelIndex: number, allSubLevels: MathWord[][]) => {
-    if (!topicUnlocked) return "locked";
-    
+  const getSubLevelStatus = (words: MathWord[], _topicUnlocked: boolean, _subLevelIndex: number, _allSubLevels: MathWord[][]): "available" | "completed" | "needs_retry" | "locked" => {
     const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
     const ratio = completedCount / words.length;
     const hasTwoStars = ratio >= 0.7;
-    
     if (completedCount === words.length && hasTwoStars) return "completed";
     if (completedCount === words.length && !hasTwoStars) return "needs_retry";
-    
-    if (subLevelIndex === 0) return "available";
-    
-    const prevSubLevel = allSubLevels[subLevelIndex - 1];
-    const prevCompletedCount = prevSubLevel.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-    const prevRatio = prevCompletedCount / prevSubLevel.length;
-    const prevHasTwoStars = prevRatio >= 0.7;
-    
-    return prevCompletedCount === prevSubLevel.length && prevHasTwoStars ? "available" : "locked";
+    return "available";
   };
 
   const getSubLevelStars = (words: MathWord[]) => {

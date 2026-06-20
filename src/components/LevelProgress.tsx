@@ -132,7 +132,7 @@ const LevelProgress = ({ grade, onSelectLevel }: LevelProgressProps) => {
       const words = letterGroups[letter] || [];
       if (words.length > 0) {
         const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-        const isUnlocked = previousUnlocked;
+        const isUnlocked = true; // 全部解锁
 
         units.push({
           letter,
@@ -169,28 +169,14 @@ const LevelProgress = ({ grade, onSelectLevel }: LevelProgressProps) => {
     return subLevels;
   };
 
-  // 获取小关卡状态 - 需要至少2星才能解锁下一关
-  const getSubLevelStatus = (words: Word[], letterUnlocked: boolean, subLevelIndex: number, allSubLevels: Word[][]) => {
-    if (!letterUnlocked) return "locked";
-    
+  // 全部小关卡解锁
+  const getSubLevelStatus = (words: Word[], _letterUnlocked: boolean, _subLevelIndex: number, _allSubLevels: Word[][]): "available" | "completed" | "needs_retry" | "locked" => {
     const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
     const ratio = completedCount / words.length;
-    
-    // 判断是否达到2星标准（70%正确率）
     const hasTwoStars = ratio >= 0.7;
-    
     if (completedCount === words.length && hasTwoStars) return "completed";
-    if (completedCount === words.length && !hasTwoStars) return "needs_retry"; // 完成但星级不够
-    
-    // 检查前一个小关卡是否完成且达到2星
-    if (subLevelIndex === 0) return "available";
-    
-    const prevSubLevel = allSubLevels[subLevelIndex - 1];
-    const prevCompletedCount = prevSubLevel.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-    const prevRatio = prevCompletedCount / prevSubLevel.length;
-    const prevHasTwoStars = prevRatio >= 0.7;
-    
-    return prevCompletedCount === prevSubLevel.length && prevHasTwoStars ? "available" : "locked";
+    if (completedCount === words.length && !hasTwoStars) return "needs_retry";
+    return "available";
   };
 
   // 获取小关卡星星数

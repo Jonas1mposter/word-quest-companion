@@ -1923,6 +1923,10 @@ export type Database = {
         Returns: string
       }
       gacha_draw: { Args: { p_count: number }; Returns: Json }
+      handle_team_join_request: {
+        Args: { _accept: boolean; _request_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

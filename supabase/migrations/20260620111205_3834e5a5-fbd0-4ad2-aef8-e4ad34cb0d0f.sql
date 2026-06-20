@@ -1,0 +1,2 @@
+ALTER TABLE public.ranked_matches REPLICA IDENTITY FULL;
+ALTER TABLE public.match_answers REPLICA IDENTITY FULL;

@@ -45,6 +45,7 @@ const App = () => {
               <Route path="/support" element={<Support />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/product-ppt" element={<ProductPPT />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

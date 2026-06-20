@@ -85,6 +85,12 @@ Deno.serve(async (req) => {
           updates.push(admin.from("profiles").update(patch).eq("id", pp.id));
         }
         await Promise.all(updates);
+
+        // 自动判定徽章解锁
+        await Promise.all([
+          admin.rpc("award_badges_for_profile", { p_id: p1p.id }),
+          admin.rpc("award_badges_for_profile", { p_id: p2p.id }),
+        ]);
       }
     }
 

@@ -926,6 +926,7 @@ export type Database = {
           description: string | null
           icon: string
           id: string
+          in_gacha_pool: boolean
           name: string
           rarity: string
         }
@@ -936,6 +937,7 @@ export type Database = {
           description?: string | null
           icon?: string
           id?: string
+          in_gacha_pool?: boolean
           name: string
           rarity?: string
         }
@@ -946,6 +948,7 @@ export type Database = {
           description?: string | null
           icon?: string
           id?: string
+          in_gacha_pool?: boolean
           name?: string
           rarity?: string
         }
@@ -1908,6 +1911,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_badges_for_profile: { Args: { p_id: string }; Returns: number }
       find_match: {
         Args: {
           _elo_rating: number
@@ -1918,6 +1922,7 @@ export type Database = {
         }
         Returns: string
       }
+      gacha_draw: { Args: { p_count: number }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

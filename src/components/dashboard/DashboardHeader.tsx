@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { Crown, GraduationCap, LogOut, User } from "lucide-react";
+import { Crown, GraduationCap, LogOut, ShoppingBag, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const logoDashboard = "/placeholder.svg";
@@ -41,6 +41,10 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             )}
             {user && (
               <>
+                <Button variant="outline" size="sm" onClick={() => navigate('/shop')}
+                  className="border-amber-400/60 text-amber-400 hover:bg-amber-400/10">
+                  <ShoppingBag className="w-4 h-4 mr-2" />商城
+                </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}
                     className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">

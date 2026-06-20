@@ -15,6 +15,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Support from "./pages/Support";
 import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
+import Shop from "./pages/Shop";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => {
               <Route path="/support" element={<Support />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/product-ppt" element={<ProductPPT />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

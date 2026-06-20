@@ -15,6 +15,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Support from "./pages/Support";
 import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
+import Shop from "./pages/Shop";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

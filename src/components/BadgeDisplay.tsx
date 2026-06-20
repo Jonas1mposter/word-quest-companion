@@ -109,8 +109,16 @@ const BadgeDisplay = () => {
   }, [profile]);
 
   useEffect(() => {
-    fetchBadges();
-  }, [fetchBadges]);
+    let cancelled = false;
+    (async () => {
+      if (profile?.id) {
+        await checkAndAwardBadges();
+      }
+      if (!cancelled) await fetchBadges();
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

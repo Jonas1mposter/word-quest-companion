@@ -139,6 +139,9 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
         setCurrentIndex(prev => prev + 1);
       } else {
         setPhase("result");
+        if (profile) {
+          queryClient.invalidateQueries({ queryKey: ["math-learning-progress", profile.id] });
+        }
       }
     }, 1500);
   };

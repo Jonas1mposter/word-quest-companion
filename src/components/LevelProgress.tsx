@@ -170,7 +170,7 @@ const LevelProgress = ({ grade, onSelectLevel }: LevelProgressProps) => {
   };
 
   // 全部小关卡解锁
-  const getSubLevelStatus = (words: Word[], _letterUnlocked: boolean, _subLevelIndex: number, _allSubLevels: Word[][]) => {
+  const getSubLevelStatus = (words: Word[], _letterUnlocked: boolean, _subLevelIndex: number, _allSubLevels: Word[][]): "available" | "completed" | "needs_retry" | "locked" => {
     const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
     const ratio = completedCount / words.length;
     const hasTwoStars = ratio >= 0.7;

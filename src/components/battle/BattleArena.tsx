@@ -96,6 +96,7 @@ const BattleArena = ({
   const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPlayer1Ref = useRef(false);
 
   const generateOptions = useCallback((words: Word[], idx: number) => {

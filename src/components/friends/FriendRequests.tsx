@@ -78,7 +78,7 @@ export const FriendRequests = ({ currentProfileId }: FriendRequestsProps) => {
     try {
       const { error: updateError } = await supabase
         .from("friend_requests")
-        .update({ status: accept ? "accepted" : "rejected", updated_at: new Date().toISOString() })
+        .update({ status: accept ? "accepted" : "rejected" })
         .eq("id", requestId);
 
       if (updateError) throw updateError;

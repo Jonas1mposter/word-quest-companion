@@ -205,32 +205,20 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
     }
   };
 
-  const handleRequest = async (requestId: string, accept: boolean, teamId: string, requestProfileId: string) => {
+  const handleRequest = async (requestId: string, accept: boolean, _teamId: string, _requestProfileId: string) => {
     try {
-      if (accept) {
-        // Check member count
-        const { count } = await supabase
-          .from('team_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', teamId);
-
-        if ((count || 0) >= (myTeam?.max_members || 10)) {
-          toast.error('战队已满');
-          return;
-        }
-
-        await supabase.from('team_members').insert({
-          team_id: teamId,
-          profile_id: requestProfileId,
-          role: 'member',
-        });
+      const { error } = await supabase.rpc('handle_team_join_request', {
+        _request_id: requestId,
+        _accept: accept,
+      });
+      if (error) {
+        const msg = error.message || '';
+        if (msg.includes('team is full')) toast.error('战队已满');
+        else if (msg.includes('already handled')) toast.error('该申请已处理');
+        else if (msg.includes('only captain')) toast.error('只有队长可以审批');
+        else toast.error('操作失败');
+        return;
       }
-
-      await supabase
-        .from('team_join_requests')
-        .update({ status: accept ? 'accepted' : 'rejected' })
-        .eq('id', requestId);
-
       toast.success(accept ? '已接受' : '已拒绝');
       loadTeamData();
     } catch {

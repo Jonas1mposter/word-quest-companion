@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +34,7 @@ type Phase = "learn" | "quiz" | "result";
 const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: ScienceWordLearningProps) => {
   const { profile } = useAuth();
   const { speak } = useSpeech();
+  const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
   
   const [phase, setPhase] = useState<Phase>("learn");
@@ -137,6 +139,9 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
         setCurrentIndex(prev => prev + 1);
       } else {
         setPhase("result");
+        if (profile) {
+          queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
+        }
       }
     }, 1500);
   };

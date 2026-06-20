@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
@@ -61,6 +62,7 @@ interface Word {
 
 const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningProps) => {
   const { profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const sounds = useMatchSounds();
   const [words, setWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(true);
@@ -411,6 +413,10 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
         ]);
 
         await refreshProfile();
+        // 失效关卡解锁所需的学习进度缓存，确保返回关卡列表能看到下一关解锁
+        queryClient.invalidateQueries({ queryKey: ["learning-progress", profile.id] });
+        queryClient.invalidateQueries({ queryKey: ["math-learning-progress", profile.id] });
+        queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
       } catch (error) {
         console.error("Error finishing level:", error);
       }

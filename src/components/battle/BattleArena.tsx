@@ -96,6 +96,7 @@ const BattleArena = ({
   const winnerIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPlayer1Ref = useRef(false);
 
   const generateOptions = useCallback((words: Word[], idx: number) => {
@@ -135,6 +136,26 @@ const BattleArena = ({
       })
       .subscribe();
     channelRef.current = channel;
+
+    // 兜底：实时事件可能丢失，定期回拉对方分数与比赛状态
+    const pollId = window.setInterval(async () => {
+      if (matchEndedRef.current) return;
+      const { data: m } = await supabase
+        .from('ranked_matches')
+        .select('player1_score, player2_score, status, winner_id')
+        .eq('id', matchId)
+        .single();
+      if (!m) return;
+      const oppScore = isPlayer1Ref.current ? m.player2_score : m.player1_score;
+      setOpponentScore(prev => (oppScore > prev ? oppScore : prev));
+      if (m.winner_id) winnerIdRef.current = m.winner_id;
+      if (m.status === 'completed' && !matchEndedRef.current) {
+        matchEndedRef.current = true;
+        setPhase("result");
+      }
+    }, 2000);
+    pollRef.current = pollId;
+
     setPhase("countdown");
   }, [profile, generateOptions]);
 
@@ -162,6 +183,7 @@ const BattleArena = ({
       leaveQueue();
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);

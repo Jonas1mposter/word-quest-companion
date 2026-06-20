@@ -1,1 +1,4 @@
 project_id = "xsfuyevlhamssomxqvwl"
+
+[functions.init-storage]
+verify_jwt = false

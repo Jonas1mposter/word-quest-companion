@@ -41,6 +41,10 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             )}
             {user && (
               <>
+                <Button variant="outline" size="sm" onClick={() => navigate('/shop')}
+                  className="border-amber-400/60 text-amber-400 hover:bg-amber-400/10">
+                  <ShoppingBag className="w-4 h-4 mr-2" />商城
+                </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}
                     className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">

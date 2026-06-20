@@ -34,6 +34,7 @@ type Phase = "learn" | "quiz" | "result";
 const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: MathWordLearningProps) => {
   const { profile } = useAuth();
   const { speak } = useSpeech();
+  const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
   
   const [phase, setPhase] = useState<Phase>("learn");

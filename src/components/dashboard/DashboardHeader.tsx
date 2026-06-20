@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { Crown, GraduationCap, LogOut, User } from "lucide-react";
+import { Crown, GraduationCap, LogOut, ShoppingBag, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const logoDashboard = "/placeholder.svg";

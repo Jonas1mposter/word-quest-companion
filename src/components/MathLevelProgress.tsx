@@ -94,7 +94,7 @@ const MathLevelProgress = ({ onSelectLevel }: MathLevelProgressProps) => {
       .forEach((topic) => {
         const words = topicGroups[topic];
         const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-        const isUnlocked = previousUnlocked;
+        const isUnlocked = true;
 
         units.push({
           topic,

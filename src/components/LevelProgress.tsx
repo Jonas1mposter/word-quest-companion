@@ -132,7 +132,7 @@ const LevelProgress = ({ grade, onSelectLevel }: LevelProgressProps) => {
       const words = letterGroups[letter] || [];
       if (words.length > 0) {
         const completedCount = words.filter(w => userProgress[w.id]?.mastery_level >= 1).length;
-        const isUnlocked = previousUnlocked;
+        const isUnlocked = true; // 全部解锁
 
         units.push({
           letter,

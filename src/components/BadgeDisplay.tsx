@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBadgeChecker } from "@/hooks/useBadgeChecker";
@@ -51,6 +51,19 @@ const categoryLabels: Record<string, string> = {
   hidden: "隐藏",
 };
 
+// Rarity rank: higher = more prestigious. Used for stable, deterministic ordering.
+const rarityRank: Record<string, number> = {
+  mythology: 6,
+  hidden: 5,
+  legendary: 4,
+  epic: 3,
+  rare: 2,
+  common: 1,
+};
+
+type FilterStatus = "all" | "earned" | "locked";
+type FilterRarity = "all" | "mythology" | "hidden" | "legendary" | "epic" | "rare" | "common";
+
 // Check if rarity is mythology (red animated glow)
 const isMythology = (rarity: string) => rarity === "mythology";
 // Check if rarity is hidden (rainbow shimmer, no pulse)
@@ -69,12 +82,13 @@ const BadgeDisplay = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [rarityFilter, setRarityFilter] = useState<FilterRarity>("all");
+
   const fetchBadges = useCallback(async () => {
-    // Fetch all badges
     const { data: allBadges, error: badgesError } = await supabase
       .from("badges")
-      .select("*")
-      .order("rarity", { ascending: false });
+      .select("*");
 
     if (badgesError) {
       console.error("Error fetching badges:", badgesError);
@@ -82,7 +96,6 @@ const BadgeDisplay = () => {
       return;
     }
 
-    // Fetch user's earned badges if logged in
     let earnedBadgesMap: Record<string, string> = {};
     if (profile) {
       const { data: userBadges } = await supabase
@@ -97,12 +110,27 @@ const BadgeDisplay = () => {
       }
     }
 
-    // Mark earned badges with earned time
-    const badgesWithStatus = allBadges?.map(badge => ({
+    const badgesWithStatus: BadgeItem[] = (allBadges || []).map(badge => ({
       ...badge,
       earned: badge.id in earnedBadgesMap,
       earnedAt: earnedBadgesMap[badge.id] || undefined,
-    })) || [];
+    }));
+
+    // Stable, deterministic sort:
+    // 1) earned first (so unlocked achievements bubble up)
+    // 2) higher rarity rank first
+    // 3) category alphabetical
+    // 4) name alphabetical (zh-collation)
+    badgesWithStatus.sort((a, b) => {
+      if ((a.earned ? 1 : 0) !== (b.earned ? 1 : 0)) {
+        return a.earned ? -1 : 1;
+      }
+      const ra = rarityRank[a.rarity] ?? 0;
+      const rb = rarityRank[b.rarity] ?? 0;
+      if (ra !== rb) return rb - ra;
+      if (a.category !== b.category) return a.category.localeCompare(b.category);
+      return a.name.localeCompare(b.name, "zh-Hans-CN");
+    });
 
     setBadges(badgesWithStatus);
     setLoading(false);
@@ -128,6 +156,17 @@ const BadgeDisplay = () => {
   };
 
   const earnedCount = badges.filter(b => b.earned).length;
+
+  const visibleBadges = useMemo(() => {
+    return badges.filter(b => {
+      if (statusFilter === "earned" && !b.earned) return false;
+      if (statusFilter === "locked" && b.earned) return false;
+      if (rarityFilter !== "all" && b.rarity !== rarityFilter) return false;
+      return true;
+    });
+  }, [badges, statusFilter, rarityFilter]);
+
+  const rarityFilterOptions: FilterRarity[] = ["all", "mythology", "hidden", "legendary", "epic", "rare", "common"];
 
   if (loading) {
     return (
@@ -167,8 +206,41 @@ const BadgeDisplay = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex gap-1">
+            {(["all", "earned", "locked"] as FilterStatus[]).map(s => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === "all" ? "全部" : s === "earned" ? "已获得" : "未解锁"}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {rarityFilterOptions.map(r => (
+              <Button
+                key={r}
+                size="sm"
+                variant={rarityFilter === r ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setRarityFilter(r)}
+              >
+                {r === "all" ? "全稀有度" : rarityLabels[r]}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-5 gap-3">
-          {badges.map((badge) => {
+          {visibleBadges.length === 0 && (
+            <div className="col-span-5 text-center text-sm text-muted-foreground py-8">
+              没有符合筛选条件的徽章
+            </div>
+          )}
+          {visibleBadges.map((badge) => {
             const isEarned = badge.earned;
             const isMythologyBadge = isMythology(badge.rarity);
             const isHiddenBadge = isHidden(badge.rarity);

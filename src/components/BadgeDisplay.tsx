@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBadgeChecker } from "@/hooks/useBadgeChecker";
@@ -51,6 +51,19 @@ const categoryLabels: Record<string, string> = {
   hidden: "隐藏",
 };
 
+// Rarity rank: higher = more prestigious. Used for stable, deterministic ordering.
+const rarityRank: Record<string, number> = {
+  mythology: 6,
+  hidden: 5,
+  legendary: 4,
+  epic: 3,
+  rare: 2,
+  common: 1,
+};
+
+type FilterStatus = "all" | "earned" | "locked";
+type FilterRarity = "all" | "mythology" | "hidden" | "legendary" | "epic" | "rare" | "common";
+
 // Check if rarity is mythology (red animated glow)
 const isMythology = (rarity: string) => rarity === "mythology";
 // Check if rarity is hidden (rainbow shimmer, no pulse)
@@ -69,12 +82,13 @@ const BadgeDisplay = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [rarityFilter, setRarityFilter] = useState<FilterRarity>("all");
+
   const fetchBadges = useCallback(async () => {
-    // Fetch all badges
     const { data: allBadges, error: badgesError } = await supabase
       .from("badges")
-      .select("*")
-      .order("rarity", { ascending: false });
+      .select("*");
 
     if (badgesError) {
       console.error("Error fetching badges:", badgesError);
@@ -82,7 +96,6 @@ const BadgeDisplay = () => {
       return;
     }
 
-    // Fetch user's earned badges if logged in
     let earnedBadgesMap: Record<string, string> = {};
     if (profile) {
       const { data: userBadges } = await supabase
@@ -97,12 +110,27 @@ const BadgeDisplay = () => {
       }
     }
 
-    // Mark earned badges with earned time
-    const badgesWithStatus = allBadges?.map(badge => ({
+    const badgesWithStatus: BadgeItem[] = (allBadges || []).map(badge => ({
       ...badge,
       earned: badge.id in earnedBadgesMap,
       earnedAt: earnedBadgesMap[badge.id] || undefined,
-    })) || [];
+    }));
+
+    // Stable, deterministic sort:
+    // 1) earned first (so unlocked achievements bubble up)
+    // 2) higher rarity rank first
+    // 3) category alphabetical
+    // 4) name alphabetical (zh-collation)
+    badgesWithStatus.sort((a, b) => {
+      if ((a.earned ? 1 : 0) !== (b.earned ? 1 : 0)) {
+        return a.earned ? -1 : 1;
+      }
+      const ra = rarityRank[a.rarity] ?? 0;
+      const rb = rarityRank[b.rarity] ?? 0;
+      if (ra !== rb) return rb - ra;
+      if (a.category !== b.category) return a.category.localeCompare(b.category);
+      return a.name.localeCompare(b.name, "zh-Hans-CN");
+    });
 
     setBadges(badgesWithStatus);
     setLoading(false);

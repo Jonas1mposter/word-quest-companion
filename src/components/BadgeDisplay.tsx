@@ -157,6 +157,17 @@ const BadgeDisplay = () => {
 
   const earnedCount = badges.filter(b => b.earned).length;
 
+  const visibleBadges = useMemo(() => {
+    return badges.filter(b => {
+      if (statusFilter === "earned" && !b.earned) return false;
+      if (statusFilter === "locked" && b.earned) return false;
+      if (rarityFilter !== "all" && b.rarity !== rarityFilter) return false;
+      return true;
+    });
+  }, [badges, statusFilter, rarityFilter]);
+
+  const rarityFilterOptions: FilterRarity[] = ["all", "mythology", "hidden", "legendary", "epic", "rare", "common"];
+
   if (loading) {
     return (
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -195,8 +206,41 @@ const BadgeDisplay = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex gap-1">
+            {(["all", "earned", "locked"] as FilterStatus[]).map(s => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === "all" ? "全部" : s === "earned" ? "已获得" : "未解锁"}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {rarityFilterOptions.map(r => (
+              <Button
+                key={r}
+                size="sm"
+                variant={rarityFilter === r ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setRarityFilter(r)}
+              >
+                {r === "all" ? "全稀有度" : rarityLabels[r]}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-5 gap-3">
-          {badges.map((badge) => {
+          {visibleBadges.length === 0 && (
+            <div className="col-span-5 text-center text-sm text-muted-foreground py-8">
+              没有符合筛选条件的徽章
+            </div>
+          )}
+          {visibleBadges.map((badge) => {
             const isEarned = badge.earned;
             const isMythologyBadge = isMythology(badge.rarity);
             const isHiddenBadge = isHidden(badge.rarity);

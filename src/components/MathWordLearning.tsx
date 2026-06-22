@@ -217,6 +217,10 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setCombo(0);
+    setMaxCombo(0);
+    setXpEarned(0);
+    setCoinsEarned(0);
     setShowMeaning(false);
     setLearnedWords(new Set());
   };

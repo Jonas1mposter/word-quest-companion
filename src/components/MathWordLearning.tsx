@@ -100,6 +100,49 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
     }
   };
 
+  const finishLevel = async (finalCorrect: number) => {
+    const accuracy = words.length > 0 ? finalCorrect / words.length : 0;
+    const baseXp = 5;
+    const baseCoins = 2;
+    setXpEarned(baseXp + Math.floor(accuracy * 5));
+    setCoinsEarned(baseCoins + (accuracy === 1 ? 3 : Math.floor(accuracy * 2)));
+    setPhase("result");
+
+    if (profile) {
+      try {
+        const { data, error } = await supabase.functions.invoke("complete-level", {
+          body: {
+            levelId: `MATH-${levelId}`,
+            levelName,
+            totalWords: words.length,
+            correctCount: finalCorrect,
+            maxCombo,
+            isLetterLevel: false,
+          },
+        });
+        if (error || (data && data.error)) {
+          console.error("complete-level failed", error || data?.error);
+        } else if (data) {
+          setXpEarned(data.xpGained ?? xpEarned);
+          setCoinsEarned(data.coinsGained ?? coinsEarned);
+          if (data.leveledUp) toast.success(`🎉 升级了！现在是 Lv.${data.newLevel}！`);
+        }
+        await supabase.functions.invoke("increment-quest-progress", {
+          body: { questType: "learn", amount: 1 },
+        });
+        if (finalCorrect > 0) {
+          await supabase.functions.invoke("increment-quest-progress", {
+            body: { questType: "words", amount: finalCorrect },
+          });
+        }
+        await refreshProfile();
+        queryClient.invalidateQueries({ queryKey: ["math-learning-progress", profile.id] });
+      } catch (err) {
+        console.error("Error finishing level:", err);
+      }
+    }
+  };
+
   const handleQuizAnswer = async (answer: string) => {
     if (isAnswered) return;
     
@@ -107,45 +150,64 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
     setIsAnswered(true);
     
     const isCorrect = answer === currentWord.meaning;
+    let nextCorrect = correctCount;
     
     if (isCorrect) {
-      setCorrectCount(prev => prev + 1);
+      nextCorrect = correctCount + 1;
+      setCorrectCount(nextCorrect);
+      setCombo(prev => {
+        const next = prev + 1;
+        if (next > maxCombo) setMaxCombo(next);
+        return next;
+      });
     } else {
       setIncorrectCount(prev => prev + 1);
+      setCombo(0);
     }
 
-    // Save progress to database
+    // Save per-word progress without regressing mastery or accumulated counts
     if (profile) {
       try {
-        const { error } = await supabase
+        const { data: existing } = await supabase
           .from("math_learning_progress")
-          .upsert({
+          .select("id, mastery_level, correct_count, incorrect_count")
+          .eq("profile_id", profile.id)
+          .eq("word_id", currentWord.id)
+          .maybeSingle();
+
+        const nowIso = new Date().toISOString();
+        if (existing) {
+          await supabase
+            .from("math_learning_progress")
+            .update({
+              mastery_level: Math.max(existing.mastery_level ?? 0, isCorrect ? 1 : 0),
+              correct_count: (existing.correct_count ?? 0) + (isCorrect ? 1 : 0),
+              incorrect_count: (existing.incorrect_count ?? 0) + (isCorrect ? 0 : 1),
+              last_reviewed_at: nowIso,
+              updated_at: nowIso,
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("math_learning_progress").insert({
             profile_id: profile.id,
             word_id: currentWord.id,
             mastery_level: isCorrect ? 1 : 0,
             correct_count: isCorrect ? 1 : 0,
             incorrect_count: isCorrect ? 0 : 1,
-            last_reviewed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: "profile_id,word_id",
+            last_reviewed_at: nowIso,
+            updated_at: nowIso,
           });
-        
-        if (error) console.error("Failed to save progress:", error);
+        }
       } catch (err) {
         console.error("Error saving progress:", err);
       }
     }
 
-    // Auto advance after delay
     setTimeout(() => {
       if (currentIndex < words.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
-        setPhase("result");
-        if (profile) {
-          queryClient.invalidateQueries({ queryKey: ["math-learning-progress", profile.id] });
-        }
+        finishLevel(nextCorrect);
       }
     }, 1500);
   };

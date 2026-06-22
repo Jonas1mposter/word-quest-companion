@@ -453,6 +453,14 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
             </div>
           </div>
 
+          {/* Rewards */}
+          <div className="flex justify-center gap-6 text-sm">
+            <span className="text-neon-cyan">+{xpEarned} XP</span>
+            <span className="text-accent">+{coinsEarned} 金币</span>
+            {maxCombo >= 3 && <span className="text-orange-400">连击 x{maxCombo}</span>}
+          </div>
+
+
           {/* Actions */}
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={handleRetry}>

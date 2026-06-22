@@ -32,7 +32,7 @@ interface ScienceWordLearningProps {
 type Phase = "learn" | "quiz" | "result";
 
 const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: ScienceWordLearningProps) => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { speak } = useSpeech();
   const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
@@ -42,6 +42,10 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   const [showMeaning, setShowMeaning] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const [quizOptions, setQuizOptions] = useState<string[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -96,6 +100,49 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
     }
   };
 
+  const finishLevel = async (finalCorrect: number) => {
+    const accuracy = words.length > 0 ? finalCorrect / words.length : 0;
+    const baseXp = 5;
+    const baseCoins = 2;
+    setXpEarned(baseXp + Math.floor(accuracy * 5));
+    setCoinsEarned(baseCoins + (accuracy === 1 ? 3 : Math.floor(accuracy * 2)));
+    setPhase("result");
+
+    if (profile) {
+      try {
+        const { data, error } = await supabase.functions.invoke("complete-level", {
+          body: {
+            levelId: `SCI-${levelId}`,
+            levelName,
+            totalWords: words.length,
+            correctCount: finalCorrect,
+            maxCombo,
+            isLetterLevel: false,
+          },
+        });
+        if (error || (data && data.error)) {
+          console.error("complete-level failed", error || data?.error);
+        } else if (data) {
+          setXpEarned(data.xpGained ?? xpEarned);
+          setCoinsEarned(data.coinsGained ?? coinsEarned);
+          if (data.leveledUp) toast.success(`🎉 升级了！现在是 Lv.${data.newLevel}！`);
+        }
+        await supabase.functions.invoke("increment-quest-progress", {
+          body: { questType: "learn", amount: 1 },
+        });
+        if (finalCorrect > 0) {
+          await supabase.functions.invoke("increment-quest-progress", {
+            body: { questType: "words", amount: finalCorrect },
+          });
+        }
+        await refreshProfile();
+        queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
+      } catch (err) {
+        console.error("Error finishing level:", err);
+      }
+    }
+  };
+
   const handleQuizAnswer = async (answer: string) => {
     if (isAnswered) return;
     
@@ -103,45 +150,63 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
     setIsAnswered(true);
     
     const isCorrect = answer === currentWord.meaning;
+    let nextCorrect = correctCount;
     
     if (isCorrect) {
-      setCorrectCount(prev => prev + 1);
+      nextCorrect = correctCount + 1;
+      setCorrectCount(nextCorrect);
+      setCombo(prev => {
+        const next = prev + 1;
+        if (next > maxCombo) setMaxCombo(next);
+        return next;
+      });
     } else {
       setIncorrectCount(prev => prev + 1);
+      setCombo(0);
     }
 
-    // Save progress to database
     if (profile) {
       try {
-        const { error } = await supabase
+        const { data: existing } = await supabase
           .from("science_learning_progress")
-          .upsert({
+          .select("id, mastery_level, correct_count, incorrect_count")
+          .eq("profile_id", profile.id)
+          .eq("word_id", currentWord.id)
+          .maybeSingle();
+
+        const nowIso = new Date().toISOString();
+        if (existing) {
+          await supabase
+            .from("science_learning_progress")
+            .update({
+              mastery_level: Math.max(existing.mastery_level ?? 0, isCorrect ? 1 : 0),
+              correct_count: (existing.correct_count ?? 0) + (isCorrect ? 1 : 0),
+              incorrect_count: (existing.incorrect_count ?? 0) + (isCorrect ? 0 : 1),
+              last_reviewed_at: nowIso,
+              updated_at: nowIso,
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("science_learning_progress").insert({
             profile_id: profile.id,
             word_id: currentWord.id,
             mastery_level: isCorrect ? 1 : 0,
             correct_count: isCorrect ? 1 : 0,
             incorrect_count: isCorrect ? 0 : 1,
-            last_reviewed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: "profile_id,word_id",
+            last_reviewed_at: nowIso,
+            updated_at: nowIso,
           });
-        
-        if (error) console.error("Failed to save progress:", error);
+        }
       } catch (err) {
         console.error("Error saving progress:", err);
       }
     }
 
-    // Auto advance after delay
     setTimeout(() => {
       if (currentIndex < words.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
-        setPhase("result");
-        if (profile) {
-          queryClient.invalidateQueries({ queryKey: ["science-learning-progress", profile.id] });
-        }
+        finishLevel(nextCorrect);
       }
     }, 1500);
   };
@@ -151,6 +216,10 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setCombo(0);
+    setMaxCombo(0);
+    setXpEarned(0);
+    setCoinsEarned(0);
     setShowMeaning(false);
     setLearnedWords(new Set());
   };
@@ -394,6 +463,15 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
               <p className="text-xs text-muted-foreground">正确率</p>
             </div>
           </div>
+
+          {/* Rewards */}
+          <div className="flex justify-center gap-6 text-sm">
+            <span className="text-green-500">+{xpEarned} XP</span>
+            <span className="text-accent">+{coinsEarned} 金币</span>
+            {maxCombo >= 3 && <span className="text-orange-400">连击 x{maxCombo}</span>}
+          </div>
+
+
 
           {/* Actions */}
           <div className="flex gap-3">

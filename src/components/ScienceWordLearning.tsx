@@ -32,7 +32,7 @@ interface ScienceWordLearningProps {
 type Phase = "learn" | "quiz" | "result";
 
 const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: ScienceWordLearningProps) => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { speak } = useSpeech();
   const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
@@ -42,6 +42,10 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   const [showMeaning, setShowMeaning] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const [quizOptions, setQuizOptions] = useState<string[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);

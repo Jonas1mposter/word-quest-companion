@@ -134,14 +134,17 @@ export const useMatchQueue = ({
         }
 
         try {
-          // First check if we've already been matched (e.g. realtime event was missed)
-          const { data: queueEntry } = await supabase
+          // First check if we've already been matched (e.g. realtime event was missed).
+          // Use limit(1) + order to tolerate any residual duplicate matched rows.
+          const { data: queueEntries } = await supabase
             .from('match_queue')
-            .select('status, match_id')
+            .select('status, match_id, created_at')
             .eq('profile_id', profileId)
             .eq('status', 'matched')
-            .maybeSingle();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
+          const queueEntry = queueEntries?.[0];
           if (queueEntry?.match_id && !matchFoundRef.current) {
             await handleMatchResolved(queueEntry.match_id);
             return;

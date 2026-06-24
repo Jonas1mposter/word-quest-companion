@@ -256,7 +256,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
         {activeView === "wrongbook" && profile && (
           <div className="max-w-2xl mx-auto">
-            <WrongWordBook onStartReview={words => setWrongWordsToReview(words)} />
+            <WrongWordBook onStartReview={(words, subject) => { setWrongReviewSubject(subject); setWrongWordsToReview(words); }} />
           </div>
         )}
 

@@ -58,9 +58,13 @@ Deno.serve(async (req) => {
       const winField = isFree ? "free_match_wins" : "wins";
       const lossField = isFree ? "free_match_losses" : "losses";
 
+      const selectCols = isFree
+        ? `id, ${eloField}, ${winField}, ${lossField}`
+        : `id, ${eloField}, ${winField}, ${lossField}, rank_tier, rank_stars, rank_points`;
+
       const { data: players } = await admin
         .from("profiles")
-        .select(`id, ${eloField}, ${winField}, ${lossField}`)
+        .select(selectCols)
         .in("id", [match.player1_id, match.player2_id]);
 
       const byId = new Map<string, any>((players ?? []).map((p: any) => [p.id, p]));
@@ -75,6 +79,50 @@ Deno.serve(async (req) => {
         const d1 = Math.round(K * (s1 - expected(e1, e2)));
         const d2 = Math.round(K * (s2 - expected(e2, e1)));
 
+        // 段位系统配置 - 与前端 RankDisplay 保持一致
+        const TIER_ORDER = ["bronze", "silver", "gold", "platinum", "diamond", "champion"] as const;
+        const STARS_TO_PROMOTE: Record<string, number> = {
+          bronze: 30, silver: 40, gold: 50, platinum: 50, diamond: 60, champion: 999,
+        };
+        const computeRank = (
+          tier: string,
+          stars: number,
+          points: number,
+          result: 1 | 0 | 0.5,
+          eloDelta: number,
+        ) => {
+          let t = (TIER_ORDER as readonly string[]).includes(tier) ? tier : "bronze";
+          let s = stars ?? 0;
+          let pts = points ?? 0;
+          if (result === 0.5) return { rank_tier: t, rank_stars: s, rank_points: pts };
+          if (result === 1) {
+            s += 1;
+            if (t === "champion") {
+              pts += Math.max(1, eloDelta);
+            } else if (s >= STARS_TO_PROMOTE[t]) {
+              const idx = TIER_ORDER.indexOf(t as any);
+              t = TIER_ORDER[Math.min(idx + 1, TIER_ORDER.length - 1)];
+              s = 0;
+            }
+          } else {
+            // 输：青铜不扣星；其他扣1星
+            if (t !== "bronze") {
+              s -= 1;
+              if (s < 0) {
+                const idx = TIER_ORDER.indexOf(t as any);
+                if (idx > 0) {
+                  t = TIER_ORDER[idx - 1];
+                  s = Math.max(0, STARS_TO_PROMOTE[t] - 3); // 降级后保留接近晋级位置
+                } else {
+                  s = 0;
+                }
+              }
+            }
+            if (t === "champion") pts = Math.max(0, pts + eloDelta); // eloDelta 为负
+          }
+          return { rank_tier: t, rank_stars: s, rank_points: pts };
+        };
+
         const updates: Promise<unknown>[] = [];
         for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
           const patch: Record<string, any> = {
@@ -82,6 +130,13 @@ Deno.serve(async (req) => {
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
+
+          if (!isFree) {
+            const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
+            patch.rank_tier = r.rank_tier;
+            patch.rank_stars = r.rank_stars;
+            patch.rank_points = r.rank_points;
+          }
           updates.push(admin.from("profiles").update(patch).eq("id", pp.id));
         }
         await Promise.all(updates);

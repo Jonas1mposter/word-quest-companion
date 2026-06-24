@@ -53,6 +53,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
+  const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");
   const [spectateMatchId, setSpectateMatchId] = useState<string | null>(null);
   const [reconnectMatchId, setReconnectMatchId] = useState<string | null>(null);
   const [reconnectMatchType, setReconnectMatchType] = useState<"ranked" | "free">("ranked");

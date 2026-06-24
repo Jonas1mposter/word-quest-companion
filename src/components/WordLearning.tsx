@@ -266,35 +266,36 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
       setTimeout(() => setShowComboPopup(false), 800);
     }
 
-    // 使用缓存更新学习进度
+    // 持久化学习进度（fetch-then-update，确保有真实 id，否则 update 会静默失效）
     if (profile && currentWord) {
-      const existing = existingProgress.get(currentWord.id);
-      
-      if (existing) {
-        // 后台更新，不阻塞
-        supabase
+      try {
+        const { data: existing } = await supabase
           .from("learning_progress")
-          .update({
-            correct_count: (existing.correct_count || 0) + 1,
-            last_reviewed_at: new Date().toISOString(),
-            mastery_level: Math.min(5, (existing.mastery_level || 0) + 1),
-          })
-          .eq("id", existing.id);
-        
-        // 更新本地缓存
-        existing.correct_count = (existing.correct_count || 0) + 1;
-        existing.mastery_level = Math.min(5, (existing.mastery_level || 0) + 1);
-      } else {
-        supabase
-          .from("learning_progress")
-          .insert({
+          .select("id, correct_count, incorrect_count, mastery_level")
+          .eq("profile_id", profile.id)
+          .eq("word_id", currentWord.id)
+          .maybeSingle();
+        const nowIso = new Date().toISOString();
+        if (existing) {
+          await supabase
+            .from("learning_progress")
+            .update({
+              correct_count: (existing.correct_count || 0) + 1,
+              last_reviewed_at: nowIso,
+              mastery_level: Math.min(5, (existing.mastery_level || 0) + 1),
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("learning_progress").insert({
             profile_id: profile.id,
             word_id: currentWord.id,
             correct_count: 1,
-            last_reviewed_at: new Date().toISOString(),
+            incorrect_count: 0,
+            last_reviewed_at: nowIso,
             mastery_level: 1,
           });
-      }
+        }
+      } catch (e) { console.error("save correct progress failed", e); }
     }
 
     nextWord(newCorrectCount, incorrectCount);
@@ -312,30 +313,34 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
     setComboCount(0);
 
     if (profile && currentWord) {
-      const existing = existingProgress.get(currentWord.id);
-
-      if (existing) {
-        supabase
+      try {
+        const { data: existing } = await supabase
           .from("learning_progress")
-          .update({
-            incorrect_count: (existing.incorrect_count || 0) + 1,
-            last_reviewed_at: new Date().toISOString(),
-            mastery_level: Math.max(1, existing.mastery_level || 0),
-          })
-          .eq("id", existing.id);
-        
-        existing.incorrect_count = (existing.incorrect_count || 0) + 1;
-      } else {
-        supabase
-          .from("learning_progress")
-          .insert({
+          .select("id, correct_count, incorrect_count, mastery_level")
+          .eq("profile_id", profile.id)
+          .eq("word_id", currentWord.id)
+          .maybeSingle();
+        const nowIso = new Date().toISOString();
+        if (existing) {
+          await supabase
+            .from("learning_progress")
+            .update({
+              incorrect_count: (existing.incorrect_count || 0) + 1,
+              last_reviewed_at: nowIso,
+              mastery_level: Math.max(1, existing.mastery_level || 0),
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("learning_progress").insert({
             profile_id: profile.id,
             word_id: currentWord.id,
+            correct_count: 0,
             incorrect_count: 1,
-            last_reviewed_at: new Date().toISOString(),
+            last_reviewed_at: nowIso,
             mastery_level: 1,
           });
-      }
+        }
+      } catch (e) { console.error("save incorrect progress failed", e); }
     }
 
     nextWord(correctCount, newIncorrectCount);

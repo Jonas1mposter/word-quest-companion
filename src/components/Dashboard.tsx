@@ -53,6 +53,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
+  const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");
   const [spectateMatchId, setSpectateMatchId] = useState<string | null>(null);
   const [reconnectMatchId, setReconnectMatchId] = useState<string | null>(null);
   const [reconnectMatchType, setReconnectMatchType] = useState<"ranked" | "free">("ranked");
@@ -159,7 +160,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   if (activeView === "history") return <MatchHistory onBack={() => setActiveView("home")} />;
 
   if (activeView === "wrongbook" && wrongWordsToReview) {
-    return <WrongWordReview words={wrongWordsToReview}
+    return <WrongWordReview words={wrongWordsToReview} subject={wrongReviewSubject}
       onBack={() => setWrongWordsToReview(null)}
       onComplete={() => {
         setWrongWordsToReview(null); setRefreshKey(p => p + 1); refreshProfile();
@@ -255,7 +256,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
         {activeView === "wrongbook" && profile && (
           <div className="max-w-2xl mx-auto">
-            <WrongWordBook onStartReview={words => setWrongWordsToReview(words)} />
+            <WrongWordBook onStartReview={(words, subject) => { setWrongReviewSubject(subject); setWrongWordsToReview(words); }} />
           </div>
         )}
 

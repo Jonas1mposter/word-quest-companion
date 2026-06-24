@@ -160,7 +160,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   if (activeView === "history") return <MatchHistory onBack={() => setActiveView("home")} />;
 
   if (activeView === "wrongbook" && wrongWordsToReview) {
-    return <WrongWordReview words={wrongWordsToReview}
+    return <WrongWordReview words={wrongWordsToReview} subject={wrongReviewSubject}
       onBack={() => setWrongWordsToReview(null)}
       onComplete={() => {
         setWrongWordsToReview(null); setRefreshKey(p => p + 1); refreshProfile();

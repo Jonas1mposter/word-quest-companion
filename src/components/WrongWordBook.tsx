@@ -6,26 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BookX,
-  Volume2,
-  Search,
-  Play,
-  Trash2,
-  RefreshCw,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Clock,
+  BookX, Volume2, Search, Play, Trash2, RefreshCw, Loader2,
+  CheckCircle, XCircle, AlertCircle, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-interface WrongWord {
-  id: string;
+export type WrongSubject = "english" | "math" | "science";
+
+export interface WrongWord {
+  id: string;            // progress row id
   word_id: string;
   word: string;
   meaning: string;
@@ -34,73 +28,68 @@ interface WrongWord {
   incorrect_count: number;
   correct_count: number;
   last_reviewed_at: string | null;
+  subject: WrongSubject;
 }
 
 interface WrongWordBookProps {
-  onStartReview: (words: WrongWord[]) => void;
+  onStartReview: (words: WrongWord[], subject: WrongSubject) => void;
 }
+
+const TABLES: Record<WrongSubject, { progress: "learning_progress" | "math_learning_progress" | "science_learning_progress"; words: "words" | "math_words" | "science_words" }> = {
+  english: { progress: "learning_progress", words: "words" },
+  math: { progress: "math_learning_progress", words: "math_words" },
+  science: { progress: "science_learning_progress", words: "science_words" },
+};
 
 const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
   const { profile } = useAuth();
+  const [subject, setSubject] = useState<WrongSubject>("english");
   const [wrongWords, setWrongWords] = useState<WrongWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    setSelectedWords(new Set());
     fetchWrongWords();
-  }, [profile]);
+  }, [profile, subject]);
 
   const fetchWrongWords = async () => {
-    if (!profile) {
-      setLoading(false);
-      return;
-    }
-
+    if (!profile) { setLoading(false); return; }
     try {
       setLoading(true);
-      
-      // Get learning progress with incorrect_count > 0
+      const t = TABLES[subject];
       const { data: progressData, error: progressError } = await supabase
-        .from("learning_progress")
+        .from(t.progress)
         .select("id, word_id, incorrect_count, correct_count, last_reviewed_at")
         .eq("profile_id", profile.id)
         .gt("incorrect_count", 0)
         .order("incorrect_count", { ascending: false });
-
       if (progressError) throw progressError;
+      if (!progressData?.length) { setWrongWords([]); setLoading(false); return; }
 
-      if (!progressData || progressData.length === 0) {
-        setWrongWords([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get word details
-      const wordIds = progressData.map((p) => p.word_id);
+      const wordIds = progressData.map(p => p.word_id);
       const { data: wordsData, error: wordsError } = await supabase
-        .from("words")
+        .from(t.words)
         .select("id, word, meaning, phonetic, example")
         .in("id", wordIds);
-
       if (wordsError) throw wordsError;
 
-      // Combine data
-      const combined = progressData.map((progress) => {
-        const wordData = wordsData?.find((w) => w.id === progress.word_id);
+      const combined: WrongWord[] = progressData.map(p => {
+        const w = wordsData?.find(x => x.id === p.word_id);
         return {
-          id: progress.id,
-          word_id: progress.word_id,
-          word: wordData?.word || "",
-          meaning: wordData?.meaning || "",
-          phonetic: wordData?.phonetic || null,
-          example: wordData?.example || null,
-          incorrect_count: progress.incorrect_count,
-          correct_count: progress.correct_count,
-          last_reviewed_at: progress.last_reviewed_at,
+          id: p.id,
+          word_id: p.word_id,
+          word: w?.word || "",
+          meaning: w?.meaning || "",
+          phonetic: (w as any)?.phonetic ?? null,
+          example: (w as any)?.example ?? null,
+          incorrect_count: p.incorrect_count,
+          correct_count: p.correct_count,
+          last_reviewed_at: p.last_reviewed_at,
+          subject,
         };
-      }).filter((w) => w.word);
-
+      }).filter(w => w.word);
       setWrongWords(combined);
     } catch (error) {
       console.error("Error fetching wrong words:", error);
@@ -112,12 +101,8 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
 
   const filteredWords = useMemo(() => {
     if (!searchQuery.trim()) return wrongWords;
-    const query = searchQuery.toLowerCase();
-    return wrongWords.filter(
-      (w) =>
-        w.word.toLowerCase().includes(query) ||
-        w.meaning.toLowerCase().includes(query)
-    );
+    const q = searchQuery.toLowerCase();
+    return wrongWords.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q));
   }, [wrongWords, searchQuery]);
 
   const speakWord = (word: string) => {
@@ -125,87 +110,56 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
   };
 
   const toggleWordSelection = (wordId: string) => {
-    setSelectedWords((prev) => {
+    setSelectedWords(prev => {
       const next = new Set(prev);
-      if (next.has(wordId)) {
-        next.delete(wordId);
-      } else {
-        next.add(wordId);
-      }
+      if (next.has(wordId)) next.delete(wordId); else next.add(wordId);
       return next;
     });
   };
 
   const selectAll = () => {
-    if (selectedWords.size === filteredWords.length) {
-      setSelectedWords(new Set());
-    } else {
-      setSelectedWords(new Set(filteredWords.map((w) => w.word_id)));
-    }
+    if (selectedWords.size === filteredWords.length) setSelectedWords(new Set());
+    else setSelectedWords(new Set(filteredWords.map(w => w.word_id)));
   };
 
   const handleStartReview = () => {
     const wordsToReview = selectedWords.size > 0
-      ? wrongWords.filter((w) => selectedWords.has(w.word_id))
+      ? wrongWords.filter(w => selectedWords.has(w.word_id))
       : wrongWords;
-
-    if (wordsToReview.length === 0) {
-      toast.error("没有可复习的单词");
-      return;
-    }
-
-    onStartReview(wordsToReview);
+    if (wordsToReview.length === 0) { toast.error("没有可复习的单词"); return; }
+    onStartReview(wordsToReview, subject);
   };
 
   const clearMasteredWords = async () => {
     if (!profile) return;
-
     try {
-      // Clear words where correct_count >= incorrect_count * 2
       const masteredIds = wrongWords
-        .filter((w) => w.correct_count >= w.incorrect_count * 2)
-        .map((w) => w.id);
-
-      if (masteredIds.length === 0) {
-        toast.info("暂无已掌握的单词");
-        return;
-      }
-
-      // Reset incorrect_count to 0 for mastered words
+        .filter(w => w.correct_count >= w.incorrect_count * 2)
+        .map(w => w.id);
+      if (masteredIds.length === 0) { toast.info("暂无已掌握的单词"); return; }
+      const t = TABLES[subject];
       const { error } = await supabase
-        .from("learning_progress")
+        .from(t.progress)
         .update({ incorrect_count: 0 })
         .in("id", masteredIds);
-
       if (error) throw error;
-
       toast.success(`已移除 ${masteredIds.length} 个已掌握的单词`);
       fetchWrongWords();
     } catch (error) {
-      console.error("Error clearing mastered words:", error);
-      toast.error("操作失败");
+      console.error(error); toast.error("操作失败");
     }
   };
 
   const getMasteryLevel = (correct: number, incorrect: number) => {
     if (incorrect === 0) return "mastered";
-    const ratio = correct / incorrect;
-    if (ratio >= 2) return "mastered";
-    if (ratio >= 1) return "learning";
+    const r = correct / incorrect;
+    if (r >= 2) return "mastered";
+    if (r >= 1) return "learning";
     return "weak";
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-destructive/20 flex items-center justify-center">
@@ -223,88 +177,71 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
         </Button>
       </div>
 
-      {wrongWords.length === 0 ? (
+      <Tabs value={subject} onValueChange={(v) => setSubject(v as WrongSubject)}>
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsTrigger value="english">英语</TabsTrigger>
+          <TabsTrigger value="math">数学</TabsTrigger>
+          <TabsTrigger value="science">科学</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : wrongWords.length === 0 ? (
         <Card variant="glow" className="p-8 text-center">
           <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
           <h3 className="font-gaming text-xl mb-2">太棒了！</h3>
-          <p className="text-muted-foreground">
-            你还没有错题，继续保持！
-          </p>
+          <p className="text-muted-foreground">该科目还没有错题，继续保持！</p>
         </Card>
       ) : (
         <>
-          {/* Actions */}
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="搜索单词..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="搜索单词..." value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={selectAll}>
               {selectedWords.size === filteredWords.length ? "取消全选" : "全选"}
             </Button>
             <Button variant="outline" size="sm" onClick={clearMasteredWords}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              移除已掌握
+              <Trash2 className="w-4 h-4 mr-2" />移除已掌握
             </Button>
             <Button variant="hero" onClick={handleStartReview}>
               <Play className="w-4 h-4 mr-2" />
-              {selectedWords.size > 0
-                ? `复习选中 (${selectedWords.size})`
-                : "全部复习"}
+              {selectedWords.size > 0 ? `复习选中 (${selectedWords.size})` : "全部复习"}
             </Button>
           </div>
 
-          {/* Word List */}
           <ScrollArea className="h-[500px]">
             <div className="space-y-3">
-              {filteredWords.map((word) => {
+              {filteredWords.map(word => {
                 const mastery = getMasteryLevel(word.correct_count, word.incorrect_count);
                 const isSelected = selectedWords.has(word.word_id);
-
                 return (
-                  <Card
-                    key={word.id}
-                    className={cn(
-                      "p-4 cursor-pointer transition-all",
-                      isSelected && "ring-2 ring-primary bg-primary/5"
-                    )}
-                    onClick={() => toggleWordSelection(word.word_id)}
-                  >
+                  <Card key={word.id}
+                    className={cn("p-4 cursor-pointer transition-all",
+                      isSelected && "ring-2 ring-primary bg-primary/5")}
+                    onClick={() => toggleWordSelection(word.word_id)}>
                     <div className="flex items-start gap-4">
-                      <div
-                        className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1",
-                          isSelected
-                            ? "border-primary bg-primary"
-                            : "border-muted-foreground/30"
-                        )}
-                      >
+                      <div className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1",
+                        isSelected ? "border-primary bg-primary" : "border-muted-foreground/30")}>
                         {isSelected && <CheckCircle className="w-3 h-3 text-primary-foreground" />}
                       </div>
-
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-gaming text-lg">{word.word}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              speakWord(word.word);
-                            }}
-                            className="p-1 rounded-full hover:bg-primary/10"
-                          >
+                          <button onClick={(e) => { e.stopPropagation(); speakWord(word.word); }}
+                            className="p-1 rounded-full hover:bg-primary/10">
                             <Volume2 className="w-4 h-4 text-primary" />
                           </button>
                           {word.phonetic && (
-                            <span className="text-sm text-muted-foreground">
-                              {word.phonetic}
-                            </span>
+                            <span className="text-sm text-muted-foreground">{word.phonetic}</span>
                           )}
                         </div>
                         <p className="text-muted-foreground">{word.meaning}</p>
@@ -314,7 +251,6 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
                           </p>
                         )}
                       </div>
-
                       <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs">
@@ -329,29 +265,11 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
                         {word.last_reviewed_at && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span>
-                              {formatDistanceToNow(new Date(word.last_reviewed_at), {
-                                addSuffix: true,
-                                locale: zhCN,
-                              })}
-                            </span>
+                            <span>{formatDistanceToNow(new Date(word.last_reviewed_at), { addSuffix: true, locale: zhCN })}</span>
                           </div>
                         )}
-                        <Badge
-                          variant={
-                            mastery === "mastered"
-                              ? "success"
-                              : mastery === "learning"
-                              ? "default"
-                              : "destructive"
-                          }
-                          className="text-xs"
-                        >
-                          {mastery === "mastered"
-                            ? "已掌握"
-                            : mastery === "learning"
-                            ? "学习中"
-                            : "需加强"}
+                        <Badge variant={mastery === "mastered" ? "success" : mastery === "learning" ? "default" : "destructive"} className="text-xs">
+                          {mastery === "mastered" ? "已掌握" : mastery === "learning" ? "学习中" : "需加强"}
                         </Badge>
                       </div>
                     </div>
@@ -361,7 +279,6 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
             </div>
           </ScrollArea>
 
-          {/* Legend */}
           <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-3 h-3 text-destructive" />

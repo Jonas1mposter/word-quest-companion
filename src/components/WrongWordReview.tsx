@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateProfileWithXp } from "@/lib/levelUp";
 
+export type WrongSubject = "english" | "math" | "science";
+
 interface Word {
   id: string;
   word_id: string;
@@ -31,9 +33,16 @@ interface Word {
 
 interface WrongWordReviewProps {
   words: Word[];
+  subject?: WrongSubject;
   onBack: () => void;
   onComplete: () => void;
 }
+
+const PROGRESS_TABLE: Record<WrongSubject, "learning_progress" | "math_learning_progress" | "science_learning_progress"> = {
+  english: "learning_progress",
+  math: "math_learning_progress",
+  science: "science_learning_progress",
+};
 
 const QUIZ_TYPES: { type: QuizType; label: string; icon: string }[] = [
   { type: "meaning", label: "选择释义", icon: "📖" },
@@ -43,7 +52,7 @@ const QUIZ_TYPES: { type: QuizType; label: string; icon: string }[] = [
   { type: "fillBlank", label: "填空", icon: "📝" },
 ];
 
-const WrongWordReview = ({ words, onBack, onComplete }: WrongWordReviewProps) => {
+const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: WrongWordReviewProps) => {
   const { profile, refreshProfile } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);

@@ -149,6 +149,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 对局结束后，立即清理双方在 match_queue 中的残留记录，
+    // 确保下次匹配会创建全新的排队条目，避免复用旧房间。
+    await admin
+      .from("match_queue")
+      .delete()
+      .in("profile_id", [match.player1_id, match.player2_id]);
+
     return json({ ok: true, winnerId, player1_score: p1, player2_score: p2 });
   } catch (e) {
     if (e instanceof Response) return e;

@@ -58,14 +58,6 @@ export const useMatchSounds = () => {
     try { const ctx = await ensureAudioReady(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.setValueAtTime(880,ctx.currentTime); g.gain.setValueAtTime(0.08,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.08); o.start(ctx.currentTime); o.stop(ctx.currentTime+0.08); } catch(e) {}
   }, [ensureAudioReady]);
 
-  // 《无畏契约》风格连击音效：金属脆响 + 低频冲击 + 高音叮 + 噪声 snap，连击越高音色越亮越密
-  const playCombo = useCallback(async (comboCount: number) => {
-    if (!isEnabledRef.current) return;
-    try {
-      const ctx = await ensureAudioReady();
-      const now = ctx.currentTime;
-      const tier = Math.min(comboCount, 10);
-      const pitchBoost = 1 + tier * 0.06;
 
   // 击杀音效：1-5 连击对应 5 段音频，5+ 全部使用 5 连击音效
   const playCombo = useCallback(async (comboCount: number) => {

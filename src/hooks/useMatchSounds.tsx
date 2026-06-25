@@ -1,5 +1,22 @@
 import { useCallback, useRef } from 'react';
 import { audioManager } from '@/lib/audioManager';
+import kill1 from '@/assets/kill-sounds/kill_1.mp3.asset.json';
+import kill2 from '@/assets/kill-sounds/kill_2.mp3.asset.json';
+import kill3 from '@/assets/kill-sounds/kill_3.mp3.asset.json';
+import kill4 from '@/assets/kill-sounds/kill_4.mp3.asset.json';
+import kill5 from '@/assets/kill-sounds/kill_5.mp3.asset.json';
+
+const KILL_SOUND_URLS = [kill1.url, kill2.url, kill3.url, kill4.url, kill5.url];
+const killAudioCache: Record<number, HTMLAudioElement> = {};
+const getKillAudio = (n: number) => {
+  const idx = Math.min(Math.max(n, 1), 5) - 1;
+  if (!killAudioCache[idx]) {
+    const a = new Audio(KILL_SOUND_URLS[idx]);
+    a.preload = 'auto';
+    killAudioCache[idx] = a;
+  }
+  return killAudioCache[idx];
+};
 
 export const useMatchSounds = () => {
   const isEnabledRef = useRef(true);

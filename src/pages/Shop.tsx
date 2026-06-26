@@ -50,6 +50,27 @@ export default function Shop() {
   const [drawing, setDrawing] = useState<null | 1 | 10>(null);
   const [results, setResults] = useState<DrawCard[] | null>(null);
   const [poolPreview, setPoolPreview] = useState<{ rarity: string; count: number }[]>([]);
+  const [soundPacks, setSoundPacks] = useState<any[]>([]);
+  const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
+  const [packBusy, setPackBusy] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const loadPacks = async () => {
+    const { data: packs } = await supabase
+      .from("kill_sound_packs")
+      .select("*")
+      .order("price", { ascending: true });
+    setSoundPacks(packs ?? []);
+    if (profile?.id) {
+      const { data: owned } = await supabase
+        .from("user_kill_sound_packs")
+        .select("pack_id")
+        .eq("profile_id", profile.id);
+      setOwnedPackIds(new Set((owned ?? []).map((o: any) => o.pack_id)));
+    }
+  };
+
+  useEffect(() => { loadPacks(); /* eslint-disable-next-line */ }, [profile?.id]);
 
   useEffect(() => {
     (async () => {

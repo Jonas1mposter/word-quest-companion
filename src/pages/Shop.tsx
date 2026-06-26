@@ -258,6 +258,87 @@ export default function Shop() {
         <p className="text-xs text-muted-foreground text-center">
           重复名片不计入获得，奖池若该稀有度已抽满会自动降级或返还 50% 狄邦豆。
         </p>
+
+        {/* 连击音效包 */}
+        <Card className="overflow-hidden border-cyan-400/40 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-7 h-7 text-cyan-400" />
+              <div>
+                <h2 className="text-xl font-gaming">连击音效包</h2>
+                <p className="text-sm text-muted-foreground">
+                  解锁专属击杀语音，在排位与对战中替换默认连击音效。
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {soundPacks.map((pack) => {
+                const owned = ownedPackIds.has(pack.id);
+                const equipped = activePackId === pack.id;
+                return (
+                  <Card
+                    key={pack.id}
+                    className={cn(
+                      "border-2 transition-colors",
+                      equipped ? "border-cyan-400 bg-cyan-500/10" : "border-border/60 hover:border-cyan-400/60",
+                    )}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{pack.preview_icon || "🔊"}</span>
+                          <div>
+                            <div className="font-gaming text-base">{pack.name}</div>
+                            <Badge variant="outline" className="text-[10px] mt-0.5">
+                              {RARITY_LABEL[pack.rarity] ?? pack.rarity}
+                            </Badge>
+                          </div>
+                        </div>
+                        {equipped && (
+                          <Badge className="bg-cyan-500 text-white"><Check className="w-3 h-3 mr-1" />已装备</Badge>
+                        )}
+                      </div>
+                      {pack.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{pack.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => previewPack(pack)}
+                          className="flex-1"
+                        >
+                          <Play className="w-3 h-3 mr-1" />试听
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={packBusy === pack.id || equipped}
+                          onClick={() => handlePack(pack)}
+                          className={cn(
+                            "flex-1",
+                            !owned && "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600",
+                          )}
+                        >
+                          {packBusy === pack.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          ) : equipped ? (
+                            <Check className="w-3 h-3 mr-1" />
+                          ) : owned ? null : (
+                            <Coins className="w-3 h-3 mr-1" />
+                          )}
+                          {equipped ? "已装备" : owned ? "装备" : `${pack.price} 豆`}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {soundPacks.length === 0 && (
+                <p className="text-sm text-muted-foreground col-span-full text-center py-4">暂无音效包</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog open={!!results} onOpenChange={(o) => !o && setResults(null)}>

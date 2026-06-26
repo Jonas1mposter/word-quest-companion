@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,9 +12,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag } from "lucide-react";
+import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
 
 type DrawCard = {
   id?: string;
@@ -49,6 +50,27 @@ export default function Shop() {
   const [drawing, setDrawing] = useState<null | 1 | 10>(null);
   const [results, setResults] = useState<DrawCard[] | null>(null);
   const [poolPreview, setPoolPreview] = useState<{ rarity: string; count: number }[]>([]);
+  const [soundPacks, setSoundPacks] = useState<any[]>([]);
+  const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
+  const [packBusy, setPackBusy] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const loadPacks = async () => {
+    const { data: packs } = await supabase
+      .from("kill_sound_packs")
+      .select("*")
+      .order("price", { ascending: true });
+    setSoundPacks(packs ?? []);
+    if (profile?.id) {
+      const { data: owned } = await supabase
+        .from("user_kill_sound_packs")
+        .select("pack_id")
+        .eq("profile_id", profile.id);
+      setOwnedPackIds(new Set((owned ?? []).map((o: any) => o.pack_id)));
+    }
+  };
+
+  useEffect(() => { loadPacks(); /* eslint-disable-next-line */ }, [profile?.id]);
 
   useEffect(() => {
     (async () => {
@@ -92,6 +114,59 @@ export default function Shop() {
       toast.error(e?.message || "抽卡失败，请稍后再试");
     } finally {
       setDrawing(null);
+    }
+  };
+
+  const activePackId = (profile as any)?.active_kill_sound_pack_id ?? null;
+
+  const previewPack = (pack: any) => {
+    try {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+      const urls = (pack.sound_urls as string[]) ?? [];
+      const url = urls[urls.length - 1] || urls[0];
+      if (!url) return;
+      const a = new Audio(url);
+      a.volume = 0.8;
+      previewAudioRef.current = a;
+      a.play().catch(() => {});
+    } catch (e) { /* noop */ }
+  };
+
+  const handlePack = async (pack: any) => {
+    if (!profile) return;
+    const owned = ownedPackIds.has(pack.id);
+    setPackBusy(pack.id);
+    try {
+      if (!owned) {
+        if ((profile.coins ?? 0) < pack.price) {
+          toast.error(`狄邦豆不足，需要 ${pack.price}`);
+          return;
+        }
+        const { data, error } = await supabase.rpc("purchase_sound_pack", { p_pack_id: pack.id });
+        if (error) throw error;
+        const payload = data as any;
+        if (payload?.error === "not_enough_coins") {
+          toast.error("狄邦豆不足");
+          return;
+        }
+        toast.success(`已购买并装备「${pack.name}」`);
+      } else {
+        if (activePackId === pack.id) {
+          toast.info("该音效包已装备");
+          return;
+        }
+        const { error } = await supabase.rpc("equip_sound_pack", { p_pack_id: pack.id });
+        if (error) throw error;
+        toast.success(`已装备「${pack.name}」`);
+      }
+      await Promise.all([refreshProfile(), loadPacks(), reloadActiveSoundPack()]);
+    } catch (e: any) {
+      toast.error(e?.message || "操作失败");
+    } finally {
+      setPackBusy(null);
     }
   };
 
@@ -183,6 +258,87 @@ export default function Shop() {
         <p className="text-xs text-muted-foreground text-center">
           重复名片不计入获得，奖池若该稀有度已抽满会自动降级或返还 50% 狄邦豆。
         </p>
+
+        {/* 连击音效包 */}
+        <Card className="overflow-hidden border-cyan-400/40 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-7 h-7 text-cyan-400" />
+              <div>
+                <h2 className="text-xl font-gaming">连击音效包</h2>
+                <p className="text-sm text-muted-foreground">
+                  解锁专属击杀语音，在排位与对战中替换默认连击音效。
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {soundPacks.map((pack) => {
+                const owned = ownedPackIds.has(pack.id);
+                const equipped = activePackId === pack.id;
+                return (
+                  <Card
+                    key={pack.id}
+                    className={cn(
+                      "border-2 transition-colors",
+                      equipped ? "border-cyan-400 bg-cyan-500/10" : "border-border/60 hover:border-cyan-400/60",
+                    )}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{pack.preview_icon || "🔊"}</span>
+                          <div>
+                            <div className="font-gaming text-base">{pack.name}</div>
+                            <Badge variant="outline" className="text-[10px] mt-0.5">
+                              {RARITY_LABEL[pack.rarity] ?? pack.rarity}
+                            </Badge>
+                          </div>
+                        </div>
+                        {equipped && (
+                          <Badge className="bg-cyan-500 text-white"><Check className="w-3 h-3 mr-1" />已装备</Badge>
+                        )}
+                      </div>
+                      {pack.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{pack.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => previewPack(pack)}
+                          className="flex-1"
+                        >
+                          <Play className="w-3 h-3 mr-1" />试听
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={packBusy === pack.id || equipped}
+                          onClick={() => handlePack(pack)}
+                          className={cn(
+                            "flex-1",
+                            !owned && "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600",
+                          )}
+                        >
+                          {packBusy === pack.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          ) : equipped ? (
+                            <Check className="w-3 h-3 mr-1" />
+                          ) : owned ? null : (
+                            <Coins className="w-3 h-3 mr-1" />
+                          )}
+                          {equipped ? "已装备" : owned ? "装备" : `${pack.price} 豆`}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {soundPacks.length === 0 && (
+                <p className="text-sm text-muted-foreground col-span-full text-center py-4">暂无音效包</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog open={!!results} onOpenChange={(o) => !o && setResults(null)}>

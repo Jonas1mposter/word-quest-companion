@@ -597,6 +597,45 @@ export type Database = {
           },
         ]
       }
+      kill_sound_packs: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          preview_icon: string | null
+          price: number
+          rarity: string
+          sound_urls: Json
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          preview_icon?: string | null
+          price?: number
+          rarity?: string
+          sound_urls: Json
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          preview_icon?: string | null
+          price?: number
+          rarity?: string
+          sound_urls?: Json
+        }
+        Relationships: []
+      }
       learning_progress: {
         Row: {
           correct_count: number
@@ -956,6 +995,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_kill_sound_pack_id: string | null
           avatar_url: string | null
           background_type: string | null
           background_value: string | null
@@ -987,6 +1027,7 @@ export type Database = {
           xp_to_next_level: number
         }
         Insert: {
+          active_kill_sound_pack_id?: string | null
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
@@ -1018,6 +1059,7 @@ export type Database = {
           xp_to_next_level?: number
         }
         Update: {
+          active_kill_sound_pack_id?: string | null
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
@@ -1048,7 +1090,15 @@ export type Database = {
           xp?: number
           xp_to_next_level?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_kill_sound_pack_id_fkey"
+            columns: ["active_kill_sound_pack_id"]
+            isOneToOne: false
+            referencedRelation: "kill_sound_packs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ranked_matches: {
         Row: {
@@ -1627,6 +1677,39 @@ export type Database = {
           },
         ]
       }
+      user_kill_sound_packs: {
+        Row: {
+          acquired_at: string
+          pack_id: string
+          profile_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          pack_id: string
+          profile_id: string
+        }
+        Update: {
+          acquired_at?: string
+          pack_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_kill_sound_packs_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "kill_sound_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_kill_sound_packs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_name_cards: {
         Row: {
           earned_at: string
@@ -1912,6 +1995,7 @@ export type Database = {
     }
     Functions: {
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
+      equip_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       find_match: {
         Args: {
           _elo_rating: number
@@ -1934,6 +2018,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

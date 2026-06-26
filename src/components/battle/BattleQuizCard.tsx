@@ -74,13 +74,9 @@ const BattleQuizCard = ({
       ? option === word.word 
       : option === word.meaning;
 
-    // Play combo sound for streaks, otherwise normal correct/wrong sounds
+    // 1-5 连击都用击杀音效，5+ 复用第 5 段
     if (isCorrect) {
-      if (comboCount >= 2) {
-        sounds.playCombo(comboCount + 1);
-      } else {
-        sounds.playCorrect();
-      }
+      sounds.playCombo(comboCount + 1);
       haptics.success();
     } else {
       sounds.playWrong();
@@ -101,13 +97,9 @@ const BattleQuizCard = ({
     const normalizedWord = word.word.toLowerCase();
     const isCorrect = normalizedInput === normalizedWord;
 
-    // Play combo sound for streaks, otherwise normal correct/wrong sounds
+    // 1-5 连击都用击杀音效，5+ 复用第 5 段
     if (isCorrect) {
-      if (comboCount >= 2) {
-        sounds.playCombo(comboCount + 1);
-      } else {
-        sounds.playCorrect();
-      }
+      sounds.playCombo(comboCount + 1);
       haptics.success();
     } else {
       sounds.playWrong();

@@ -66,12 +66,8 @@ const QuizCard = ({
 
     // Play sound and haptic feedback
     if (isCorrect) {
-      // Play combo sound if this creates a combo (comboCount is the count BEFORE this answer)
-      if (comboCount >= 2) {
-        sounds.playCombo(comboCount + 1);
-      } else {
-        sounds.playCorrect();
-      }
+      // 1-5 连击都用击杀音效，5+ 复用第 5 段
+      sounds.playCombo(comboCount + 1);
       haptics.success();
     } else {
       sounds.playWrong();
@@ -97,11 +93,7 @@ const QuizCard = ({
 
     // Play sound and haptic feedback
     if (isCorrect) {
-      if (comboCount >= 2) {
-        sounds.playCombo(comboCount + 1);
-      } else {
-        sounds.playCorrect();
-      }
+      sounds.playCombo(comboCount + 1);
       haptics.success();
     } else {
       sounds.playWrong();

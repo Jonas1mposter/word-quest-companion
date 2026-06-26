@@ -93,11 +93,7 @@ const QuizCard = ({
 
     // Play sound and haptic feedback
     if (isCorrect) {
-      if (comboCount >= 2) {
-        sounds.playCombo(comboCount + 1);
-      } else {
-        sounds.playCorrect();
-      }
+      sounds.playCombo(comboCount + 1);
       haptics.success();
     } else {
       sounds.playWrong();

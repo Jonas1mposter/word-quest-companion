@@ -63,6 +63,8 @@ const getKillAudio = (n: number) => {
 export const useMatchSounds = () => {
   const isEnabledRef = useRef(true);
 
+  useEffect(() => { loadActivePack(); }, []);
+
   const ensureAudioReady = useCallback(async () => audioManager.ensureReady(), []);
 
   const playSearchingBeep = useCallback(async () => {

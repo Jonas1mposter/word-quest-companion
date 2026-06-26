@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
     const accuracy = correctCount / totalWords;
     const baseXp = 5;
     const bonusXp = Math.floor(accuracy * 5);
-    const baseCoins = 2;
-    const bonusCoins = accuracy === 1 ? 3 : Math.floor(accuracy * 2);
+    const baseCoins = 8;
+    const bonusCoins = accuracy === 1 ? 12 : Math.floor(accuracy * 8);
     const xpGained = baseXp + bonusXp;
     const coinsGained = baseCoins + bonusCoins;
     const stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;

@@ -12,9 +12,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag } from "lucide-react";
+import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
 
 type DrawCard = {
   id?: string;

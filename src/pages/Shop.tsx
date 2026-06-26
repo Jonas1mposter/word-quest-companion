@@ -117,6 +117,59 @@ export default function Shop() {
     }
   };
 
+  const activePackId = (profile as any)?.active_kill_sound_pack_id ?? null;
+
+  const previewPack = (pack: any) => {
+    try {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+      const urls = (pack.sound_urls as string[]) ?? [];
+      const url = urls[urls.length - 1] || urls[0];
+      if (!url) return;
+      const a = new Audio(url);
+      a.volume = 0.8;
+      previewAudioRef.current = a;
+      a.play().catch(() => {});
+    } catch (e) { /* noop */ }
+  };
+
+  const handlePack = async (pack: any) => {
+    if (!profile) return;
+    const owned = ownedPackIds.has(pack.id);
+    setPackBusy(pack.id);
+    try {
+      if (!owned) {
+        if ((profile.coins ?? 0) < pack.price) {
+          toast.error(`狄邦豆不足，需要 ${pack.price}`);
+          return;
+        }
+        const { data, error } = await supabase.rpc("purchase_sound_pack", { p_pack_id: pack.id });
+        if (error) throw error;
+        const payload = data as any;
+        if (payload?.error === "not_enough_coins") {
+          toast.error("狄邦豆不足");
+          return;
+        }
+        toast.success(`已购买并装备「${pack.name}」`);
+      } else {
+        if (activePackId === pack.id) {
+          toast.info("该音效包已装备");
+          return;
+        }
+        const { error } = await supabase.rpc("equip_sound_pack", { p_pack_id: pack.id });
+        if (error) throw error;
+        toast.success(`已装备「${pack.name}」`);
+      }
+      await Promise.all([refreshProfile(), loadPacks(), reloadActiveSoundPack()]);
+    } catch (e: any) {
+      toast.error(e?.message || "操作失败");
+    } finally {
+      setPackBusy(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background bg-grid-pattern p-4">
       <div className="max-w-3xl mx-auto space-y-6">

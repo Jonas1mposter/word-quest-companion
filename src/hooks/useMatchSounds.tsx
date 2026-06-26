@@ -1,17 +1,59 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { audioManager } from '@/lib/audioManager';
+import { supabase } from '@/integrations/supabase/client';
 import kill1 from '@/assets/kill-sounds/kill_1.mp3.asset.json';
 import kill2 from '@/assets/kill-sounds/kill_2.mp3.asset.json';
 import kill3 from '@/assets/kill-sounds/kill_3.mp3.asset.json';
 import kill4 from '@/assets/kill-sounds/kill_4.mp3.asset.json';
 import kill5 from '@/assets/kill-sounds/kill_5.mp3.asset.json';
 
-const KILL_SOUND_URLS = [kill1.url, kill2.url, kill3.url, kill4.url, kill5.url];
+const DEFAULT_URLS = [kill1.url, kill2.url, kill3.url, kill4.url, kill5.url];
+let activeUrls: string[] = [...DEFAULT_URLS];
+let activeLoaded = false;
+let activeLoadingPromise: Promise<void> | null = null;
+
 const killAudioCache: Record<number, HTMLAudioElement> = {};
+
+const loadActivePack = (): Promise<void> => {
+  if (activeLoaded) return Promise.resolve();
+  if (activeLoadingPromise) return activeLoadingPromise;
+  activeLoadingPromise = (async () => {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u?.user) return;
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('active_kill_sound_pack_id')
+        .eq('user_id', u.user.id)
+        .maybeSingle();
+      if (!prof?.active_kill_sound_pack_id) return;
+      const { data: pack } = await supabase
+        .from('kill_sound_packs')
+        .select('sound_urls')
+        .eq('id', prof.active_kill_sound_pack_id)
+        .maybeSingle();
+      const urls = pack?.sound_urls as unknown as string[] | undefined;
+      if (Array.isArray(urls) && urls.length === 5) {
+        activeUrls = urls;
+        Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
+      }
+    } catch (e) { /* fallback */ }
+    finally { activeLoaded = true; }
+  })();
+  return activeLoadingPromise;
+};
+
+export const reloadActiveSoundPack = () => {
+  activeLoaded = false;
+  activeLoadingPromise = null;
+  Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
+  return loadActivePack();
+};
+
 const getKillAudio = (n: number) => {
   const idx = Math.min(Math.max(n, 1), 5) - 1;
   if (!killAudioCache[idx]) {
-    const a = new Audio(KILL_SOUND_URLS[idx]);
+    const a = new Audio(activeUrls[idx]);
     a.preload = 'auto';
     killAudioCache[idx] = a;
   }

@@ -297,7 +297,11 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
               {/* Value */}
               <div className="text-right">
                 <div className="font-gaming text-sm text-primary">
-                  {type === "rank" && `${entry.value} 分`}
+                  {type === "rank" && (() => {
+                    const tier = (entry.tier?.toLowerCase() || "bronze") as RankTier;
+                    const config = tierConfig[tier] || tierConfig.bronze;
+                    return `${config.name}${entry.rankStars ? ` ${entry.rankStars}★` : ""}`;
+                  })()}
                   {type === "wins" && `${entry.value} 胜`}
                   {type === "xp" && `${entry.value.toLocaleString()} XP`}
                 </div>

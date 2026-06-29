@@ -1,0 +1,1 @@
+ALTER TABLE public.teams ALTER COLUMN max_members SET DEFAULT 5; UPDATE public.teams SET max_members = 5 WHERE max_members <> 5;

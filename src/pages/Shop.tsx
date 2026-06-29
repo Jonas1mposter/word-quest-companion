@@ -286,7 +286,16 @@ export default function Shop() {
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{pack.preview_icon || "🔊"}</span>
+                          {pack.icon_url ? (
+                            <img
+                              src={pack.icon_url}
+                              alt={pack.name}
+                              className="w-12 h-12 rounded-lg object-cover border border-border/60 shadow-sm"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="text-2xl">{pack.preview_icon || "🔊"}</span>
+                          )}
                           <div>
                             <div className="font-gaming text-base">{pack.name}</div>
                             <Badge variant="outline" className="text-[10px] mt-0.5">

@@ -83,7 +83,7 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
           const memberIds = teamMembers.map(m => m.profile_id);
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, username, level, avatar_url, total_xp')
+            .select('id, username, level, avatar_url, total_xp, wins')
             .in('id', memberIds);
 
           const enrichedMembers = teamMembers.map(m => {
@@ -98,10 +98,14 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
           }).sort((a, b) => a.role === 'captain' ? -1 : b.role === 'captain' ? 1 : b.total_xp - a.total_xp);
 
           setMembers(enrichedMembers);
-          
+
+          // Aggregate team stats from members (teams.total_xp/total_wins isn't auto-updated)
+          const aggXp = (profiles ?? []).reduce((s, p: any) => s + (p.total_xp || 0), 0);
+          const aggWins = (profiles ?? []).reduce((s, p: any) => s + (p.wins || 0), 0);
+
           // Get captain name
           const captain = profiles?.find(p => p.id === team.captain_id);
-          setMyTeam({ ...team, member_count: teamMembers.length, captain_name: captain?.username });
+          setMyTeam({ ...team, total_xp: aggXp, total_wins: aggWins, member_count: teamMembers.length, captain_name: captain?.username });
         }
 
         // Load pending join requests if captain

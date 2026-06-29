@@ -95,6 +95,7 @@ const BattleArena = ({
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false);
   const winnerIdRef = useRef<string | null>(null);
+  const [rewards, setRewards] = useState<{ coins: number; xp: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);

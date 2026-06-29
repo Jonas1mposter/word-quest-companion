@@ -205,7 +205,12 @@ const BattleArena = ({
     try {
       const { data, error } = await supabase.functions.invoke('process-match', { body: { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
-      else if (data) winnerIdRef.current = data.winnerId ?? null;
+      else if (data) {
+        winnerIdRef.current = data.winnerId ?? null;
+        if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
+          setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
+        }
+      }
     } catch (e) {
       console.error('process-match exception', e);
     }

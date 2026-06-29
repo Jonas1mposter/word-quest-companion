@@ -61,7 +61,6 @@ export default function Shop() {
     const { data: packs } = await supabase
       .from("kill_sound_packs")
       .select("*")
-      .gt("price", 0)
       .order("price", { ascending: true });
     setSoundPacks(packs ?? []);
     if (profile?.id) {
@@ -325,22 +324,23 @@ export default function Shop() {
                         </Button>
                         <Button
                           size="sm"
-                          disabled={packBusy === pack.id || equipped}
+                          disabled={packBusy === pack.id || equipped || (!owned && pack.price === 0)}
                           onClick={() => handlePack(pack)}
                           className={cn(
                             "flex-1",
-                            !owned && "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600",
+                            !owned && pack.price > 0 && "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600",
                           )}
                         >
                           {packBusy === pack.id ? (
                             <Loader2 className="w-3 h-3 animate-spin mr-1" />
                           ) : equipped ? (
                             <Check className="w-3 h-3 mr-1" />
-                          ) : owned ? null : (
+                          ) : owned ? null : pack.price > 0 ? (
                             <Coins className="w-3 h-3 mr-1" />
-                          )}
-                          {equipped ? "已装备" : owned ? "装备" : `${pack.price} 豆`}
+                          ) : null}
+                          {equipped ? "已装备" : owned ? "装备" : pack.price > 0 ? `${pack.price} 豆` : "赛季限定"}
                         </Button>
+
                       </div>
                     </CardContent>
                   </Card>

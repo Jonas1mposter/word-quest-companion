@@ -30,7 +30,6 @@ import SpectateView from "./SpectateView";
 import MatchHistory from "./MatchHistory";
 import { ReconnectDialog } from "./ReconnectDialog";
 import { TeamPanel } from "./team/TeamPanel";
-import { TeamChallengePanel } from "./team/TeamChallengePanel";
 import { Swords, Globe } from "lucide-react";
 import SubjectBattleSelector, { BattleSubject } from "./SubjectBattleSelector";
 import { toast } from "sonner";
@@ -114,8 +113,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   };
 
   // ===== Full-screen subviews =====
-  if (activeView === "team") return <TeamPanel onBack={() => setActiveView("home")} onOpenChallenge={() => setActiveView("teamChallenge")} />;
-  if (activeView === "teamChallenge") return <TeamChallengePanel onBack={() => setActiveView("team")} />;
+  if (activeView === "team") return <TeamPanel onBack={() => setActiveView("home")} />;
 
   if (activeView === "spectate" && spectateMatchId) {
     return <SpectateView matchId={spectateMatchId} onBack={() => {

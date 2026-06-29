@@ -8,7 +8,7 @@ export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn"
   | "battle" | "battle-select" | "freematch" | "freematch-select"
   | "leaderboard" | "profile" | "friends" | "wrongbook"
-  | "challenge" | "seasonpass" | "spectate" | "history" | "team" | "teamChallenge";
+  | "challenge" | "seasonpass" | "spectate" | "history" | "team";
 
 interface Tab { id: DashboardView; label: string; icon: LucideIcon; }
 

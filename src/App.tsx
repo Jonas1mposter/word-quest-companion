@@ -47,7 +47,9 @@ const App = () => {
               <Route path="/documents" element={<Documents />} />
               <Route path="/product-ppt" element={<ProductPPT />} />
               <Route path="/shop" element={<Shop />} />
+              <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="*" element={<NotFound />} />
+
             </Routes>
           </HashRouter>
         </TooltipProvider>

@@ -238,6 +238,83 @@ const SeasonPassManual = () => {
           </div>
         </section>
 
+        {/* 完整奖励表 */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Gift className="w-6 h-6 text-accent" />
+            S1 完整奖励表（30 级）
+          </h2>
+          <Card variant="gaming" className="border-primary/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 border-b border-border/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold w-16">等级</th>
+                    <th className="px-4 py-3 text-left font-bold">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Gift className="w-4 h-4 text-accent" /> 免费奖励
+                      </span>
+                    </th>
+                    <th className="px-4 py-3 text-left font-bold">
+                      <span className="inline-flex items-center gap-1.5 text-amber-300">
+                        <Crown className="w-4 h-4 text-amber-400" /> 高级版奖励
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { lv: 1, free: "100 狄邦豆", premium: "300 狄邦豆 + 能量 ×3" },
+                    { lv: 2, free: "能量 ×2", premium: "500 狄邦豆" },
+                    { lv: 3, free: "150 狄邦豆", premium: "稀有徽章「赛季先锋」" },
+                    { lv: 4, free: "能量 ×3", premium: "600 狄邦豆 + 能量 ×5" },
+                    { lv: 5, free: "普通徽章「起源新星」", premium: "专属名片「起源·初航」" },
+                    { lv: 6, free: "200 狄邦豆", premium: "800 狄邦豆" },
+                    { lv: 7, free: "能量 ×3", premium: "稀有徽章「连击大师」" },
+                    { lv: 8, free: "250 狄邦豆", premium: "1000 狄邦豆 + 能量 ×5" },
+                    { lv: 9, free: "能量 ×4", premium: "专属名片「金辉序章」" },
+                    { lv: 10, free: "普通徽章「十级勋章」", premium: "1500 狄邦豆 + 稀有徽章" },
+                    { lv: 11, free: "300 狄邦豆", premium: "1000 狄邦豆" },
+                    { lv: 12, free: "能量 ×5", premium: "稀有徽章「不灭斗志」" },
+                    { lv: 13, free: "350 狄邦豆", premium: "1200 狄邦豆 + 能量 ×6" },
+                    { lv: 14, free: "能量 ×5", premium: "专属名片「紫阙微光」" },
+                    { lv: 15, free: "普通徽章「半程之星」", premium: "2000 狄邦豆 + 稀有徽章" },
+                    { lv: 16, free: "400 狄邦豆", premium: "1500 狄邦豆" },
+                    { lv: 17, free: "能量 ×6", premium: "稀有徽章「百炼之刃」" },
+                    { lv: 18, free: "450 狄邦豆", premium: "1800 狄邦豆 + 能量 ×8" },
+                    { lv: 19, free: "能量 ×6", premium: "专属名片「梦之翼·序」" },
+                    { lv: 20, free: "普通徽章「二十连辉」", premium: "2500 狄邦豆 + 稀有徽章" },
+                    { lv: 21, free: "500 狄邦豆", premium: "2000 狄邦豆" },
+                    { lv: 22, free: "能量 ×7", premium: "稀有徽章「破晓之翼」" },
+                    { lv: 23, free: "600 狄邦豆", premium: "2200 狄邦豆 + 能量 ×10" },
+                    { lv: 24, free: "能量 ×8", premium: "专属名片「堕天遗武·初」" },
+                    { lv: 25, free: "稀有徽章「四分之三传奇」", premium: "3000 狄邦豆 + 史诗徽章" },
+                    { lv: 26, free: "700 狄邦豆", premium: "2500 狄邦豆" },
+                    { lv: 27, free: "能量 ×10", premium: "史诗徽章「赛季王者」" },
+                    { lv: 28, free: "800 狄邦豆", premium: "3000 狄邦豆 + 能量 ×15" },
+                    { lv: 29, free: "能量 ×10", premium: "专属名片「起源·终章」" },
+                    { lv: 30, free: "稀有徽章「S1 完赛」+ 1000 狄邦豆", premium: "传说名片「起源王者」+ 5000 狄邦豆" },
+                  ].map((row) => (
+                    <tr
+                      key={row.lv}
+                      className="border-b border-border/30 hover:bg-muted/20 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-mono font-bold text-accent">Lv.{row.lv}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{row.free}</td>
+                      <td className="px-4 py-3 text-amber-200/90">{row.premium}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            ※ 奖励内容以游戏内实际发放为准；高级版需先消耗 500 狄邦豆激活。
+          </p>
+        </section>
+
+
+
         {/* 经验来源 */}
         <section>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">

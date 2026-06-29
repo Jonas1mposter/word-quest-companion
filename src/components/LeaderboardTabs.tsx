@@ -42,29 +42,29 @@ interface LeaderboardTabsProps {
 }
 
 const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }: LeaderboardTabsProps) => {
-  const [coinsLeaderboard, setCoinsLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [rankLeaderboard, setRankLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [winsLeaderboard, setWinsLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [xpLeaderboard, setXpLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [classLeaderboard, setClassLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [activeTab, setActiveTab] = useState("coins");
+  const [activeTab, setActiveTab] = useState("rank");
   const [showFreeMatchLeaderboard, setShowFreeMatchLeaderboard] = useState(false);
 
   useEffect(() => {
     const fetchLeaderboards = async () => {
-      // 狄邦豆排行榜
-      const { data: coinsData } = await supabase
+      // 段位排行榜 (按 rank_points 排序)
+      const { data: rankData } = await supabase
         .from("profiles")
-        .select("id, username, coins, rank_tier")
+        .select("id, username, rank_tier, rank_stars, rank_points")
         .eq("grade", grade)
-        .order("coins", { ascending: false })
+        .order("rank_points", { ascending: false })
         .limit(10);
 
-      if (coinsData) {
-        setCoinsLeaderboard(coinsData.map((p: any, index: number) => ({
+      if (rankData) {
+        setRankLeaderboard(rankData.map((p: any, index: number) => ({
           rank: index + 1,
           username: p.username,
           profileId: p.id,
-          value: p.coins,
+          value: p.rank_points || 0,
           tier: p.rank_tier,
           rankStars: p.rank_stars,
         })));

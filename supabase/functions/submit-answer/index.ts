@@ -18,7 +18,8 @@ Deno.serve(async (req) => {
       .eq("id", matchId)
       .single();
     if (mErr || !match) return json({ error: "Match not found" }, 404);
-    if (match.status === "completed") return json({ error: "Match ended" }, 409);
+    // Return 200 with a flag so the client doesn't surface this as a runtime error.
+    if (match.status === "completed") return json({ ok: true, matchEnded: true, isCorrect: false }, 200);
 
     const isP1 = match.player1_id === profile.id;
     const isP2 = match.player2_id === profile.id;

@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./BattleQuizCard";
 import PlayerBattleCard from "./PlayerBattleCard";
+import KillStreakBanner from "./KillStreakBanner";
 import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
 
 interface Word {

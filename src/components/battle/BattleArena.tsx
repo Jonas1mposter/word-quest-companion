@@ -232,10 +232,30 @@ const BattleArena = ({
     answeringRef.current = true;
     try {
       const idx = currentQuestion;
-      const { data, error } = await supabase.functions.invoke('submit-answer', {
-        body: { matchId: matchData.id, questionIndex: idx, answer, quizType },
-      });
-      const serverCorrect = !error && data && !data.error ? !!data.isCorrect : clientCorrect;
+      let serverCorrect = clientCorrect;
+      let matchEnded = false;
+      try {
+        const { data, error } = await supabase.functions.invoke('submit-answer', {
+          body: { matchId: matchData.id, questionIndex: idx, answer, quizType },
+        });
+        if (error) {
+          // 409 = match already ended on server. Treat as terminal, not a crash.
+          const ctx: any = (error as any).context;
+          if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) {
+            matchEnded = true;
+          }
+        } else if (data?.error === 'Match ended') {
+          matchEnded = true;
+        } else if (data && !data.error) {
+          serverCorrect = !!data.isCorrect;
+        }
+      } catch (_) {
+        // network hiccup — fall back to client correctness
+      }
+      if (matchEnded) {
+        endMatch();
+        return;
+      }
       if (serverCorrect) {
         const ns = myScoreRef.current + 1;
         myScoreRef.current = ns;

@@ -46,6 +46,13 @@ Deno.serve(async (req) => {
     } else if (item.reward_type === "xp") {
       patch.xp = profile.xp + item.reward_value;
       patch.total_xp = (profile.total_xp ?? 0) + item.reward_value;
+    } else if (item.reward_type === "kill_sound_pack") {
+      const packId = (item as any).reward_meta?.pack_id;
+      if (packId) {
+        await admin
+          .from("user_kill_sound_packs")
+          .upsert({ profile_id: profile.id, pack_id: packId }, { onConflict: "profile_id,pack_id" });
+      }
     }
     if (Object.keys(patch).length) {
       await admin.from("profiles").update(patch).eq("id", profile.id);

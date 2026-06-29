@@ -242,7 +242,7 @@ const SeasonPassManual = () => {
         <section>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
             <Gift className="w-6 h-6 text-accent" />
-            S1 完整奖励表（30 级）
+            S1 完整奖励表（50 级）
           </h2>
           <Card variant="gaming" className="border-primary/10 overflow-hidden">
             <div className="overflow-x-auto">
@@ -294,6 +294,10 @@ const SeasonPassManual = () => {
                     { lv: 28, free: "800 狄邦豆", premium: "3000 狄邦豆 + 能量 ×15" },
                     { lv: 29, free: "能量 ×10", premium: "专属名片「起源·终章」" },
                     { lv: 30, free: "稀有徽章「S1 完赛」+ 1000 狄邦豆", premium: "传说名片「起源王者」+ 5000 狄邦豆" },
+                    { lv: 35, free: "能量 + 狄邦豆补给", premium: "高级 经验/狄邦豆 大礼包" },
+                    { lv: 40, free: "狄邦豆 + 能量礼包", premium: "高级 史诗补给" },
+                    { lv: 45, free: "能量 + 经验礼包", premium: "高级 传说补给" },
+                    { lv: 50, free: "3000 狄邦豆 · 完赛奖励", premium: "🌌 神话连杀音效「起源」" },
                   ].map((row) => (
                     <tr
                       key={row.lv}

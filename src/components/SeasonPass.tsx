@@ -280,7 +280,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
                 className="gap-2"
               >
                 <Book className="w-4 h-4" />
-                战队赛季手册
+                S1赛季手册
               </Button>
 
               {userPass && !userPass.is_premium && (

@@ -1544,6 +1544,136 @@ export type Database = {
           },
         ]
       }
+      team_challenge_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          profile_id: string
+          rank: number
+          season_id: string
+          team_id: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          id?: string
+          profile_id: string
+          rank: number
+          season_id: string
+          team_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          profile_id?: string
+          rank?: number
+          season_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_challenge_rewards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_challenge_rewards_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "team_challenge_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_challenge_rewards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_challenge_scores: {
+        Row: {
+          id: string
+          last_updated: string
+          points: number
+          season_id: string
+          team_id: string
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          points?: number
+          season_id: string
+          team_id: string
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          points?: number
+          season_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_challenge_scores_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "team_challenge_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_challenge_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_challenge_seasons: {
+        Row: {
+          created_at: string
+          description: string | null
+          ends_at: string
+          finalized_at: string | null
+          id: string
+          name: string
+          reward_tiers: number[]
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ends_at: string
+          finalized_at?: string | null
+          id?: string
+          name: string
+          reward_tiers?: number[]
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ends_at?: string
+          finalized_at?: string | null
+          id?: string
+          name?: string
+          reward_tiers?: number[]
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_join_requests: {
         Row: {
           created_at: string
@@ -2023,6 +2153,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_team_challenge_score_for_profile: {
+        Args: { p_profile_id: string }
+        Returns: undefined
       }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
     }

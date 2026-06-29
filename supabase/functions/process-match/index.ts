@@ -152,6 +152,13 @@ Deno.serve(async (req) => {
           admin.rpc("award_badges_for_profile", { p_id: p1p.id }),
           admin.rpc("award_badges_for_profile", { p_id: p2p.id }),
         ]);
+
+        // 战队挑战赛：排位赛获胜方 +1 团队积分（自由赛不计）
+        if (!isFree && winnerId) {
+          await admin.rpc("increment_team_challenge_score_for_profile", {
+            p_profile_id: winnerId,
+          });
+        }
       }
     }
 

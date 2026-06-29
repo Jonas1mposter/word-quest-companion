@@ -52,7 +52,7 @@ const formatRemaining = (endsAt: string) => {
   return `${m} 分钟`;
 };
 
-export const TeamChallengePanel = ({ onBack }: { onBack: () => void }) => {
+export const TeamChallengePanel = ({ onBack, embedded = false }: { onBack?: () => void; embedded?: boolean }) => {
   const { profile } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -202,16 +202,17 @@ export const TeamChallengePanel = ({ onBack }: { onBack: () => void }) => {
     await loadAll();
   };
 
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+  const content = (
+    <div className={embedded ? "space-y-6" : "max-w-5xl mx-auto space-y-6"}>
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={onBack}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            返回
-          </Button>
+          {!embedded && onBack ? (
+            <Button variant="ghost" onClick={onBack}>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              返回
+            </Button>
+          ) : <div />}
           {isAdmin && (
-            <Button onClick={() => setShowCreate(true)} variant="default">
+            <Button onClick={() => setShowCreate(true)} variant="default" size={embedded ? "sm" : "default"}>
               <Plus className="h-4 w-4 mr-1" />
               开启新赛季
             </Button>
@@ -363,7 +364,6 @@ export const TeamChallengePanel = ({ onBack }: { onBack: () => void }) => {
             </CardContent>
           </Card>
         )}
-      </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
@@ -407,4 +407,7 @@ export const TeamChallengePanel = ({ onBack }: { onBack: () => void }) => {
       </Dialog>
     </div>
   );
+
+  if (embedded) return content;
+  return <div className="min-h-screen bg-background p-4 md:p-6">{content}</div>;
 };

@@ -8,6 +8,7 @@ import { BadgeIcon } from "@/components/ui/badge-icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Award, Lock, RefreshCw } from "lucide-react";
+import { getBadgeCriteria } from "@/lib/badgeCriteria";
 
 interface BadgeItem {
   id: string;

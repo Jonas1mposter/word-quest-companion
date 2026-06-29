@@ -356,6 +356,7 @@ const BattleArena = ({
             )}
           </div>
         </div>
+        <KillStreakBanner combo={comboCount} />
         {currentWord && (
           <BattleQuizCard
             word={currentWord}

@@ -288,7 +288,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
               {/* Value */}
               <div className="text-right">
                 <div className="font-gaming text-sm text-primary">
-                  {type === "coins" && `${entry.value.toLocaleString()} 豆`}
+                  {type === "rank" && `${entry.value} 分`}
                   {type === "wins" && `${entry.value} 胜`}
                   {type === "xp" && `${entry.value.toLocaleString()} XP`}
                 </div>

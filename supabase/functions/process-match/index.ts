@@ -129,11 +129,30 @@ Deno.serve(async (req) => {
           if (isFree) return score === 1 ? 12 : score === 0.5 ? 6 : 4;
           return score === 1 ? 25 : score === 0.5 ? 12 : 8;
         };
+        // 经验奖励：排位胜=80/平=40/负=25；自由对战胜=30/平=15/负=10
+        const xpReward = (score: number) => {
+          if (isFree) return score === 1 ? 30 : score === 0.5 ? 15 : 10;
+          return score === 1 ? 80 : score === 0.5 ? 40 : 25;
+        };
         const updates: Promise<unknown>[] = [];
         for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
+          // 升级计算（与 complete-level 保持一致）
+          const xpGain = xpReward(score);
+          let newXp = (pp.xp ?? 0) + xpGain;
+          let newLevel = pp.level ?? 1;
+          let newXpToNext = pp.xp_to_next_level ?? 100;
+          while (newXp >= newXpToNext) {
+            newXp -= newXpToNext;
+            newLevel++;
+            newXpToNext = 100 * newLevel;
+          }
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
             coins: (pp.coins ?? 0) + coinReward(score),
+            xp: newXp,
+            level: newLevel,
+            xp_to_next_level: newXpToNext,
+            total_xp: (pp.total_xp ?? 0) + xpGain,
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;

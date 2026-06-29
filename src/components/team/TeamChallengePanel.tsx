@@ -211,13 +211,24 @@ export const TeamChallengePanel = ({ onBack, embedded = false }: { onBack?: () =
               返回
             </Button>
           ) : <div />}
-          {isAdmin && (
-            <Button onClick={() => setShowCreate(true)} variant="default" size={embedded ? "sm" : "default"}>
-              <Plus className="h-4 w-4 mr-1" />
-              开启新赛季
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size={embedded ? "sm" : "default"}
+              onClick={() => window.open(`${window.location.origin}/#/season-manual`, "_blank")}
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              赛季手册
             </Button>
-          )}
+            {isAdmin && (
+              <Button onClick={() => setShowCreate(true)} variant="default" size={embedded ? "sm" : "default"}>
+                <Plus className="h-4 w-4 mr-1" />
+                开启新赛季
+              </Button>
+            )}
+          </div>
         </div>
+
 
         <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-background to-background">
           <CardHeader>

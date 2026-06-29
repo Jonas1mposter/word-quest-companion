@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       .eq("profile_id", profile.id)
       .eq("season_pass_item_id", itemId)
       .maybeSingle();
-    if (existing) return json({ error: "Already claimed" }, 400);
+    if (existing) return json({ ok: true, alreadyClaimed: true });
 
     const { error: insErr } = await admin
       .from("user_pass_rewards")

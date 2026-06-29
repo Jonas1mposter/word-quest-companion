@@ -192,10 +192,14 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
         body: { itemId: item.id },
       });
       if (error || (data && data.error)) {
-        toast.error(data?.error === "Already claimed" ? "已经领取过了" : "领取失败，请重试");
+        toast.error("领取失败，请重试");
         return;
       }
       setClaimedRewards(new Set([...claimedRewards, item.id]));
+      if (data?.alreadyClaimed) {
+        toast.info("已经领取过了");
+        return;
+      }
       refreshProfile();
       toast.success(`成功领取：${item.name}`);
     } catch (error) {

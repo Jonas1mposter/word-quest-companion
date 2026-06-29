@@ -370,9 +370,9 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
         <CardContent className="p-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className={cn("grid w-full mb-4", currentClass ? "grid-cols-4" : "grid-cols-3")}>
-              <TabsTrigger value="coins" className="flex items-center gap-2">
-                <Coins className="w-4 h-4" />
-                <span className="hidden sm:inline">狄邦豆</span>
+              <TabsTrigger value="rank" className="flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                <span className="hidden sm:inline">段位</span>
               </TabsTrigger>
               <TabsTrigger value="wins" className="flex items-center gap-2">
                 <Swords className="w-4 h-4" />
@@ -390,8 +390,8 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
               )}
             </TabsList>
             
-            <TabsContent value="coins">
-              {renderLeaderboard(coinsLeaderboard, "coins")}
+            <TabsContent value="rank">
+              {renderLeaderboard(rankLeaderboard, "rank")}
             </TabsContent>
             <TabsContent value="wins">
               {renderLeaderboard(winsLeaderboard, "wins")}

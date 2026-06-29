@@ -303,8 +303,8 @@ export const BattleInviteReceiver = ({
         const { data: match, error: matchError } = await supabase
           .from("ranked_matches")
           .insert({
-            player1_id: pendingInvite.sender_id,
-            player2_id: currentProfileId,
+            player1_id: currentProfileId,
+            player2_id: pendingInvite.sender_id,
             grade: currentGrade,
             status: "in_progress",
             words: words || [],

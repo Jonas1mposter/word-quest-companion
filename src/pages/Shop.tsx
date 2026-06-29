@@ -163,6 +163,7 @@ export default function Shop() {
         if (error) throw error;
         toast.success(`已装备「${pack.name}」`);
       }
+      reloadKillStreakIcons();
       await Promise.all([refreshProfile(), loadPacks(), reloadActiveSoundPack()]);
     } catch (e: any) {
       toast.error(e?.message || "操作失败");

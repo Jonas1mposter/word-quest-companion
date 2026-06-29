@@ -34,7 +34,7 @@ interface TeamMember {
   total_xp: number;
 }
 
-export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
+export const TeamPanel = ({ onBack, onOpenChallenge }: { onBack: () => void; onOpenChallenge?: () => void }) => {
   const { profile } = useAuth();
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);

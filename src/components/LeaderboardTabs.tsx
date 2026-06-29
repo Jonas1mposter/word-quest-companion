@@ -187,7 +187,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
     }
   };
 
-  const renderLeaderboard = (entries: LeaderboardEntry[], type: "coins" | "wins" | "xp" | "class") => {
+  const renderLeaderboard = (entries: LeaderboardEntry[], type: "rank" | "wins" | "xp" | "class") => {
     const nameCard = getNameCardInfo(type);
     const IconComponent = nameCard.icon;
     

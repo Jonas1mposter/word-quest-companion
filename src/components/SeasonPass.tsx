@@ -272,24 +272,37 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
               <Badge variant="outline">{season.name}</Badge>
             </CardTitle>
             
-            {userPass && !userPass.is_premium && (
-              <Button 
-                variant="hero" 
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => setShowPurchaseDialog(true)}
+                onClick={() => window.open('/#/season-manual', '_blank')}
                 className="gap-2"
               >
-                <Crown className="w-4 h-4" />
-                解锁高级版
+                <Book className="w-4 h-4" />
+                战队赛季手册
               </Button>
-            )}
-            
-            {userPass?.is_premium && (
-              <Badge variant="champion" className="gap-1">
-                <Crown className="w-3 h-3" />
-                高级版
-              </Badge>
-            )}
+
+              {userPass && !userPass.is_premium && (
+                <Button 
+                  variant="hero" 
+                  size="sm"
+                  onClick={() => setShowPurchaseDialog(true)}
+                  className="gap-2"
+                >
+                  <Crown className="w-4 h-4" />
+                  解锁高级版
+                </Button>
+              )}
+              
+              {userPass?.is_premium && (
+                <Badge variant="champion" className="gap-1">
+                  <Crown className="w-3 h-3" />
+                  高级版
+                </Badge>
+              )}
+            </div>
+
           </div>
           
           {/* Progress bar */}

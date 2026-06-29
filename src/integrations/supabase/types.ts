@@ -603,6 +603,7 @@ export type Database = {
           created_at: string
           description: string | null
           icon_url: string | null
+          icon_urls: Json | null
           id: string
           is_default: boolean
           name: string
@@ -616,6 +617,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           icon_url?: string | null
+          icon_urls?: Json | null
           id?: string
           is_default?: boolean
           name: string
@@ -629,6 +631,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           icon_url?: string | null
+          icon_urls?: Json | null
           id?: string
           is_default?: boolean
           name?: string

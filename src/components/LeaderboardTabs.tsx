@@ -327,7 +327,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
       <div className="space-y-4">
         <Button 
           variant="outline" 
-          onClick={() => setActiveTab("coins")}
+          onClick={() => setActiveTab("rank")}
           className="gap-2"
         >
           <Trophy className="w-4 h-4" />

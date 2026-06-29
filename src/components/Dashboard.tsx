@@ -18,6 +18,7 @@ import ChallengeArena from "./ChallengeArena";
 import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
+import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
 import BadgeDisplay from "./BadgeDisplay";
 import LearningStats from "./LearningStats";
@@ -158,6 +159,16 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
 
   if (activeView === "history") return <MatchHistory onBack={() => setActiveView("home")} />;
+
+  if (activeView === "bot") {
+    if (!user) return <LoginRequired Icon={Swords} title="登录后参与人机对抗"
+      subtitle="选择难度，和 AI 切磋词汇！" onBack={() => setActiveView("home")} />;
+    return <BotBattle onBack={() => {
+      setActiveView("home");
+      setRefreshKey(p => p + 1); refreshProfile();
+      setTimeout(() => { checkAndAwardBadges(); checkNameCards(); }, 500);
+    }} />;
+  }
 
   if (activeView === "wrongbook" && wrongWordsToReview) {
     return <WrongWordReview words={wrongWordsToReview} subject={wrongReviewSubject}

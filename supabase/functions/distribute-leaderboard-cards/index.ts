@@ -15,7 +15,7 @@ interface CardConfig {
 
 const LEADERBOARD_CARDS: Record<string, CardConfig> = {
   leaderboard_wins: { name: "狄邦排位大师", orderBy: "wins", limit: 10 },
-  leaderboard_coins: { name: "狄邦财富大亨", orderBy: "coins", limit: 10 },
+  leaderboard_rank: { name: "狄邦不败之巅", orderBy: "rank_points", limit: 10 },
   leaderboard_xp: { name: "狄邦至高巅峰", orderBy: "total_xp", limit: 10 },
 };
 

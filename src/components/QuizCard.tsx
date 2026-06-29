@@ -144,7 +144,7 @@ const QuizCard = ({
             </button>
             <PosTag value={inferPos(word.meaning)} />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">词性: {inferPos(word.meaning) || "—"}</p>
+          
           {word.phonetic && (
             <p className="text-muted-foreground text-lg">{word.phonetic}</p>
           )}

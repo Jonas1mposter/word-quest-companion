@@ -6,6 +6,14 @@ import { cn } from "@/lib/utils";
 import { speakWord as speak } from "@/hooks/useSpeech";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
+import { inferPos } from "@/lib/partOfSpeech";
+
+const PosTag = ({ value }: { value: string }) =>
+  value ? (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neon-blue/15 text-neon-blue text-xs font-mono font-semibold tracking-wide">
+      {value}
+    </span>
+  ) : null;
 
 export type BattleQuizType = "meaning" | "reverse" | "spelling" | "listening";
 

@@ -1426,6 +1426,7 @@ export type Database = {
           is_premium: boolean
           level: number
           name: string
+          reward_meta: Json | null
           reward_type: string
           reward_value: number
           season_id: string
@@ -1438,6 +1439,7 @@ export type Database = {
           is_premium?: boolean
           level?: number
           name?: string
+          reward_meta?: Json | null
           reward_type?: string
           reward_value?: number
           season_id: string
@@ -1450,6 +1452,7 @@ export type Database = {
           is_premium?: boolean
           level?: number
           name?: string
+          reward_meta?: Json | null
           reward_type?: string
           reward_value?: number
           season_id?: string

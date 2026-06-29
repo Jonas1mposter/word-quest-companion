@@ -58,9 +58,10 @@ Deno.serve(async (req) => {
       const winField = isFree ? "free_match_wins" : "wins";
       const lossField = isFree ? "free_match_losses" : "losses";
 
+      const xpCols = `xp, total_xp, level, xp_to_next_level`;
       const selectCols = isFree
-        ? `id, coins, ${eloField}, ${winField}, ${lossField}`
-        : `id, coins, ${eloField}, ${winField}, ${lossField}, rank_tier, rank_stars, rank_points`;
+        ? `id, coins, ${xpCols}, ${eloField}, ${winField}, ${lossField}`
+        : `id, coins, ${xpCols}, ${eloField}, ${winField}, ${lossField}, rank_tier, rank_stars, rank_points`;
 
       const { data: players } = await admin
         .from("profiles")

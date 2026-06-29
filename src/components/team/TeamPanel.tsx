@@ -83,7 +83,7 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
           const memberIds = teamMembers.map(m => m.profile_id);
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, username, level, avatar_url, total_xp')
+            .select('id, username, level, avatar_url, total_xp, wins')
             .in('id', memberIds);
 
           const enrichedMembers = teamMembers.map(m => {
@@ -98,10 +98,14 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
           }).sort((a, b) => a.role === 'captain' ? -1 : b.role === 'captain' ? 1 : b.total_xp - a.total_xp);
 
           setMembers(enrichedMembers);
-          
+
+          // Aggregate team stats from members (teams.total_xp/total_wins isn't auto-updated)
+          const aggXp = (profiles ?? []).reduce((s, p: any) => s + (p.total_xp || 0), 0);
+          const aggWins = (profiles ?? []).reduce((s, p: any) => s + (p.wins || 0), 0);
+
           // Get captain name
           const captain = profiles?.find(p => p.id === team.captain_id);
-          setMyTeam({ ...team, member_count: teamMembers.length, captain_name: captain?.username });
+          setMyTeam({ ...team, total_xp: aggXp, total_wins: aggWins, member_count: teamMembers.length, captain_name: captain?.username });
         }
 
         // Load pending join requests if captain
@@ -136,19 +140,30 @@ export const TeamPanel = ({ onBack }: { onBack: () => void }) => {
       if (teams) {
         // Count members for each team
         const enriched = await Promise.all(teams.map(async (t) => {
-          const { count } = await supabase
+          const { data: tm } = await supabase
             .from('team_members')
-            .select('*', { count: 'exact', head: true })
+            .select('profile_id')
             .eq('team_id', t.id);
-          
+          const ids = (tm ?? []).map(x => x.profile_id);
+          let aggXp = 0, aggWins = 0;
+          if (ids.length) {
+            const { data: ps } = await supabase
+              .from('profiles')
+              .select('total_xp, wins')
+              .in('id', ids);
+            aggXp = (ps ?? []).reduce((s: number, p: any) => s + (p.total_xp || 0), 0);
+            aggWins = (ps ?? []).reduce((s: number, p: any) => s + (p.wins || 0), 0);
+          }
+
           const { data: captain } = await supabase
             .from('profiles')
             .select('username')
             .eq('id', t.captain_id)
             .single();
 
-          return { ...t, member_count: count || 0, captain_name: captain?.username };
+          return { ...t, total_xp: aggXp, total_wins: aggWins, member_count: ids.length, captain_name: captain?.username };
         }));
+        enriched.sort((a, b) => b.total_xp - a.total_xp);
         setAllTeams(enriched);
       }
     }

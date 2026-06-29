@@ -26,10 +26,10 @@ export const RewardsTab = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-white">
+          <Card className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white">
             <CardContent className="p-4">
-              <div className="font-gaming text-lg">狄邦财富大亨</div>
-              <div className="text-sm opacity-80">狄邦豆排行榜前10名</div>
+              <div className="font-gaming text-lg">狄邦不败之巅</div>
+              <div className="text-sm opacity-80">段位排行榜前10名</div>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white">

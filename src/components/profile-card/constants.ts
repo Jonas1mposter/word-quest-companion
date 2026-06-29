@@ -81,7 +81,7 @@ export interface BestRecords {
 export const getUnlockCondition = (card: NameCardData): string => {
   if (card.category === "leaderboard_wins") return "排位胜利榜前10名";
   if (card.category === "leaderboard_xp") return "经验值榜前10名";
-  if (card.category === "leaderboard_coins") return "狄邦豆榜前10名";
+  if (card.category === "leaderboard_coins" || card.category === "leaderboard_rank") return "排位段位榜前10名";
   if (card.category === "special") return "内测用户专属";
   if (card.description?.includes("解锁")) return card.description;
   return card.description || "特殊方式获取";

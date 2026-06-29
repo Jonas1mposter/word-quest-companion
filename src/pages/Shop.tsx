@@ -16,6 +16,7 @@ import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Chec
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
+import { reloadKillStreakIcons } from "@/components/battle/KillStreakBanner";
 
 type DrawCard = {
   id?: string;

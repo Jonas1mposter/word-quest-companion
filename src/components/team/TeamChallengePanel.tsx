@@ -408,4 +408,7 @@ export const TeamChallengePanel = ({ onBack, embedded = false }: { onBack?: () =
       </Dialog>
     </div>
   );
+
+  if (embedded) return content;
+  return <div className="min-h-screen bg-background p-4 md:p-6">{content}</div>;
 };

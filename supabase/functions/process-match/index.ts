@@ -129,10 +129,10 @@ Deno.serve(async (req) => {
           if (isFree) return score === 1 ? 12 : score === 0.5 ? 6 : 4;
           return score === 1 ? 25 : score === 0.5 ? 12 : 8;
         };
-        // 经验奖励：排位胜=80/平=40/负=25；自由对战胜=30/平=15/负=10
+        // 经验奖励：排位胜=20/平=10/负=5；自由对战胜=30/平=15/负=10
         const xpReward = (score: number) => {
           if (isFree) return score === 1 ? 30 : score === 0.5 ? 15 : 10;
-          return score === 1 ? 80 : score === 0.5 ? 40 : 25;
+          return score === 1 ? 20 : score === 0.5 ? 10 : 5;
         };
         const updates: Promise<unknown>[] = [];
         for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       : (callerScore === 1 ? 25 : callerScore === 0.5 ? 12 : 8);
     const xpEarned = isFree
       ? (callerScore === 1 ? 30 : callerScore === 0.5 ? 15 : 10)
-      : (callerScore === 1 ? 80 : callerScore === 0.5 ? 40 : 25);
+      : (callerScore === 1 ? 20 : callerScore === 0.5 ? 10 : 5);
 
     // 对局结束后，立即清理双方在 match_queue 中的残留记录，
     // 确保下次匹配会创建全新的排队条目，避免复用旧房间。

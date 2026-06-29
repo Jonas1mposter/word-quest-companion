@@ -308,15 +308,14 @@ const BadgeDisplay = () => {
                 {/* Tooltip on hover */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 w-48">
                   <p className="text-xs font-semibold text-foreground">{badge.name}</p>
-                  {/* Show unlock time if earned, otherwise show condition */}
-                  <div className="mt-1">
-                    {isEarned ? (
+                  {/* Always show acquisition criteria; show unlock time too if earned */}
+                  <div className="mt-1 space-y-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      获取方式：{getBadgeCriteria(badge.name, badge.description)}
+                    </p>
+                    {isEarned && (
                       <p className="text-[10px] text-primary font-medium">
                         ✓ 解锁于 {badge.earnedAt ? formatEarnedDate(badge.earnedAt) : "未知时间"}
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground">
-                        解锁条件：{badge.description || "完成特定任务"}
                       </p>
                     )}
                   </div>

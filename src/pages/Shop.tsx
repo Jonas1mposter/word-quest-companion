@@ -61,7 +61,6 @@ export default function Shop() {
     const { data: packs } = await supabase
       .from("kill_sound_packs")
       .select("*")
-      .gt("price", 0)
       .order("price", { ascending: true });
     setSoundPacks(packs ?? []);
     if (profile?.id) {

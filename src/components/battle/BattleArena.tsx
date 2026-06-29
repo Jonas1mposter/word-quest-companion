@@ -239,12 +239,11 @@ const BattleArena = ({
           body: { matchId: matchData.id, questionIndex: idx, answer, quizType },
         });
         if (error) {
-          // 409 = match already ended on server. Treat as terminal, not a crash.
           const ctx: any = (error as any).context;
           if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) {
             matchEnded = true;
           }
-        } else if (data?.error === 'Match ended') {
+        } else if (data?.matchEnded || data?.error === 'Match ended') {
           matchEnded = true;
         } else if (data && !data.error) {
           serverCorrect = !!data.isCorrect;

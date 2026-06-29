@@ -49,18 +49,27 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
   const [activeTab, setActiveTab] = useState("rank");
   const [showFreeMatchLeaderboard, setShowFreeMatchLeaderboard] = useState(false);
 
+  const tierOrder: Record<string, number> = {
+    champion: 6, diamond: 5, platinum: 4, gold: 3, silver: 2, bronze: 1,
+  };
+
   useEffect(() => {
     const fetchLeaderboards = async () => {
-      // 段位排行榜 (按 rank_points 排序)
+      // 段位排行榜 (按段位 > 星数 > 积分排序)
       const { data: rankData } = await supabase
         .from("profiles")
         .select("id, username, rank_tier, rank_stars, rank_points")
-        .eq("grade", grade)
-        .order("rank_points", { ascending: false })
-        .limit(10);
+        .eq("grade", grade);
 
       if (rankData) {
-        setRankLeaderboard(rankData.map((p: any, index: number) => ({
+        const sorted = [...rankData].sort((a: any, b: any) => {
+          const ta = tierOrder[(a.rank_tier || "bronze").toLowerCase()] || 0;
+          const tb = tierOrder[(b.rank_tier || "bronze").toLowerCase()] || 0;
+          if (tb !== ta) return tb - ta;
+          if ((b.rank_stars || 0) !== (a.rank_stars || 0)) return (b.rank_stars || 0) - (a.rank_stars || 0);
+          return (b.rank_points || 0) - (a.rank_points || 0);
+        }).slice(0, 10);
+        setRankLeaderboard(sorted.map((p: any, index: number) => ({
           rank: index + 1,
           username: p.username,
           profileId: p.id,

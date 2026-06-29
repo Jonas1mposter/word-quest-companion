@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       : (callerScore === 1 ? 25 : callerScore === 0.5 ? 12 : 8);
     const xpEarned = isFree
       ? (callerScore === 1 ? 30 : callerScore === 0.5 ? 15 : 10)
-      : (callerScore === 1 ? 80 : callerScore === 0.5 ? 40 : 25);
+      : (callerScore === 1 ? 20 : callerScore === 0.5 ? 10 : 5);
 
     // 对局结束后，立即清理双方在 match_queue 中的残留记录，
     // 确保下次匹配会创建全新的排队条目，避免复用旧房间。

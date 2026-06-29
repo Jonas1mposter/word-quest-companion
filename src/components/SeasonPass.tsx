@@ -237,13 +237,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
   }
 
   if (!season) {
-    return (
-      <Card variant="gaming">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          当前没有进行中的赛季
-        </CardContent>
-      </Card>
-    );
+    return <SeasonPassManual />;
   }
 
   // Group items by level

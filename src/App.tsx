@@ -17,6 +17,7 @@ import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
+import SeasonPassManual from "./pages/SeasonPassManual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => {
               <Route path="/product-ppt" element={<ProductPPT />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/season-manual" element={<SeasonManual />} />
+              <Route path="/season-pass-manual" element={<SeasonPassManual />} />
               <Route path="*" element={<NotFound />} />
 
             </Routes>

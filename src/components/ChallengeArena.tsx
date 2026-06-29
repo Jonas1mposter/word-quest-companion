@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import SeasonThemeCard from "./SeasonThemeCard";
 import SeasonMilestones from "./SeasonMilestones";
 import SeasonEvents from "./SeasonEvents";
+import { TeamChallengePanel } from "./team/TeamChallengePanel";
+import { Shield } from "lucide-react";
 
 interface ClassChallengeData {
   id: string;
@@ -581,7 +583,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
               <TabsTrigger value="class" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">班级挑战</span>
@@ -589,6 +591,10 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
               <TabsTrigger value="grade" className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 <span className="hidden sm:inline">年级挑战</span>
+              </TabsTrigger>
+              <TabsTrigger value="team" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">战队挑战</span>
               </TabsTrigger>
               <TabsTrigger value="rewards" className="flex items-center gap-2">
                 <Gift className="w-4 h-4" />
@@ -607,6 +613,10 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
 
             <TabsContent value="grade">
               {renderGradeChallenge()}
+            </TabsContent>
+
+            <TabsContent value="team">
+              <TeamChallengePanel embedded />
             </TabsContent>
 
             <TabsContent value="rewards">

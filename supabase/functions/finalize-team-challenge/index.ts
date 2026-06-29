@@ -3,10 +3,10 @@ import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin, profile, supabase } = await requireProfile(req);
+    const { admin, profile } = await requireProfile(req);
 
     // Admin only
-    const { data: isAdmin } = await supabase.rpc("has_role", {
+    const { data: isAdmin } = await admin.rpc("has_role", {
       _user_id: profile.user_id,
       _role: "admin",
     });

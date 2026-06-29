@@ -276,7 +276,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('/#/season-manual', '_blank')}
+                onClick={() => window.open('/#/season-pass-manual', '_blank')}
                 className="gap-2"
               >
                 <Book className="w-4 h-4" />

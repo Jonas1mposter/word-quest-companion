@@ -174,8 +174,8 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
 
   const getNameCardInfo = (tab: string) => {
     switch (tab) {
-      case "coins":
-        return { name: "狄邦财富大亨", gradient: "from-amber-500 via-yellow-400 to-amber-600", icon: Coins };
+      case "rank":
+        return { name: "狄邦不败之巅", gradient: "from-purple-500 via-pink-500 to-rose-500", icon: Crown };
       case "wins":
         return { name: "狄邦排位大师", gradient: "from-purple-600 via-pink-500 to-purple-600", icon: Swords };
       case "xp":

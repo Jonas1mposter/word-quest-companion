@@ -602,6 +602,7 @@ export type Database = {
           code: string
           created_at: string
           description: string | null
+          icon_url: string | null
           id: string
           is_default: boolean
           name: string
@@ -614,6 +615,7 @@ export type Database = {
           code: string
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           is_default?: boolean
           name: string
@@ -626,6 +628,7 @@ export type Database = {
           code?: string
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           is_default?: boolean
           name?: string

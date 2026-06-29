@@ -16,6 +16,7 @@ import Support from "./pages/Support";
 import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
 import Shop from "./pages/Shop";
+import SeasonManual from "./pages/SeasonManual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

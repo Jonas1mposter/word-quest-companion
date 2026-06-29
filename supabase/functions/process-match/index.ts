@@ -123,10 +123,16 @@ Deno.serve(async (req) => {
           return { rank_tier: t, rank_stars: s, rank_points: pts };
         };
 
+        // 狄邦豆奖励：排位胜=25/负=8/平=12；自由对战胜=12/负=4/平=6
+        const coinReward = (score: number) => {
+          if (isFree) return score === 1 ? 12 : score === 0.5 ? 6 : 4;
+          return score === 1 ? 25 : score === 0.5 ? 12 : 8;
+        };
         const updates: Promise<unknown>[] = [];
         for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
+            coins: (pp.coins ?? 0) + coinReward(score),
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;

@@ -423,6 +423,16 @@ const BattleArena = ({
               <p className="text-4xl font-gaming text-neon-blue">{opponentScore}</p>
             </div>
           </div>
+          {rewards && (
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-gaming">
+                +{rewards.coins} 狄邦豆
+              </div>
+              <div className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-gaming">
+                +{rewards.xp} EXP
+              </div>
+            </div>
+          )}
           <Button onClick={onBack} className="w-full" size="lg">返回</Button>
         </Card>
       </div>

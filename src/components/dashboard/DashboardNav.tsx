@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, BookOpen, BookX, Swords, Globe, Target, Book,
+  Sparkles, BookOpen, BookX, Swords, Globe, Target, Book, Bot,
   Users, Shield, History, Trophy, User, LucideIcon,
 } from "lucide-react";
 
 export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn"
-  | "battle" | "battle-select" | "freematch" | "freematch-select"
+  | "battle" | "battle-select" | "freematch" | "freematch-select" | "bot"
   | "leaderboard" | "profile" | "friends" | "wrongbook"
   | "challenge" | "seasonpass" | "spectate" | "history" | "team";
 
@@ -18,6 +18,7 @@ const TABS: Tab[] = [
   { id: "wrongbook", label: "错题本", icon: BookX },
   { id: "battle-select", label: "排位赛", icon: Swords },
   { id: "freematch-select", label: "自由服", icon: Globe },
+  { id: "bot", label: "人机", icon: Bot },
   { id: "challenge", label: "挑战赛", icon: Target },
   { id: "seasonpass", label: "手册", icon: Book },
   { id: "friends", label: "好友", icon: Users },

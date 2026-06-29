@@ -40,6 +40,7 @@ const RARITY_LABEL: Record<string, string> = {
   rare: "稀有",
   epic: "史诗",
   legendary: "传说",
+  mythology: "神话",
 };
 
 const SINGLE_COST = 100;

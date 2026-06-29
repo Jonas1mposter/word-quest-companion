@@ -20,6 +20,7 @@ const TIERS = [
   { label: "Triple Kill", sub: "三杀", color: "from-violet-400 to-purple-600", glow: "shadow-[0_0_40px_rgba(167,139,250,0.9)]" },
   { label: "Quadra Kill", sub: "四杀", color: "from-pink-400 to-fuchsia-600", glow: "shadow-[0_0_50px_rgba(244,114,182,0.9)]" },
   { label: "PENTA KILL", sub: "超神 · 无人能敌", color: "from-yellow-300 via-amber-500 to-red-600", glow: "shadow-[0_0_60px_rgba(250,204,21,1)]" },
+  { label: "HEXA KILL", sub: "电音光谱 · 万象共鸣", color: "from-cyan-300 via-fuchsia-500 to-purple-600", glow: "shadow-[0_0_80px_rgba(217,70,239,1)]" },
 ];
 
 let cachedIcons: string[] | null = null;
@@ -44,7 +45,7 @@ const loadIcons = async (): Promise<string[]> => {
         .eq("id", prof.active_kill_sound_pack_id)
         .maybeSingle();
       const urls = (pack as any)?.icon_urls as string[] | undefined;
-      if (Array.isArray(urls) && urls.length === 5) {
+      if (Array.isArray(urls) && urls.length >= 5) {
         cachedIcons = urls;
         return urls;
       }
@@ -80,9 +81,10 @@ export const KillStreakBanner = ({ combo }: Props) => {
   }, [combo]);
 
   if (shown < 1) return null;
-  const tierIdx = Math.min(shown, 5) - 1;
+  const maxTier = Math.min(icons.length, TIERS.length);
+  const tierIdx = Math.min(shown, maxTier) - 1;
   const tier = TIERS[tierIdx];
-  const iconUrl = icons[tierIdx] ?? DEFAULT_ICONS[tierIdx];
+  const iconUrl = icons[tierIdx] ?? DEFAULT_ICONS[Math.min(tierIdx, DEFAULT_ICONS.length - 1)];
 
   return (
     <div
@@ -94,7 +96,8 @@ export const KillStreakBanner = ({ combo }: Props) => {
           "flex items-center gap-3 rounded-2xl px-6 py-3 bg-gradient-to-r text-white border border-white/30 backdrop-blur-md",
           tier.color,
           tier.glow,
-          shown >= 5 && "animate-pulse"
+          shown >= 5 && "animate-pulse",
+          shown >= 6 && "ring-2 ring-cyan-300/70"
         )}
       >
         <img

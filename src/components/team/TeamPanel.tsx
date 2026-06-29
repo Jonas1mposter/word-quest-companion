@@ -294,7 +294,13 @@ export const TeamPanel = ({ onBack, onOpenChallenge }: { onBack: () => void; onO
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <Shield className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-gaming">我的战队</h1>
+            <h1 className="text-2xl font-gaming flex-1">我的战队</h1>
+            {onOpenChallenge && (
+              <Button variant="outline" size="sm" onClick={onOpenChallenge}>
+                <Trophy className="w-4 h-4 mr-1 text-yellow-500" />
+                战队挑战赛
+              </Button>
+            )}
           </div>
 
           {/* Team info */}
@@ -428,7 +434,13 @@ export const TeamPanel = ({ onBack, onOpenChallenge }: { onBack: () => void; onO
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <Shield className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-gaming">战队系统</h1>
+          <h1 className="text-2xl font-gaming flex-1">战队系统</h1>
+          {onOpenChallenge && (
+            <Button variant="outline" size="sm" onClick={onOpenChallenge}>
+              <Trophy className="w-4 h-4 mr-1 text-yellow-500" />
+              挑战赛
+            </Button>
+          )}
         </div>
 
         {/* Actions */}

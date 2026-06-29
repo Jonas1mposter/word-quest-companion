@@ -6,6 +6,14 @@ import { cn } from "@/lib/utils";
 import { speakWord as speak } from "@/hooks/useSpeech";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
+import { inferPos } from "@/lib/partOfSpeech";
+
+const PosTag = ({ value }: { value: string }) =>
+  value ? (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neon-blue/15 text-neon-blue text-xs font-mono font-semibold tracking-wide">
+      {value}
+    </span>
+  ) : null;
 
 export type BattleQuizType = "meaning" | "reverse" | "spelling" | "listening";
 
@@ -142,6 +150,7 @@ const BattleQuizCard = ({
           >
             <Volume2 className="w-5 h-5 text-primary" />
           </button>
+          <PosTag value={inferPos(word.meaning)} />
         </div>
         {word.phonetic && (
           <p className="text-muted-foreground text-lg mb-8">{word.phonetic}</p>
@@ -201,7 +210,8 @@ const BattleQuizCard = ({
             中译英
           </span>
         </div>
-        <h2 className="text-3xl font-gaming text-glow-purple mb-8">{word.meaning}</h2>
+        <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+        <div className="mb-6 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
 
         <div className="grid grid-cols-1 gap-3">
           {wordOptions.map((option, index) => {
@@ -260,6 +270,7 @@ const BattleQuizCard = ({
           </span>
         </div>
         <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+        <div className="mb-2 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
         <p className="text-muted-foreground text-sm mb-6">
           首字母提示: <span className="font-mono text-primary">{word.word[0].toUpperCase()}</span>
         </p>

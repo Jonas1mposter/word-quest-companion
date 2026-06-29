@@ -7,6 +7,14 @@ import { cn } from "@/lib/utils";
 import { speakWord as speak } from "@/hooks/useSpeech";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
+import { inferPos } from "@/lib/partOfSpeech";
+
+const PosTag = ({ value }: { value: string }) =>
+  value ? (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neon-blue/15 text-neon-blue text-xs font-mono font-semibold tracking-wide">
+      {value}
+    </span>
+  ) : null;
 
 export type QuizType = "meaning" | "spelling" | "listening" | "fillBlank" | "reverse";
 
@@ -134,7 +142,9 @@ const QuizCard = ({
             >
               <Volume2 className="w-5 h-5 text-primary" />
             </button>
+            <PosTag value={inferPos(word.meaning)} />
           </div>
+          
           {word.phonetic && (
             <p className="text-muted-foreground text-lg">{word.phonetic}</p>
           )}
@@ -207,6 +217,7 @@ const QuizCard = ({
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">选择正确的英文单词</p>
           <h2 className="text-3xl font-gaming text-glow-purple">{word.meaning}</h2>
+          <div className="mt-2 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
         </div>
 
         <div className="grid grid-cols-1 gap-3">
@@ -275,7 +286,8 @@ const QuizCard = ({
       <Card variant="glow" className="p-8 max-w-lg mx-auto animate-scale-in">
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">根据中文释义拼写单词</p>
-          <h2 className="text-3xl font-gaming text-glow-purple mb-4">{word.meaning}</h2>
+          <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+          <div className="mb-3 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
           <button
             onClick={() => setShowHint(!showHint)}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -439,7 +451,10 @@ const QuizCard = ({
       <Card variant="glow" className="p-8 max-w-lg mx-auto animate-scale-in">
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">根据句子填写单词</p>
-          <p className="text-lg text-muted-foreground mb-4">{word.meaning}</p>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <p className="text-lg text-muted-foreground">{word.meaning}</p>
+            <PosTag value={inferPos(word.meaning)} />
+          </div>
           <p className="text-xl italic text-foreground/80">"{getBlankSentence()}"</p>
           {showHint && (
             <p className="text-lg text-primary/70 font-mono mt-4">{getHint()}</p>

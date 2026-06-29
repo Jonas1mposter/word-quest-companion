@@ -33,7 +33,7 @@ const loadActivePack = (): Promise<void> => {
         .eq('id', prof.active_kill_sound_pack_id)
         .maybeSingle();
       const urls = pack?.sound_urls as unknown as string[] | undefined;
-      if (Array.isArray(urls) && urls.length === 5) {
+      if (Array.isArray(urls) && urls.length >= 5) {
         activeUrls = urls;
         Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
       }
@@ -51,7 +51,8 @@ export const reloadActiveSoundPack = () => {
 };
 
 const getKillAudio = (n: number) => {
-  const idx = Math.min(Math.max(n, 1), 5) - 1;
+  const max = activeUrls.length;
+  const idx = Math.min(Math.max(n, 1), max) - 1;
   if (!killAudioCache[idx]) {
     const a = new Audio(activeUrls[idx]);
     a.preload = 'auto';

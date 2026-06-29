@@ -182,6 +182,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 计算调用方的奖励（即便已结算也能返回，便于前端展示）
+    const isFree = match.match_type === "free";
+    const callerScore = winnerId === null ? 0.5 : winnerId === profile.id ? 1 : 0;
+    const coinsEarned = isFree
+      ? (callerScore === 1 ? 12 : callerScore === 0.5 ? 6 : 4)
+      : (callerScore === 1 ? 25 : callerScore === 0.5 ? 12 : 8);
+    const xpEarned = isFree
+      ? (callerScore === 1 ? 30 : callerScore === 0.5 ? 15 : 10)
+      : (callerScore === 1 ? 80 : callerScore === 0.5 ? 40 : 25);
+
     // 对局结束后，立即清理双方在 match_queue 中的残留记录，
     // 确保下次匹配会创建全新的排队条目，避免复用旧房间。
     await admin
@@ -189,9 +199,10 @@ Deno.serve(async (req) => {
       .delete()
       .in("profile_id", [match.player1_id, match.player2_id]);
 
-    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2 });
+    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);
   }
 });
+

@@ -95,6 +95,7 @@ const BattleArena = ({
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false);
   const winnerIdRef = useRef<string | null>(null);
+  const [rewards, setRewards] = useState<{ coins: number; xp: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,7 +205,12 @@ const BattleArena = ({
     try {
       const { data, error } = await supabase.functions.invoke('process-match', { body: { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
-      else if (data) winnerIdRef.current = data.winnerId ?? null;
+      else if (data) {
+        winnerIdRef.current = data.winnerId ?? null;
+        if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
+          setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
+        }
+      }
     } catch (e) {
       console.error('process-match exception', e);
     }
@@ -417,6 +423,16 @@ const BattleArena = ({
               <p className="text-4xl font-gaming text-neon-blue">{opponentScore}</p>
             </div>
           </div>
+          {rewards && (
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-gaming">
+                +{rewards.coins} 狄邦豆
+              </div>
+              <div className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-gaming">
+                +{rewards.xp} EXP
+              </div>
+            </div>
+          )}
           <Button onClick={onBack} className="w-full" size="lg">返回</Button>
         </Card>
       </div>

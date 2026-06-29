@@ -364,7 +364,6 @@ export const TeamChallengePanel = ({ onBack, embedded = false }: { onBack?: () =
             </CardContent>
           </Card>
         )}
-      </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>

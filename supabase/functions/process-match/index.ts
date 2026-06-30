@@ -128,8 +128,24 @@ Deno.serve(async (req) => {
           patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
 
           updates.push(admin.from("profiles").update(patch).eq("id", pid));
+          // 累计豆数
+          if (patch.coins > (pp.coins ?? 0)) {
+            updates.push(admin.rpc("bump_lifetime_coins", { p_id: pid, p_amount: patch.coins - (pp.coins ?? 0) }));
+          }
+          // 排位胜场计数
+          if (score === 1) updates.push(admin.rpc("bump_ranked_win", { p_id: pid }));
         }
         await Promise.all(updates);
+
+        // 双子星：完赛领先 20 分
+        if (winnerTeam !== null) {
+          const winners = winnerTeam === 1 ? team1 : team2;
+          const diff = Math.abs(t1 - t2);
+          if (diff >= 20) {
+            await Promise.all(winners.map(id => admin.rpc("grant_special_badge", { p_id: id, p_name: "双子星" })));
+          }
+        }
+
         await Promise.all(memberIds.map(id => admin.rpc("award_badges_for_profile", { p_id: id })));
 
         if (winnerTeam) {

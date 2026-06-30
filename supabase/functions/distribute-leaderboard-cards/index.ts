@@ -122,6 +122,59 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- Bump leaderboard_appearances for users on any top10 ---
+    for (const id of allTopIds) {
+      const { data: p } = await supabase.from("profiles").select("leaderboard_appearances").eq("id", id).maybeSingle();
+      await supabase.from("profiles").update({
+        leaderboard_appearances: (p?.leaderboard_appearances ?? 0) + 1,
+      }).eq("id", id);
+    }
+
+    // --- GOAT: top-3 on all three leaderboards this week ---
+    let goatCount = 0;
+    if (top3PerBoard.length === 3 && top3PerBoard.every((b) => b.length > 0)) {
+      const [a, b, c] = top3PerBoard;
+      const goatIds = a.filter((id) => b.includes(id) && c.includes(id));
+      for (const id of goatIds) {
+        await supabase.rpc("grant_special_badge", { p_id: id, p_name: "GOAT" });
+        goatCount++;
+      }
+    }
+    summary.goat = goatCount;
+
+    // --- 无限进步: every team member has >=10 ranked wins in past 7 days ---
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: teams } = await supabase.from("teams").select("id");
+    let infinityCount = 0;
+    for (const t of teams ?? []) {
+      const { data: members } = await supabase
+        .from("team_members").select("profile_id").eq("team_id", (t as any).id);
+      const memberIds = (members ?? []).map((m: any) => m.profile_id);
+      if (memberIds.length < 2) continue;
+      let allQualify = true;
+      for (const pid of memberIds) {
+        const { count } = await supabase
+          .from("ranked_matches")
+          .select("id", { count: "exact", head: true })
+          .eq("winner_id", pid)
+          .eq("status", "completed")
+          .gte("created_at", since);
+        if ((count ?? 0) < 10) { allQualify = false; break; }
+      }
+      if (allQualify) {
+        for (const pid of memberIds) {
+          await supabase.rpc("grant_special_badge", { p_id: pid, p_name: "无限进步" });
+          infinityCount++;
+        }
+      }
+    }
+    summary.infinity = infinityCount;
+
+    // --- Sweep award_badges_for_profile for affected users (covers 声名远扬 tiers etc.) ---
+    for (const id of allTopIds) {
+      await supabase.rpc("award_badges_for_profile", { p_id: id });
+    }
+
     return new Response(JSON.stringify({ ok: true, summary, ts: new Date().toISOString() }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

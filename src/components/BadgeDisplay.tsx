@@ -141,6 +141,7 @@ const BadgeDisplay = () => {
     let cancelled = false;
     (async () => {
       if (profile?.id) {
+        try { await supabase.rpc("record_daily_login" as any); } catch {}
         await checkAndAwardBadges();
       }
       if (!cancelled) await fetchBadges();

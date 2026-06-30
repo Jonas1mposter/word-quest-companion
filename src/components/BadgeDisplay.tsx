@@ -40,16 +40,19 @@ const rarityLabels: Record<string, string> = {
 };
 
 const categoryLabels: Record<string, string> = {
-  learning: "学习",
-  battle: "对战",
-  streak: "坚持",
-  achievement: "成就",
-  challenge: "挑战赛",
-  ranked: "排位",
-  wealth: "财富",
+  tier_rank: "排位",
+  tier_words: "词汇",
+  tier_coins: "财富",
+  tier_perfect: "完美",
+  tier_login_total: "累计登录",
+  tier_streak: "连续登录",
+  tier_xp: "经验",
+  tier_leaderboard: "排行榜",
+  common: "入门",
   special: "特殊",
-  welcome: "欢迎",
-  hidden: "隐藏",
+  // 历史兼容
+  learning: "学习", battle: "对战", streak: "坚持", achievement: "成就",
+  challenge: "挑战赛", ranked: "排位", wealth: "财富", welcome: "欢迎", hidden: "隐藏",
 };
 
 // Rarity rank: higher = more prestigious. Used for stable, deterministic ordering.
@@ -141,6 +144,7 @@ const BadgeDisplay = () => {
     let cancelled = false;
     (async () => {
       if (profile?.id) {
+        try { await supabase.rpc("record_daily_login" as any); } catch {}
         await checkAndAwardBadges();
       }
       if (!cancelled) await fetchBadges();

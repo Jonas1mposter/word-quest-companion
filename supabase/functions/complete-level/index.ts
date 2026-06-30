@@ -110,6 +110,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 累计豆数 & 完美主义计数
+    if (coinsGained > 0) {
+      await admin.rpc("bump_lifetime_coins", { p_id: profile.id, p_amount: coinsGained });
+    }
+    if (accuracy === 1) {
+      await admin.rpc("bump_perfect_clear", { p_id: profile.id });
+    }
+
     // 自动判定徽章解锁
     await admin.rpc("award_badges_for_profile", { p_id: profile.id });
 

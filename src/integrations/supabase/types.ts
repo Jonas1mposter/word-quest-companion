@@ -1093,14 +1093,20 @@ export type Database = {
           grade: number
           id: string
           last_energy_restore: string | null
+          last_login_date: string | null
+          leaderboard_appearances: number
           level: number
+          lifetime_coins_earned: number
           losses: number
           max_combo: number
           max_energy: number
+          perfect_clears: number
           rank_points: number
           rank_stars: number
           rank_tier: string
+          ranked_wins: number
           streak: number
+          total_login_days: number
           total_xp: number
           updated_at: string
           user_id: string
@@ -1125,14 +1131,20 @@ export type Database = {
           grade?: number
           id?: string
           last_energy_restore?: string | null
+          last_login_date?: string | null
+          leaderboard_appearances?: number
           level?: number
+          lifetime_coins_earned?: number
           losses?: number
           max_combo?: number
           max_energy?: number
+          perfect_clears?: number
           rank_points?: number
           rank_stars?: number
           rank_tier?: string
+          ranked_wins?: number
           streak?: number
+          total_login_days?: number
           total_xp?: number
           updated_at?: string
           user_id: string
@@ -1157,14 +1169,20 @@ export type Database = {
           grade?: number
           id?: string
           last_energy_restore?: string | null
+          last_login_date?: string | null
+          leaderboard_appearances?: number
           level?: number
+          lifetime_coins_earned?: number
           losses?: number
           max_combo?: number
           max_energy?: number
+          perfect_clears?: number
           rank_points?: number
           rank_stars?: number
           rank_tier?: string
+          ranked_wins?: number
           streak?: number
+          total_login_days?: number
           total_xp?: number
           updated_at?: string
           user_id?: string
@@ -2243,6 +2261,12 @@ export type Database = {
     }
     Functions: {
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
+      bump_lifetime_coins: {
+        Args: { p_amount: number; p_id: string }
+        Returns: undefined
+      }
+      bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
+      bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
       equip_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       find_match: {
         Args: {
@@ -2265,6 +2289,10 @@ export type Database = {
         Returns: string
       }
       gacha_draw: { Args: { p_count: number }; Returns: Json }
+      grant_special_badge: {
+        Args: { p_id: string; p_name: string }
+        Returns: boolean
+      }
       handle_team_join_request: {
         Args: { _accept: boolean; _request_id: string }
         Returns: Json
@@ -2281,6 +2309,7 @@ export type Database = {
         Returns: undefined
       }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
+      record_daily_login: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

@@ -18,6 +18,7 @@ import ChallengeArena from "./ChallengeArena";
 import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
+import Battle2v2Arena from "./Battle2v2Arena";
 import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
 import BadgeDisplay from "./BadgeDisplay";

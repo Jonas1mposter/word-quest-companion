@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const { data: match, error: mErr } = await admin
       .from("ranked_matches")
-      .select("id, player1_id, player2_id, player1_score, player2_score, words, status")
+      .select("id, player1_id, player2_id, player1_score, player2_score, words, status, match_type")
       .eq("id", matchId)
       .single();
     if (mErr || !match) return json({ error: "Match not found" }, 404);

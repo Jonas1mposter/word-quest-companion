@@ -111,9 +111,12 @@ export function useProfileCardData(profile: any) {
 
   useEffect(() => {
     if (profile?.id) {
-      fetchUserBadges();
-      fetchUserNameCards();
-      fetchBestRecords();
+      (async () => {
+        try { await supabase.rpc("award_badges_for_profile" as any, { p_id: profile.id }); } catch {}
+        await fetchUserBadges();
+        await fetchUserNameCards();
+        await fetchBestRecords();
+      })();
     }
   }, [profile?.id, fetchUserBadges, fetchUserNameCards, fetchBestRecords]);
 

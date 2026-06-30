@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
   );
 
   const summary: Record<string, unknown> = {};
+  const top3PerBoard: string[][] = []; // for GOAT
+  const allTopIds = new Set<string>(); // for leaderboard_appearances bump + award sweep
 
   try {
     // --- Personal leaderboards ---

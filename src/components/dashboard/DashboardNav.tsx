@@ -6,7 +6,7 @@ import {
 
 export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn"
-  | "battle" | "battle-select" | "battle2v2" | "battle2v2-select"
+  | "battle" | "battle-select" | "battle2v2" | "battle2v2-select" | "battle2v2-practice"
   | "freematch" | "freematch-select" | "bot"
   | "leaderboard" | "profile" | "friends" | "wrongbook"
   | "challenge" | "seasonpass" | "spectate" | "history" | "team";
@@ -19,6 +19,7 @@ const TABS: Tab[] = [
   { id: "wrongbook", label: "错题本", icon: BookX },
   { id: "battle-select", label: "排位赛", icon: Swords },
   { id: "battle2v2-select", label: "2v2 排位", icon: Swords },
+  { id: "battle2v2-practice", label: "2v2 练习", icon: Bot },
   { id: "freematch-select", label: "自由服", icon: Globe },
   { id: "bot", label: "人机", icon: Bot },
   { id: "challenge", label: "挑战赛", icon: Target },

@@ -121,13 +121,14 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const tryFindMatch = useCallback(async () => {
     if (!profile) return null;
-    const { data, error } = await supabase.rpc('find_match_2v2', {
+    const args: any = {
       _profile_id: profile.id,
       _grade: profile.grade,
       _elo_rating: (profile as any).elo_rating ?? 1000,
       _subject: subject,
-      _party_id: partyId,
-    });
+    };
+    if (partyId) args._party_id = partyId;
+    const { data, error } = await supabase.rpc('find_match_2v2', args);
     if (error) { setQueueError(error.message); return null; }
     return data as string | null;
   }, [profile, subject, partyId]);

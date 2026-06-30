@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
         .order(cfg.orderBy, { ascending: false })
         .limit(cfg.limit);
       const topIds = (top ?? []).map((p: any) => p.id);
+      top3PerBoard.push(topIds.slice(0, 3));
+      topIds.forEach((id) => allTopIds.add(id));
 
       // Remove from users no longer in top
       if (topIds.length > 0) {

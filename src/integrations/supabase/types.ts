@@ -801,6 +801,74 @@ export type Database = {
         }
         Relationships: []
       }
+      match_parties: {
+        Row: {
+          created_at: string
+          expires_at: string
+          grade: number
+          id: string
+          invited_id: string | null
+          leader_id: string
+          match_id: string | null
+          member_id: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          grade: number
+          id?: string
+          invited_id?: string | null
+          leader_id: string
+          match_id?: string | null
+          member_id?: string | null
+          status?: string
+          subject?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          grade?: number
+          id?: string
+          invited_id?: string | null
+          leader_id?: string
+          match_id?: string | null
+          member_id?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_parties_invited_id_fkey"
+            columns: ["invited_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_parties_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_parties_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_parties_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_queue: {
         Row: {
           created_at: string
@@ -809,6 +877,9 @@ export type Database = {
           id: string
           match_id: string | null
           match_type: string
+          mode: string
+          party_id: string | null
+          party_size: number
           profile_id: string
           status: string
           subject: string | null
@@ -820,6 +891,9 @@ export type Database = {
           id?: string
           match_id?: string | null
           match_type?: string
+          mode?: string
+          party_id?: string | null
+          party_size?: number
           profile_id: string
           status?: string
           subject?: string | null
@@ -831,6 +905,9 @@ export type Database = {
           id?: string
           match_id?: string | null
           match_type?: string
+          mode?: string
+          party_id?: string | null
+          party_size?: number
           profile_id?: string
           status?: string
           subject?: string | null
@@ -1113,14 +1190,20 @@ export type Database = {
           grade: number
           id: string
           match_type: string
+          mode: string
           player1_id: string | null
           player1_score: number
           player2_id: string | null
           player2_score: number
+          player3_id: string | null
+          player4_id: string | null
           started_at: string | null
           status: string
           subject: string | null
+          team1_score: number
+          team2_score: number
           winner_id: string | null
+          winner_team: number | null
           words: Json | null
         }
         Insert: {
@@ -1129,14 +1212,20 @@ export type Database = {
           grade?: number
           id?: string
           match_type?: string
+          mode?: string
           player1_id?: string | null
           player1_score?: number
           player2_id?: string | null
           player2_score?: number
+          player3_id?: string | null
+          player4_id?: string | null
           started_at?: string | null
           status?: string
           subject?: string | null
+          team1_score?: number
+          team2_score?: number
           winner_id?: string | null
+          winner_team?: number | null
           words?: Json | null
         }
         Update: {
@@ -1145,14 +1234,20 @@ export type Database = {
           grade?: number
           id?: string
           match_type?: string
+          mode?: string
           player1_id?: string | null
           player1_score?: number
           player2_id?: string | null
           player2_score?: number
+          player3_id?: string | null
+          player4_id?: string | null
           started_at?: string | null
           status?: string
           subject?: string | null
+          team1_score?: number
+          team2_score?: number
           winner_id?: string | null
+          winner_team?: number | null
           words?: Json | null
         }
         Relationships: [
@@ -1166,6 +1261,20 @@ export type Database = {
           {
             foreignKeyName: "ranked_matches_player2_id_fkey"
             columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_matches_player3_id_fkey"
+            columns: ["player3_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranked_matches_player4_id_fkey"
+            columns: ["player4_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2140,6 +2249,16 @@ export type Database = {
           _elo_rating: number
           _grade: number
           _match_type: string
+          _profile_id: string
+          _subject?: string
+        }
+        Returns: string
+      }
+      find_match_2v2: {
+        Args: {
+          _elo_rating: number
+          _grade: number
+          _party_id?: string
           _profile_id: string
           _subject?: string
         }

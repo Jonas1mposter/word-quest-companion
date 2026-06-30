@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const { data: match, error: mErr } = await admin
       .from("ranked_matches")
-      .select("id, player1_id, player2_id, player1_score, player2_score, words, status")
+      .select("id, player1_id, player2_id, player1_score, player2_score, words, status, match_type")
       .eq("id", matchId)
       .single();
     if (mErr || !match) return json({ error: "Match not found" }, 404);
@@ -64,9 +64,12 @@ Deno.serve(async (req) => {
       is_correct: isCorrect,
     });
 
-    if (isCorrect) {
+    // 排位赛：答对+1，答错-1；自由赛：答对+1，答错不扣
+    const isRanked = match.match_type === "ranked";
+    const delta = isCorrect ? 1 : (isRanked ? -1 : 0);
+    if (delta !== 0) {
       const field = isP1 ? "player1_score" : "player2_score";
-      const newScore = (isP1 ? match.player1_score : match.player2_score) + 1;
+      const newScore = (isP1 ? match.player1_score : match.player2_score) + delta;
       await admin
         .from("ranked_matches")
         .update({ [field]: newScore })

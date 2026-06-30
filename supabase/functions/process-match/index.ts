@@ -27,11 +27,13 @@ Deno.serve(async (req) => {
       .select("player_id, is_correct")
       .eq("match_id", matchId);
 
+    const isRanked = match.match_type === "ranked";
     let p1 = 0, p2 = 0;
     for (const a of answers ?? []) {
-      if (!a.is_correct) continue;
-      if (a.player_id === match.player1_id) p1++;
-      else if (a.player_id === match.player2_id) p2++;
+      const inc = a.is_correct ? 1 : (isRanked ? -1 : 0);
+      if (inc === 0) continue;
+      if (a.player_id === match.player1_id) p1 += inc;
+      else if (a.player_id === match.player2_id) p2 += inc;
     }
 
     let winnerId: string | null = null;

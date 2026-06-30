@@ -18,6 +18,7 @@ const TABS: Tab[] = [
   { id: "learn", label: "闯关", icon: BookOpen },
   { id: "wrongbook", label: "错题本", icon: BookX },
   { id: "battle-select", label: "排位赛", icon: Swords },
+  { id: "battle2v2-select", label: "2v2 排位", icon: Swords },
   { id: "freematch-select", label: "自由服", icon: Globe },
   { id: "bot", label: "人机", icon: Bot },
   { id: "challenge", label: "挑战赛", icon: Target },

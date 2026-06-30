@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./battle/BattleQuizCard";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
-import KillStreakBanner from "./battle/KillStreakBanner";
+import { KillStreakBanner } from "./battle/KillStreakBanner";
 
 interface Word { id: string; word: string; meaning: string; phonetic?: string | null; example?: string | null; }
 interface MatchData {

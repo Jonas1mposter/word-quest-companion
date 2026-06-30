@@ -43,6 +43,7 @@ const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => (
           const isActive =
             activeView === tab.id ||
             (tab.id === "battle-select" && activeView === "battle") ||
+            (tab.id === "battle2v2-select" && activeView === "battle2v2") ||
             (tab.id === "freematch-select" && activeView === "freematch");
           return (
             <Button

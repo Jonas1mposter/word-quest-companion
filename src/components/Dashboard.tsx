@@ -18,6 +18,7 @@ import ChallengeArena from "./ChallengeArena";
 import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
+import Battle2v2Arena from "./Battle2v2Arena";
 import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
 import BadgeDisplay from "./BadgeDisplay";
@@ -131,6 +132,21 @@ const Dashboard = ({ grade }: DashboardProps) => {
     return <SubjectBattleSelector battleType="free"
       onSelectSubject={s => { setBattleSubject(s); setActiveView("freematch"); }}
       onBack={() => setActiveView("home")} />;
+  }
+  if (activeView === "battle2v2-select") {
+    return <SubjectBattleSelector battleType="ranked"
+      onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
+      onBack={() => setActiveView("home")} />;
+  }
+  if (activeView === "battle2v2") {
+    if (!user) return <LoginRequired Icon={Swords} title="登录后参与 2v2 排位赛"
+      subtitle="组队 4 人切磋词汇！" onBack={() => setActiveView("home")} />;
+    return <Battle2v2Arena subject={battleSubject} onBack={() => {
+      setActiveView("home");
+      setRefreshKey(p => p + 1); refreshProfile();
+      setBattleSubject("mixed");
+      setTimeout(() => { checkAndAwardBadges(); checkNameCards(); }, 500);
+    }} />;
   }
 
   if (activeView === "battle") {

@@ -6,7 +6,8 @@ import {
 
 export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn"
-  | "battle" | "battle-select" | "freematch" | "freematch-select" | "bot"
+  | "battle" | "battle-select" | "battle2v2" | "battle2v2-select"
+  | "freematch" | "freematch-select" | "bot"
   | "leaderboard" | "profile" | "friends" | "wrongbook"
   | "challenge" | "seasonpass" | "spectate" | "history" | "team";
 

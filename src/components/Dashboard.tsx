@@ -19,6 +19,7 @@ import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
 import Battle2v2Arena from "./Battle2v2Arena";
+import Battle2v2Practice from "./Battle2v2Practice";
 import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
 import BadgeDisplay from "./BadgeDisplay";
@@ -147,6 +148,11 @@ const Dashboard = ({ grade }: DashboardProps) => {
       setBattleSubject("mixed");
       setTimeout(() => { checkAndAwardBadges(); checkNameCards(); }, 500);
     }} />;
+  }
+  if (activeView === "battle2v2-practice") {
+    if (!user) return <LoginRequired Icon={Swords} title="登录后体验 2v2 练习"
+      subtitle="和 Bot 队友一起对战 2 个 Bot！" onBack={() => setActiveView("home")} />;
+    return <Battle2v2Practice onBack={() => setActiveView("home")} />;
   }
 
   if (activeView === "battle") {

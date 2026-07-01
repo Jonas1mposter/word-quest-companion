@@ -192,14 +192,16 @@ const BadgeDisplay = () => {
     if (!selected) return null;
     const series = tierSeries[selected.category];
     if (!series) return null;
-    const siblings = grouped[selected.category] || [];
+    const siblings = badges
+      .filter(b => b.category === selected.category)
+      .sort((a, b) => romanIdx(a.name) - romanIdx(b.name));
     const currentIdx = romanIdx(selected.name);
     const value = getMetricValue(series.metric as string);
     const target = series.thresholds[currentIdx];
     const prev = currentIdx === 0 ? 0 : series.thresholds[currentIdx - 1];
     const pct = Math.min(100, Math.max(0, ((value - prev) / Math.max(1, target - prev)) * 100));
     return { series, siblings, currentIdx, value, target, prev, pct };
-  }, [selected, grouped, getMetricValue]);
+  }, [selected, badges, getMetricValue]);
 
   if (loading) {
     return (

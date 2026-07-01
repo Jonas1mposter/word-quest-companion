@@ -58,21 +58,10 @@ const tierSeries: Record<
   tier_leaderboard: { title: "声名远扬", metric: "leaderboard_appearances", thresholds: [1, 5, 10, 20], unit: "次登榜" },
 };
 
-const groupOrder = [
-  "tier_rank",
-  "tier_words",
-  "tier_coins",
-  "tier_perfect",
-  "tier_login_total",
-  "tier_streak",
-  "tier_xp",
-  "tier_leaderboard",
-  "special",
-  "common",
-];
+const groupOrder = ["series", "special", "common"];
 
 const groupTitles: Record<string, string> = {
-  ...Object.fromEntries(Object.entries(tierSeries).map(([k, v]) => [k, v.title])),
+  series: "系列成就",
   special: "特殊荣誉",
   common: "起航",
 };

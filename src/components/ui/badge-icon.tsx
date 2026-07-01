@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import { Award, BookOpen, BookOpenCheck, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Library, Medal, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap, type LucideIcon } from "lucide-react";
+import { Award, Banknote, BookOpen, BookOpenCheck, CalendarDays, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Infinity, Library, Medal, Megaphone, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap, type LucideIcon } from "lucide-react";
 
-const iconMap: Record<string, LucideIcon> = { Award, BookOpen, BookOpenCheck, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Library, Medal, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap };
+const iconMap: Record<string, LucideIcon> = { Award, Banknote, BookOpen, BookOpenCheck, CalendarDays, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Infinity, Library, Medal, Megaphone, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap };
 
 interface BadgeIconProps { icon: string; className?: string; fallbackClassName?: string; }
 

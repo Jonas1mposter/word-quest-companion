@@ -58,21 +58,10 @@ const tierSeries: Record<
   tier_leaderboard: { title: "声名远扬", metric: "leaderboard_appearances", thresholds: [1, 5, 10, 20], unit: "次登榜" },
 };
 
-const groupOrder = [
-  "tier_rank",
-  "tier_words",
-  "tier_coins",
-  "tier_perfect",
-  "tier_login_total",
-  "tier_streak",
-  "tier_xp",
-  "tier_leaderboard",
-  "special",
-  "common",
-];
+const groupOrder = ["series", "special", "common"];
 
 const groupTitles: Record<string, string> = {
-  ...Object.fromEntries(Object.entries(tierSeries).map(([k, v]) => [k, v.title])),
+  series: "系列成就",
   special: "特殊荣誉",
   common: "起航",
 };
@@ -147,20 +136,39 @@ const BadgeDisplay = () => {
     setRefreshing(false);
   };
 
-  // group badges by category
-  const grouped = useMemo(() => {
-    const g: Record<string, BadgeItem[]> = {};
+  // group badges: collapse tier_* into one "series" group with only the representative badge per series
+  // (highest earned tier, or lowest locked tier if none earned)
+  const { grouped, seriesRepMap } = useMemo(() => {
+    const g: Record<string, BadgeItem[]> = { series: [], special: [], common: [] };
+    // bucket tier badges by series first
+    const bySeries: Record<string, BadgeItem[]> = {};
     for (const b of badges) {
-      const key = groupTitles[b.category] ? b.category : (b.category in tierSeries ? b.category : "special");
-      (g[key] ||= []).push(b);
+      if (b.category in tierSeries) {
+        (bySeries[b.category] ||= []).push(b);
+      } else if (b.category === "special") {
+        g.special.push(b);
+      } else {
+        g.common.push(b);
+      }
     }
-    // sort tier series by roman index; others by rarity
-    Object.keys(g).forEach(k => {
-      if (k in tierSeries) g[k].sort((a, b) => romanIdx(a.name) - romanIdx(b.name));
-      else g[k].sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
-    });
-    return g;
+    // pick representative for each tier series (highest earned; fallback lv.1)
+    const repMap: Record<string, string> = {}; // seriesCategory -> repBadgeId
+    for (const key of Object.keys(tierSeries)) {
+      const arr = (bySeries[key] || []).slice().sort((a, b) => romanIdx(a.name) - romanIdx(b.name));
+      if (!arr.length) continue;
+      const highestEarned = [...arr].reverse().find(b => b.earned);
+      const rep = highestEarned ?? arr[0];
+      repMap[key] = rep.id;
+      g.series.push(rep);
+    }
+    // keep series in declared order
+    const seriesOrder = Object.keys(tierSeries);
+    g.series.sort((a, b) => seriesOrder.indexOf(a.category) - seriesOrder.indexOf(b.category));
+    g.special.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+    g.common.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+    return { grouped: g, seriesRepMap: repMap };
   }, [badges]);
+
 
   const getMetricValue = useCallback((metric: string): number => {
     if (metric === "__mastered_words") return masteredWords;
@@ -184,14 +192,16 @@ const BadgeDisplay = () => {
     if (!selected) return null;
     const series = tierSeries[selected.category];
     if (!series) return null;
-    const siblings = grouped[selected.category] || [];
+    const siblings = badges
+      .filter(b => b.category === selected.category)
+      .sort((a, b) => romanIdx(a.name) - romanIdx(b.name));
     const currentIdx = romanIdx(selected.name);
     const value = getMetricValue(series.metric as string);
     const target = series.thresholds[currentIdx];
     const prev = currentIdx === 0 ? 0 : series.thresholds[currentIdx - 1];
     const pct = Math.min(100, Math.max(0, ((value - prev) / Math.max(1, target - prev)) * 100));
     return { series, siblings, currentIdx, value, target, prev, pct };
-  }, [selected, grouped, getMetricValue]);
+  }, [selected, badges, getMetricValue]);
 
   if (loading) {
     return (

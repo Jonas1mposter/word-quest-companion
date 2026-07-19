@@ -36,6 +36,10 @@ Deno.serve(async (req) => {
       coins: (profile.coins ?? 0) + coinsGain,
     }).eq("id", profile.id);
 
+    if (xpGain > 0) {
+      await admin.rpc("add_season_pass_xp", { p_profile_id: profile.id, p_xp: xpGain });
+    }
+
     return json({ ok: true, xpEarned: xpGain, coinsEarned: coinsGain });
   } catch (e) {
     if (e instanceof Response) return e;

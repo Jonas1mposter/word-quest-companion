@@ -104,9 +104,13 @@ export default function Shop() {
       if (error) throw error;
       const payload = data as any;
       if (payload?.error) {
-        toast.error(payload.error === "not_enough_coins" ? "狄邦豆不足" : String(payload.error));
+        const msg = payload.error === "not_enough_coins" ? "狄邦豆不足"
+          : payload.error === "pool_exhausted" ? "你已拥有奖池中全部普通/稀有/史诗/传说名片，暂无可抽取"
+          : String(payload.error);
+        toast.error(msg);
         return;
       }
+
       setResults((payload?.results as DrawCard[]) ?? []);
       if (payload?.refund > 0) {
         toast.info(`奖池有 ${(payload.refund / 50)} 张已满，返还 ${payload.refund} 狄邦豆`);

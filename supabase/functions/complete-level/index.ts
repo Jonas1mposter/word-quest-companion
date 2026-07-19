@@ -121,6 +121,12 @@ Deno.serve(async (req) => {
     // 自动判定徽章解锁
     await admin.rpc("award_badges_for_profile", { p_id: profile.id });
 
+    // 赛季手册经验
+    if (xpGained > 0) {
+      await admin.rpc("add_season_pass_xp", { p_profile_id: profile.id, p_xp: xpGained });
+    }
+
+
 
     return json({
       ok: true,

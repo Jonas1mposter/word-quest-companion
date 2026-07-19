@@ -244,8 +244,12 @@ Deno.serve(async (req) => {
           if (!isFree && score === 1) {
             updates.push(admin.rpc("bump_ranked_win", { p_id: pp.id }));
           }
+          if (xpGain > 0) {
+            updates.push(admin.rpc("add_season_pass_xp", { p_profile_id: pp.id, p_xp: xpGain }));
+          }
         }
         await Promise.all(updates);
+
 
         // 降维打击：排位 10-0 零封
         if (!isFree && winnerId) {

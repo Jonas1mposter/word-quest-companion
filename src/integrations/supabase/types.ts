@@ -2260,6 +2260,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_season_pass_xp: {
+        Args: { p_profile_id: string; p_xp: number }
+        Returns: undefined
+      }
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
       bump_lifetime_coins: {
         Args: { p_amount: number; p_id: string }

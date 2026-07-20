@@ -28,6 +28,7 @@ export interface Friend {
 export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpectate }: FriendListProps) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchFriends = async () => {

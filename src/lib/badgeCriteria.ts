@@ -110,6 +110,7 @@ export const BADGE_CRITERIA_FUN: Record<string, string> = {
   "GOAT": "金字塔的尖，方程式的解",
   "百万英镑": "这得花不少钱，先生",
   "无限进步": "于是我们，一拍即合",
+  "社区贡献者": "众人拾柴火焰高",
 };
 
 export const getBadgeCriteria = (

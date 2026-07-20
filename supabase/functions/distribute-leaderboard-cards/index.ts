@@ -38,11 +38,17 @@ Deno.serve(async (req) => {
         .from("name_cards").select("id").eq("name", cfg.name).maybeSingle();
       if (!card) { summary[category] = "card_missing"; continue; }
 
-      const { data: top } = await supabase
-        .from("profiles")
-        .select(`id, ${cfg.orderBy}`)
-        .order(cfg.orderBy, { ascending: false })
-        .limit(cfg.limit);
+      let query = supabase.from("profiles").select("id");
+      if (category === "leaderboard_rank") {
+        // Match LeaderboardTabs: tier > stars > points
+        query = query
+          .order("rank_tier", { ascending: false, nullsFirst: false })
+          .order("rank_stars", { ascending: false, nullsFirst: false })
+          .order("rank_points", { ascending: false, nullsFirst: false });
+      } else {
+        query = query.order(cfg.orderBy, { ascending: false, nullsFirst: false });
+      }
+      const { data: top } = await query.limit(cfg.limit);
       const topIds = (top ?? []).map((p: any) => p.id);
       top3PerBoard.push(topIds.slice(0, 3));
       topIds.forEach((id) => allTopIds.add(id));

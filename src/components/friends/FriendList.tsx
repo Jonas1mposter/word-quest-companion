@@ -241,6 +241,7 @@ export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpecta
           </div>
         )}
       </CardContent>
+      <PlayerProfileDialog profileId={previewId} open={!!previewId} onOpenChange={(o) => !o && setPreviewId(null)} />
     </Card>
   );
 };

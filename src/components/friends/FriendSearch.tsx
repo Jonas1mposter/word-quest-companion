@@ -25,6 +25,7 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingTo, setSendingTo] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSearch = async () => {

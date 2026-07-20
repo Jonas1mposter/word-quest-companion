@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, UserPlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PlayerProfileDialog } from "./PlayerProfileDialog";
 
 interface FriendSearchProps {
   currentProfileId: string;
@@ -24,6 +25,7 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingTo, setSendingTo] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSearch = async () => {
@@ -153,8 +155,12 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
                 key={user.id}
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold">
+                <button
+                  type="button"
+                  onClick={() => setPreviewId(user.id)}
+                  className="flex items-center gap-3 text-left flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold shrink-0">
                     {user.avatar_url ? (
                       <img
                         src={user.avatar_url}
@@ -165,8 +171,8 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
                       user.username.charAt(0).toUpperCase()
                     )}
                   </div>
-                  <div>
-                    <div className="font-medium">{user.username}</div>
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{user.username}</div>
                     <div className="text-xs text-muted-foreground">
                       {user.grade}年级 · Lv.{user.level} ·{" "}
                       <span className={getRankColor(user.rank_tier)}>
@@ -174,7 +180,7 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </button>
                 <Button
                   size="sm"
                   onClick={() => sendFriendRequest(user.id)}
@@ -200,6 +206,7 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
           </div>
         )}
       </CardContent>
+      <PlayerProfileDialog profileId={previewId} open={!!previewId} onOpenChange={(o) => !o && setPreviewId(null)} />
     </Card>
   );
 };

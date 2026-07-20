@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, MessageCircle, Swords, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PlayerProfileDialog } from "./PlayerProfileDialog";
 
 interface FriendListProps {
   currentProfileId: string;
@@ -27,6 +28,7 @@ export interface Friend {
 export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpectate }: FriendListProps) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchFriends = async () => {
@@ -155,8 +157,12 @@ export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpecta
                 key={friend.id}
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPreviewId(friend.id)}
+                  className="flex items-center gap-3 text-left flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                >
+                  <div className="relative shrink-0">
                     <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold">
                       {friend.avatar_url ? (
                         <img
@@ -174,9 +180,9 @@ export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpecta
                       </span>
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{friend.username}</span>
+                      <span className="font-medium truncate">{friend.username}</span>
                       {friend.activeMatchId && (
                         <Badge variant="outline" className="text-xs text-destructive border-destructive/50 px-1.5 py-0">
                           对战中
@@ -190,7 +196,7 @@ export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpecta
                       </span>
                     </div>
                   </div>
-                </div>
+                </button>
                 <div className="flex gap-1">
                   {friend.activeMatchId && onSpectate && (
                     <Button
@@ -235,6 +241,7 @@ export const FriendList = ({ currentProfileId, onOpenChat, onChallenge, onSpecta
           </div>
         )}
       </CardContent>
+      <PlayerProfileDialog profileId={previewId} open={!!previewId} onOpenChange={(o) => !o && setPreviewId(null)} />
     </Card>
   );
 };

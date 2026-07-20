@@ -1,0 +1,1 @@
+UPDATE public.badges SET icon = 'Lightbulb' WHERE name = '社区贡献者';

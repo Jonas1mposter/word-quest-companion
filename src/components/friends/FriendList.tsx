@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, MessageCircle, Swords, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PlayerProfileDialog } from "./PlayerProfileDialog";
 
 interface FriendListProps {
   currentProfileId: string;

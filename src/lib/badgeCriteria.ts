@@ -59,6 +59,7 @@ export const BADGE_CRITERIA: Record<string, string> = {
   "GOAT": "同一周内，在三个排行榜中获得前三名",
   "百万英镑": "清空商城（拥有所有可用狄邦豆购买的音效与名片）",
   "无限进步": "战队内每位队员一周内获得 10 次排位赛胜利",
+  "社区贡献者": "为狄邦单词通提出建设性意见，感谢您的支持！",
 };
 
 export const BADGE_CRITERIA_FUN: Record<string, string> = {

@@ -1,4 +1,12 @@
 project_id = "xsfuyevlhamssomxqvwl"
 
+[auth]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = false
+
 [functions.init-storage]
 verify_jwt = false

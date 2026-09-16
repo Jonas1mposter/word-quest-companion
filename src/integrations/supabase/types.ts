@@ -597,6 +597,99 @@ export type Database = {
           },
         ]
       }
+      hs_learning_progress: {
+        Row: {
+          correct_count: number
+          created_at: string
+          id: string
+          incorrect_count: number
+          last_reviewed_at: string | null
+          mastery_level: number
+          profile_id: string
+          updated_at: string
+          word_id: string
+        }
+        Insert: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          incorrect_count?: number
+          last_reviewed_at?: string | null
+          mastery_level?: number
+          profile_id: string
+          updated_at?: string
+          word_id: string
+        }
+        Update: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          incorrect_count?: number
+          last_reviewed_at?: string | null
+          mastery_level?: number
+          profile_id?: string
+          updated_at?: string
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hs_learning_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hs_learning_progress_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "hs_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hs_words: {
+        Row: {
+          created_at: string
+          definition: string | null
+          example: string | null
+          id: string
+          meaning: string
+          order_index: number
+          phonetic: string | null
+          subject: string
+          unit: number
+          unit_name: string | null
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          definition?: string | null
+          example?: string | null
+          id?: string
+          meaning: string
+          order_index?: number
+          phonetic?: string | null
+          subject: string
+          unit?: number
+          unit_name?: string | null
+          word: string
+        }
+        Update: {
+          created_at?: string
+          definition?: string | null
+          example?: string | null
+          id?: string
+          meaning?: string
+          order_index?: number
+          phonetic?: string | null
+          subject?: string
+          unit?: number
+          unit_name?: string | null
+          word?: string
+        }
+        Relationships: []
+      }
       kill_sound_packs: {
         Row: {
           code: string

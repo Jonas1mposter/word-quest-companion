@@ -12,6 +12,8 @@ import MathLevelProgress from "./MathLevelProgress";
 import MathWordLearning from "./MathWordLearning";
 import ScienceLevelProgress from "./ScienceLevelProgress";
 import ScienceWordLearning from "./ScienceWordLearning";
+import HSLevelProgress, { HSWord } from "./HSLevelProgress";
+import HSWordLearning from "./HSWordLearning";
 import LeaderboardTabs from "./LeaderboardTabs";
 import DailyQuest from "./DailyQuest";
 import ChallengeArena from "./ChallengeArena";
@@ -53,6 +55,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedLevel, setSelectedLevel] = useState<{ id: string; name: string } | null>(null);
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
+  const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[] } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
@@ -95,6 +98,13 @@ const Dashboard = ({ grade }: DashboardProps) => {
   };
   const handleBackFromScienceLearning = () => {
     setSelectedScienceLevel(null); setActiveView("learn");
+    setRefreshKey(p => p + 1); refreshProfile();
+  };
+  const handleSelectHSLevel = (id: string, name: string, words: HSWord[]) => {
+    setSelectedHSLevel({ id, name, words }); setActiveView("hslearn");
+  };
+  const handleBackFromHSLearning = () => {
+    setSelectedHSLevel(null); setActiveView("learn");
     setRefreshKey(p => p + 1); refreshProfile();
   };
   const handleFriendBattleStart = (matchId: string) => {
@@ -192,6 +202,11 @@ const Dashboard = ({ grade }: DashboardProps) => {
     }} />;
   }
 
+  if (activeView === "hslearn" && selectedHSLevel) {
+    return <HSWordLearning levelId={selectedHSLevel.id} levelName={selectedHSLevel.name}
+      words={selectedHSLevel.words}
+      onBack={handleBackFromHSLearning} onComplete={handleBackFromHSLearning} />;
+  }
   if (activeView === "wrongbook" && wrongWordsToReview) {
     return <WrongWordReview words={wrongWordsToReview} subject={wrongReviewSubject}
       onBack={() => setWrongWordsToReview(null)}
@@ -264,6 +279,10 @@ const Dashboard = ({ grade }: DashboardProps) => {
             <div className="pt-4 border-t border-border/50">
               <h2 className="font-gaming text-xl mb-4">🧪 科学词汇</h2>
               <ScienceLevelProgress key={`science-${refreshKey}`} onSelectLevel={handleSelectScienceLevel} />
+            </div>
+            <div className="pt-4 border-t border-border/50">
+              <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
+              <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
             </div>
           </div>
         )}

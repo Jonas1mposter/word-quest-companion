@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 
 export type DashboardView =
-  | "home" | "learn" | "mathlearn" | "sciencelearn"
+  | "home" | "learn" | "mathlearn" | "sciencelearn" | "hslearn"
   | "battle" | "battle-select" | "battle2v2" | "battle2v2-select" | "battle2v2-practice"
   | "freematch" | "freematch-select" | "bot"
   | "leaderboard" | "profile" | "friends" | "wrongbook"

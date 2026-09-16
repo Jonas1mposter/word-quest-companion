@@ -10,3 +10,6 @@ double_confirm_changes = false
 
 [functions.init-storage]
 verify_jwt = false
+
+[functions.seed-hs-words]
+verify_jwt = false

@@ -56,6 +56,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
+  const [learnZone, setLearnZone] = useState<"junior" | "high">("junior");
   const [refreshKey, setRefreshKey] = useState(0);
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);

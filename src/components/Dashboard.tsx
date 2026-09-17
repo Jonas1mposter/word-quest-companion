@@ -42,7 +42,7 @@ import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
 import LoginRequired from "./dashboard/LoginRequired";
 
-interface DashboardProps { grade: 7 | 8; }
+interface DashboardProps { grade: 7 | 8 | 9; }
 
 const Dashboard = ({ grade }: DashboardProps) => {
   const navigate = useNavigate();

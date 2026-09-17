@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 const logoDashboard = "/placeholder.svg";
 
 interface DashboardHeaderProps {
-  grade: 7 | 8;
+  grade: 7 | 8 | 9;
   className?: string | null;
   user: any;
   isAdmin: boolean;
@@ -25,9 +25,9 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             <div>
               <h1 className="font-gaming text-xl text-glow-purple">狄邦单词通</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant={grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1">
+                <Badge variant={grade === 9 ? "gold" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1">
                   <GraduationCap className="w-3 h-3" />
-                  {grade === 7 ? "七" : "八"}年级专区
+                  {grade === 9 ? "高中专区" : `${grade === 7 ? "七" : "八"}年级专区`}
                 </Badge>
                 {className && <Badge variant="secondary" className="text-xs">{className}班</Badge>}
               </div>

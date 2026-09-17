@@ -55,7 +55,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedLevel, setSelectedLevel] = useState<{ id: string; name: string } | null>(null);
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
-  const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[] } | null>(null);
+  const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
@@ -100,8 +100,8 @@ const Dashboard = ({ grade }: DashboardProps) => {
     setSelectedScienceLevel(null); setActiveView("learn");
     setRefreshKey(p => p + 1); refreshProfile();
   };
-  const handleSelectHSLevel = (id: string, name: string, words: HSWord[]) => {
-    setSelectedHSLevel({ id, name, words }); setActiveView("hslearn");
+  const handleSelectHSLevel = (id: string, name: string, words: HSWord[], mode: "learn" | "quiz" = "learn") => {
+    setSelectedHSLevel({ id, name, words, mode }); setActiveView("hslearn");
   };
   const handleBackFromHSLearning = () => {
     setSelectedHSLevel(null); setActiveView("learn");
@@ -204,7 +204,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
   if (activeView === "hslearn" && selectedHSLevel) {
     return <HSWordLearning levelId={selectedHSLevel.id} levelName={selectedHSLevel.name}
-      words={selectedHSLevel.words}
+      words={selectedHSLevel.words} startPhase={selectedHSLevel.mode === "quiz" ? "quiz" : "learn"}
       onBack={handleBackFromHSLearning} onComplete={handleBackFromHSLearning} />;
   }
   if (activeView === "wrongbook" && wrongWordsToReview) {

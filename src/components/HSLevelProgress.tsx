@@ -22,7 +22,7 @@ export interface HSWord {
 }
 
 interface HSLevelProgressProps {
-  onSelectLevel: (levelId: string, levelName: string, words: HSWord[]) => void;
+  onSelectLevel: (levelId: string, levelName: string, words: HSWord[], mode?: "learn" | "quiz") => void;
 }
 
 // Subject display config (extend as more subjects are imported)
@@ -209,14 +209,20 @@ const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
                             </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="px-3 pb-3">
+                            <div className="px-3 pb-3 grid grid-cols-2 gap-2">
                               <Button
                                 variant={unitComplete ? "outline" : "hero"}
                                 size="sm"
-                                className="w-full"
-                                onClick={() => onSelectLevel(`hs-${subject}-${unit}`, `${cfg.name} · ${unitName}`, words)}
+                                onClick={() => onSelectLevel(`hs-${subject}-${unit}`, `${cfg.name} · ${unitName}`, words, "learn")}
                               >
-                                {unitComplete ? "重玩本单元" : done > 0 ? "继续学习" : "开始学习"}（{words.length} 词）
+                                {unitComplete ? "重玩本单元" : done > 0 ? "继续学习" : "开始学习"}（{words.length}）
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onSelectLevel(`hs-${subject}-${unit}`, `${cfg.name} · ${unitName}`, words, "quiz")}
+                              >
+                                直接练习题
                               </Button>
                             </div>
                           </CollapsibleContent>

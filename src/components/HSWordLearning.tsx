@@ -188,7 +188,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
   };
 
   const handleRetry = () => {
-    setPhase("learn");
+    setPhase(startPhase);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);

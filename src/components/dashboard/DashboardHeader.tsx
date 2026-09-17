@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { Crown, GraduationCap, LogOut, ShoppingBag, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 
 const logoDashboard = "/placeholder.svg";
 
@@ -16,7 +18,9 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: DashboardHeaderProps) => {
   const navigate = useNavigate();
+  const [zoneOpen, setZoneOpen] = useState(false);
   return (
+    <>
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
@@ -25,7 +29,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             <div>
               <h1 className="font-gaming text-xl text-glow-purple">狄邦单词通</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant={grade === 9 ? "gold" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1">
+                <Badge onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80" title="点击切换分区">
                   <GraduationCap className="w-3 h-3" />
                   {grade === 9 ? "高中专区" : `${grade === 7 ? "七" : "八"}年级专区`}
                 </Badge>
@@ -61,6 +65,8 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
         </div>
       </div>
     </header>
+    <GradeSelectionDialog open={zoneOpen} onClose={() => setZoneOpen(false)} />
+    </>
   );
 };
 

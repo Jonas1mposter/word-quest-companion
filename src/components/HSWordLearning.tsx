@@ -16,19 +16,20 @@ interface HSWordLearningProps {
   levelId: string;
   levelName: string;
   words: HSWord[];
+  startPhase?: "learn" | "quiz";
   onBack: () => void;
   onComplete: () => void;
 }
 
 type Phase = "learn" | "quiz" | "result";
 
-const HSWordLearning = ({ levelId, levelName, words, onBack, onComplete }: HSWordLearningProps) => {
+const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBack, onComplete }: HSWordLearningProps) => {
   const { profile, refreshProfile } = useAuth();
   const { speak } = useSpeech();
   const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
 
-  const [phase, setPhase] = useState<Phase>("learn");
+  const [phase, setPhase] = useState<Phase>(startPhase);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);

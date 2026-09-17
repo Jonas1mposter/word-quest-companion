@@ -106,10 +106,10 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
     setDifficulty(diff);
     setPhase("loading");
     // Pull 10 random words for the grade (English curriculum)
-    const { data } = await supabase
-      .from("words").select("id, word, meaning, phonetic, example")
-      .eq("grade", profile.grade)
-      .limit(200);
+    const isHS = Number(profile.grade) >= 9;
+    const { data } = isHS
+      ? await (supabase.from("hs_words" as any).select("id, word, meaning, phonetic, example").limit(400) as any)
+      : await supabase.from("words").select("id, word, meaning, phonetic, example").eq("grade", profile.grade).limit(200);
     const pool = (data || []).sort(() => Math.random() - 0.5).slice(0, 10);
     if (pool.length < 4) {
       setPhase("select");

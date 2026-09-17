@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 const Index = () => {
   const { user, profile, loading, gradeAutoDetected } = useAuth();
   const navigate = useNavigate();
-  const [grade, setGrade] = useState<7 | 8>(7);
+  const [grade, setGrade] = useState<7 | 8 | 9>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
 
   const hasResolvedGradeSelection = (() => {
@@ -46,7 +46,7 @@ const Index = () => {
   // Sync grade from profile
   useEffect(() => {
     if (profile?.grade) {
-      setGrade(profile.grade as 7 | 8);
+      setGrade(profile.grade as 7 | 8 | 9);
     }
   }, [profile?.grade]);
 

@@ -42,7 +42,7 @@ import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
 import LoginRequired from "./dashboard/LoginRequired";
 
-interface DashboardProps { grade: 7 | 8; }
+interface DashboardProps { grade: 7 | 8 | 9; }
 
 const Dashboard = ({ grade }: DashboardProps) => {
   const navigate = useNavigate();
@@ -56,8 +56,8 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
-  const [learnZone, setLearnZone] = useState<"junior" | "high">("junior");
   const [refreshKey, setRefreshKey] = useState(0);
+  const isHighSchool = Number(grade) >= 9;
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
   const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");
@@ -136,17 +136,17 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
 
   if (activeView === "battle-select") {
-    return <SubjectBattleSelector battleType="ranked"
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "freematch-select") {
-    return <SubjectBattleSelector battleType="free"
+    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("freematch"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "battle2v2-select") {
-    return <SubjectBattleSelector battleType="ranked"
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
       onBack={() => setActiveView("home")} />;
   }
@@ -260,41 +260,25 @@ const Dashboard = ({ grade }: DashboardProps) => {
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-gaming text-xl">学习关卡</h2>
-                <Badge variant="energy">{grade}年级</Badge>
+                <Badge variant="energy">{isHighSchool ? "高中分区" : `${grade}年级`}</Badge>
               </div>
-              <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+              {isHighSchool ? (
+                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              ) : (
+                <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+              )}
             </div>
           </div>
         )}
 
         {activeView === "learn" && (
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setLearnZone("junior")}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  learnZone === "junior"
-                    ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
-                    : "border-border/50 bg-card/50 hover:border-primary/40"
-                }`}
-              >
-                <p className="font-gaming text-base">📚 {grade}年级分区</p>
-                <p className="text-xs text-muted-foreground mt-1">英语 · 数学 · 科学词汇</p>
-              </button>
-              <button
-                onClick={() => setLearnZone("high")}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  learnZone === "high"
-                    ? "border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/20"
-                    : "border-border/50 bg-card/50 hover:border-amber-500/40"
-                }`}
-              >
-                <p className="font-gaming text-base">🎓 高中分区</p>
-                <p className="text-xs text-muted-foreground mt-1">经济 · 物理 · 化学 · 生物 · 数学</p>
-              </button>
-            </div>
-
-            {learnZone === "junior" ? (
+            {isHighSchool ? (
+              <div>
+                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
+                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              </div>
+            ) : (
               <>
                 <div>
                   <h2 className="font-gaming text-xl mb-4">📚 {grade}年级单词</h2>
@@ -309,11 +293,6 @@ const Dashboard = ({ grade }: DashboardProps) => {
                   <ScienceLevelProgress key={`science-${refreshKey}`} onSelectLevel={handleSelectScienceLevel} />
                 </div>
               </>
-            ) : (
-              <div>
-                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
-              </div>
             )}
           </div>
         )}

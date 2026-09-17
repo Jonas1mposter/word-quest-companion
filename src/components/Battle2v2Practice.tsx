@@ -111,9 +111,10 @@ const Battle2v2Practice = ({ onBack }: Props) => {
     if (!profile) return;
     setDifficulty(diff);
     setPhase("loading");
-    const { data } = await supabase
-      .from("words").select("id, word, meaning, phonetic, example")
-      .eq("grade", profile.grade).limit(300);
+    const isHS = Number(profile.grade) >= 9;
+    const { data } = isHS
+      ? await (supabase.from("hs_words" as any).select("id, word, meaning, phonetic, example").limit(400) as any)
+      : await supabase.from("words").select("id, word, meaning, phonetic, example").eq("grade", profile.grade).limit(300);
     const pool = (data || []).sort(() => Math.random() - 0.5).slice(0, 15);
     if (pool.length < 4) { setPhase("select"); return; }
     setWords(pool);

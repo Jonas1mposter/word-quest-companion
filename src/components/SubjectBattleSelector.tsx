@@ -14,18 +14,80 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type BattleSubject = "mixed" | "english" | "math" | "science";
+export type BattleSubject =
+  | "mixed" | "english" | "math" | "science"
+  | "economics" | "physics" | "chemistry" | "biology" | "hsmath";
 
 interface SubjectBattleSelectorProps {
   onSelectSubject: (subject: BattleSubject) => void;
   onBack: () => void;
   battleType: "ranked" | "free";
+  isHighSchool?: boolean;
 }
 
-const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType }: SubjectBattleSelectorProps) => {
+const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighSchool = false }: SubjectBattleSelectorProps) => {
   const [selectedSubject, setSelectedSubject] = useState<BattleSubject | null>(null);
 
-  const subjects = [
+  const hsSubjects = [
+    {
+      id: "mixed" as BattleSubject,
+      name: "综合词汇",
+      description: "高中五大学科混合出题",
+      icon: Sparkles,
+      color: "from-purple-500 to-pink-500",
+      borderColor: "border-purple-500/50",
+      bgColor: "bg-purple-500/10",
+      badge: "推荐",
+      badgeColor: "bg-purple-500",
+    },
+    {
+      id: "economics" as BattleSubject,
+      name: "经济词汇",
+      description: "经济学科专业术语",
+      icon: BookOpen,
+      color: "from-amber-500 to-yellow-600",
+      borderColor: "border-amber-500/50",
+      bgColor: "bg-amber-500/10",
+    },
+    {
+      id: "physics" as BattleSubject,
+      name: "物理词汇",
+      description: "物理学科专业术语",
+      icon: Zap,
+      color: "from-orange-500 to-red-500",
+      borderColor: "border-orange-500/50",
+      bgColor: "bg-orange-500/10",
+    },
+    {
+      id: "chemistry" as BattleSubject,
+      name: "化学词汇",
+      description: "化学学科专业术语",
+      icon: FlaskConical,
+      color: "from-blue-500 to-cyan-500",
+      borderColor: "border-blue-500/50",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      id: "biology" as BattleSubject,
+      name: "生物词汇",
+      description: "生物学科专业术语",
+      icon: FlaskConical,
+      color: "from-green-500 to-emerald-600",
+      borderColor: "border-green-500/50",
+      bgColor: "bg-green-500/10",
+    },
+    {
+      id: "hsmath" as BattleSubject,
+      name: "数学词汇",
+      description: "高中数学专业术语",
+      icon: Calculator,
+      color: "from-purple-500 to-indigo-500",
+      borderColor: "border-purple-500/50",
+      bgColor: "bg-purple-500/10",
+    },
+  ];
+
+  const juniorSubjects = [
     {
       id: "mixed" as BattleSubject,
       name: "综合词汇",
@@ -69,6 +131,8 @@ const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType }: SubjectB
       badgeColor: "bg-green-500",
     },
   ];
+
+  const subjects = isHighSchool ? hsSubjects : juniorSubjects;
 
   const handleConfirm = () => {
     if (selectedSubject) {

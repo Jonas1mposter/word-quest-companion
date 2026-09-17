@@ -56,8 +56,8 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
-  const [learnZone, setLearnZone] = useState<"junior" | "high">("junior");
   const [refreshKey, setRefreshKey] = useState(0);
+  const isHighSchool = Number(grade) >= 9;
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
   const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");
@@ -136,17 +136,17 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
 
   if (activeView === "battle-select") {
-    return <SubjectBattleSelector battleType="ranked"
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "freematch-select") {
-    return <SubjectBattleSelector battleType="free"
+    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("freematch"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "battle2v2-select") {
-    return <SubjectBattleSelector battleType="ranked"
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
       onBack={() => setActiveView("home")} />;
   }

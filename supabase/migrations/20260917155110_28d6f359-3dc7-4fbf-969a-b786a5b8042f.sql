@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.use_hs_words_for_hs_matches() FROM PUBLIC, anon, authenticated;

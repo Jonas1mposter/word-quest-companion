@@ -273,32 +273,12 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
         {activeView === "learn" && (
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setLearnZone("junior")}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  learnZone === "junior"
-                    ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
-                    : "border-border/50 bg-card/50 hover:border-primary/40"
-                }`}
-              >
-                <p className="font-gaming text-base">📚 {grade}年级分区</p>
-                <p className="text-xs text-muted-foreground mt-1">英语 · 数学 · 科学词汇</p>
-              </button>
-              <button
-                onClick={() => setLearnZone("high")}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  learnZone === "high"
-                    ? "border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/20"
-                    : "border-border/50 bg-card/50 hover:border-amber-500/40"
-                }`}
-              >
-                <p className="font-gaming text-base">🎓 高中分区</p>
-                <p className="text-xs text-muted-foreground mt-1">经济 · 物理 · 化学 · 生物 · 数学</p>
-              </button>
-            </div>
-
-            {learnZone === "junior" ? (
+            {isHighSchool ? (
+              <div>
+                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
+                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              </div>
+            ) : (
               <>
                 <div>
                   <h2 className="font-gaming text-xl mb-4">📚 {grade}年级单词</h2>
@@ -313,11 +293,6 @@ const Dashboard = ({ grade }: DashboardProps) => {
                   <ScienceLevelProgress key={`science-${refreshKey}`} onSelectLevel={handleSelectScienceLevel} />
                 </div>
               </>
-            ) : (
-              <div>
-                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
-              </div>
             )}
           </div>
         )}

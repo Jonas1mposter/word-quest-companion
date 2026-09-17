@@ -13,7 +13,9 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
-          redirectTo: window.location.origin + '/#/callback',
+          // Supabase returns OAuth credentials in the URL hash. A HashRouter
+          // route here would create a second `#` and break session recovery.
+          redirectTo: `${window.location.origin}/`,
           scopes: 'email profile openid GroupMember.Read.All',
         },
       });

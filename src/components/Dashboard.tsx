@@ -260,9 +260,13 @@ const Dashboard = ({ grade }: DashboardProps) => {
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-gaming text-xl">学习关卡</h2>
-                <Badge variant="energy">{grade}年级</Badge>
+                <Badge variant="energy">{isHighSchool ? "高中分区" : `${grade}年级`}</Badge>
               </div>
-              <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+              {isHighSchool ? (
+                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              ) : (
+                <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+              )}
             </div>
           </div>
         )}

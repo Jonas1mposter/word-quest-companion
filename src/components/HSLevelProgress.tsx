@@ -42,14 +42,22 @@ const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
   const { data: allWords = [], isLoading: wordsLoading } = useQuery({
     queryKey: ["hs-words"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("hs_words" as any)
-        .select("id, word, meaning, phonetic, definition, example, subject, unit, unit_name")
-        .order("subject", { ascending: true })
-        .order("unit", { ascending: true })
-        .order("order_index", { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as HSWord[];
+      const all: HSWord[] = [];
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("hs_words" as any)
+          .select("id, word, meaning, phonetic, definition, example, subject, unit, unit_name")
+          .order("subject", { ascending: true })
+          .order("unit", { ascending: true })
+          .order("order_index", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = (data || []) as unknown as HSWord[];
+        all.push(...rows);
+        if (rows.length < pageSize) break;
+      }
+      return all;
     },
     staleTime: 10 * 60 * 1000,
   });

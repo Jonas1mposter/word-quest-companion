@@ -263,12 +263,12 @@ const Dashboard = ({ grade }: DashboardProps) => {
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-gaming text-xl">学习关卡</h2>
-                <Badge variant="energy">{isHighSchool ? "高中分区" : `${grade}年级`}</Badge>
+                <Badge variant="energy">{zoneName(Number(grade))}分区</Badge>
               </div>
-              {isHighSchool ? (
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              {useZoneBank ? (
+                <HSLevelProgress key={`hs-${grade}-${refreshKey}`} grade={Number(grade)} onSelectLevel={handleSelectHSLevel} />
               ) : (
-                <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+                <LevelProgress key={refreshKey} grade={grade as 7 | 8} onSelectLevel={handleSelectLevel} />
               )}
             </div>
           </div>
@@ -276,16 +276,16 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
         {activeView === "learn" && (
           <div className="max-w-3xl mx-auto space-y-6">
-            {isHighSchool ? (
+            {useZoneBank ? (
               <div>
-                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+                <h2 className="font-gaming text-xl mb-4">{isPrimary ? "🧒" : "🎓"} {zoneName(Number(grade))}分区</h2>
+                <HSLevelProgress key={`hs-${grade}-${refreshKey}`} grade={Number(grade)} onSelectLevel={handleSelectHSLevel} />
               </div>
             ) : (
               <>
                 <div>
                   <h2 className="font-gaming text-xl mb-4">📚 {grade}年级单词</h2>
-                  <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+                  <LevelProgress key={refreshKey} grade={grade as 7 | 8} onSelectLevel={handleSelectLevel} />
                 </div>
                 <div className="pt-4 border-t border-border/50">
                   <h2 className="font-gaming text-xl mb-4">🔢 0580数学词汇</h2>

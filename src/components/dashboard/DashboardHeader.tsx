@@ -33,7 +33,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                   <GraduationCap className="w-3 h-3" />
                   {grade === 9 ? "高中专区" : `${grade === 7 ? "七" : "八"}年级专区`}
                 </Badge>
-                {className && <Badge variant="secondary" className="text-xs">{className}班</Badge>}
+                {grade !== 9 && className && <Badge variant="secondary" className="text-xs">{className}班</Badge>}
               </div>
             </div>
           </div>

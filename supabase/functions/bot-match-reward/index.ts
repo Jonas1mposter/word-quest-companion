@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
     const xpGain = result === "win" ? 3 : result === "draw" ? 2 : 1;
     // 小额狄邦豆奖励：随难度递增，仅胜利/平局
     const coinTable: Record<string, [number, number, number]> = {
-      easy:   [3, 1, 0],
-      medium: [5, 2, 0],
-      hard:   [8, 3, 1],
+      easy:   [4, 2, 0],
+      medium: [7, 3, 1],
+      hard:   [11, 4, 1],
     };
     const [cw, cd, cl] = coinTable[diff];
     const coinsGain = result === "win" ? cw : result === "draw" ? cd : cl;

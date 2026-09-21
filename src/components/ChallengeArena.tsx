@@ -359,7 +359,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-secondary-foreground" />
                   <CardTitle className="text-lg">
-                    {grade === 9 ? "高中" : grade === 7 ? "七年级" : "八年级"}专区
+                    {zoneName(grade)}专区
                   </CardTitle>
                 </div>
                 {getRankIcon(myGrade.rank_position)}
@@ -419,7 +419,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">
-                        {gradeItem.grade === 9 ? "高中" : gradeItem.grade === 7 ? "七年级" : "八年级"}
+                        {zoneName(gradeItem.grade)}
                       </span>
                       <Badge variant="secondary" className="text-xs">
                         {gradeItem.member_count}人

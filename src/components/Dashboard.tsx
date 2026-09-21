@@ -41,8 +41,9 @@ import { toast } from "sonner";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
 import LoginRequired from "./dashboard/LoginRequired";
+import { isPrimaryZone, usesZoneWordBank, zoneName } from "@/lib/zones";
 
-interface DashboardProps { grade: 7 | 8 | 9; }
+interface DashboardProps { grade: number; }
 
 const Dashboard = ({ grade }: DashboardProps) => {
   const navigate = useNavigate();
@@ -58,6 +59,8 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const isHighSchool = Number(grade) >= 9;
+  const isPrimary = isPrimaryZone(Number(grade));
+  const useZoneBank = usesZoneWordBank(Number(grade));
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
   const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");

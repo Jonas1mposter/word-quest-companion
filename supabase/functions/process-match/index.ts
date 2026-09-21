@@ -38,8 +38,8 @@ const computeRank = (
 };
 
 const coinReward = (score: number, isFree: boolean) =>
-  isFree ? (score === 1 ? 12 : score === 0.5 ? 6 : 4)
-         : (score === 1 ? 25 : score === 0.5 ? 12 : 8);
+  isFree ? (score === 1 ? 16 : score === 0.5 ? 8 : 5)
+         : (score === 1 ? 33 : score === 0.5 ? 16 : 10);
 const xpReward = (score: number, isFree: boolean) =>
   isFree ? (score === 1 ? 30 : score === 0.5 ? 15 : 10)
          : (score === 1 ? 20 : score === 0.5 ? 10 : 5);

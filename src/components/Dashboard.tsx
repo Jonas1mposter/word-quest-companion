@@ -139,17 +139,17 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
 
   if (activeView === "battle-select") {
-    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "freematch-select") {
-    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("freematch"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "battle2v2-select") {
-    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
       onBack={() => setActiveView("home")} />;
   }

@@ -8,6 +8,7 @@ import { Lock, Star, Loader2, ChevronDown, ChevronRight, GraduationCap } from "l
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery } from "@tanstack/react-query";
+import { zoneName } from "@/lib/zones";
 
 export interface HSWord {
   id: string;
@@ -33,15 +34,18 @@ export const HS_SUBJECT_CONFIG: Record<string, { name: string; color: string; gr
   chemistry: { name: "化学", color: "text-blue-500", gradient: "from-blue-500 to-cyan-500" },
   biology: { name: "生物", color: "text-green-500", gradient: "from-green-500 to-emerald-600" },
   math: { name: "数学", color: "text-purple-500", gradient: "from-purple-500 to-indigo-500" },
+  science: { name: "科学", color: "text-green-500", gradient: "from-green-500 to-emerald-600" },
 };
 
-const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
+const HSLevelProgress = ({ grade = 9, onSelectLevel }: HSLevelProgressProps) => {
   const { profile } = useAuth();
-  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set(["economics"]));
+  const zoneGrade = grade >= 9 ? 9 : grade;
+  const primary = zoneGrade <= 6;
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set([primary ? "science" : "economics"]));
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
 
   const { data: allWords = [], isLoading: wordsLoading } = useQuery({
-    queryKey: ["hs-words"],
+    queryKey: ["hs-words", zoneGrade],
     queryFn: async () => {
       const all: HSWord[] = [];
       const pageSize = 1000;
@@ -49,6 +53,7 @@ const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
         const { data, error } = await supabase
           .from("hs_words" as any)
           .select("id, word, meaning, phonetic, definition, example, subject, unit, unit_name")
+          .eq("grade", zoneGrade)
           .order("subject", { ascending: true })
           .order("unit", { ascending: true })
           .order("order_index", { ascending: true })
@@ -127,7 +132,7 @@ const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
   if (subjects.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        高中分区词汇正在录入中，敬请期待
+        {primary ? `${zoneName(zoneGrade)}分区词汇正在录入中，敬请期待` : "高中分区词汇正在录入中，敬请期待"}
       </div>
     );
   }
@@ -137,7 +142,8 @@ const HSLevelProgress = ({ onSelectLevel }: HSLevelProgressProps) => {
       <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
         <GraduationCap className="w-4 h-4 text-amber-500 flex-shrink-0" />
         <span className="text-muted-foreground">
-          <span className="text-foreground font-medium">高中分区</span> - 国际课程学科词汇（IB / AP / A-Level / IG）
+          <span className="text-foreground font-medium">{zoneName(zoneGrade)}分区</span>
+          {primary ? " - 小学学科词汇（中英对照 · 单元同步）" : " - 国际课程学科词汇（IB / AP / A-Level / IG）"}
         </span>
       </div>
 

@@ -653,6 +653,7 @@ export type Database = {
           created_at: string
           definition: string | null
           example: string | null
+          grade: number
           id: string
           meaning: string
           order_index: number
@@ -666,6 +667,7 @@ export type Database = {
           created_at?: string
           definition?: string | null
           example?: string | null
+          grade?: number
           id?: string
           meaning: string
           order_index?: number
@@ -679,6 +681,7 @@ export type Database = {
           created_at?: string
           definition?: string | null
           example?: string | null
+          grade?: number
           id?: string
           meaning?: string
           order_index?: number

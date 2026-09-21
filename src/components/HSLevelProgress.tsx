@@ -22,6 +22,7 @@ export interface HSWord {
 }
 
 interface HSLevelProgressProps {
+  grade?: number;
   onSelectLevel: (levelId: string, levelName: string, words: HSWord[], mode?: "learn" | "quiz") => void;
 }
 

@@ -23,9 +23,10 @@ interface SubjectBattleSelectorProps {
   onBack: () => void;
   battleType: "ranked" | "free";
   isHighSchool?: boolean;
+  zoneGrade?: number;
 }
 
-const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighSchool = false }: SubjectBattleSelectorProps) => {
+const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighSchool = false, zoneGrade = 7 }: SubjectBattleSelectorProps) => {
   const [selectedSubject, setSelectedSubject] = useState<BattleSubject | null>(null);
 
   const hsSubjects = [
@@ -132,7 +133,22 @@ const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighScho
     },
   ];
 
-  const subjects = isHighSchool ? hsSubjects : juniorSubjects;
+  const primarySubjects = [
+    {
+      id: "science" as BattleSubject,
+      name: "科学词汇",
+      description: "本年级课本单元词汇",
+      icon: FlaskConical,
+      color: "from-green-500 to-emerald-500",
+      borderColor: "border-green-500/50",
+      bgColor: "bg-green-500/10",
+      badge: "推荐",
+      badgeColor: "bg-green-500",
+    },
+  ];
+
+  const isPrimary = zoneGrade >= 1 && zoneGrade <= 6;
+  const subjects = isPrimary ? primarySubjects : isHighSchool ? hsSubjects : juniorSubjects;
 
   const handleConfirm = () => {
     if (selectedSubject) {

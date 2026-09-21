@@ -28,6 +28,7 @@ import SeasonMilestones from "./SeasonMilestones";
 import SeasonEvents from "./SeasonEvents";
 import { TeamChallengePanel } from "./team/TeamChallengePanel";
 import { Shield } from "lucide-react";
+import { zoneName } from "@/lib/zones";
 
 interface ClassChallengeData {
   id: string;

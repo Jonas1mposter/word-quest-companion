@@ -5,6 +5,7 @@ import { GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { ALL_GRADES, zoneName } from "@/lib/zones";
 
 interface GradeSelectionDialogProps {
   open: boolean;
@@ -13,7 +14,7 @@ interface GradeSelectionDialogProps {
 
 const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
   const { profile, refreshProfile } = useAuth();
-  const [selectedGrade, setSelectedGrade] = useState<7 | 8 | 9 | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   const getGradeSelectionStorageKey = (profileId: string) => `grade-selection-resolved:${profileId}`;
@@ -35,7 +36,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
         // Ignore storage errors in restricted mobile browsers
       }
       await refreshProfile();
-      toast.success(selectedGrade === 9 ? "已进入高中分区" : `已设置为 ${selectedGrade} 年级`);
+      toast.success(`已进入${zoneName(selectedGrade)}分区`);
       onClose();
     } catch (err) {
       console.error("Failed to update grade:", err);
@@ -59,7 +60,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
         </DialogHeader>
 
         <div className="grid grid-cols-3 gap-3 py-4">
-          {([7, 8, 9] as const).map((grade) => (
+          {ALL_GRADES.map((grade) => (
             <button
               key={grade}
               onClick={() => setSelectedGrade(grade)}
@@ -71,8 +72,8 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
                 }
               `}
             >
-              <span className="text-3xl font-bold text-foreground">{grade === 9 ? "高中" : grade}</span>
-              <span className="text-sm text-muted-foreground">{grade === 9 ? "分区" : "年级"}</span>
+              <span className="text-2xl font-bold text-foreground">{grade === 9 ? "高中" : grade}</span>
+              <span className="text-xs text-muted-foreground">{grade === 9 ? "分区" : "年级"}</span>
               {selectedGrade === grade && (
                 <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-primary" />
               )}

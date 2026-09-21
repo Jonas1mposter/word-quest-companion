@@ -9,20 +9,29 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { url, subject } = await req.json();
-    if (!url) throw new Error("url required");
+    const body = await req.json();
+    const { url, subject, grade, rows: inlineRows, replace } = body;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`fetch failed ${res.status}`);
-    const rows = await res.json();
+    let rows = inlineRows;
+    if (!rows) {
+      if (!url) throw new Error("url or rows required");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`fetch failed ${res.status}`);
+      rows = await res.json();
+    }
 
     const subj = subject ?? "economics";
-    await supabase.from("hs_words").delete().eq("subject", subj);
+    const gradeVal = typeof grade === "number" ? grade : 9;
+    if (replace !== false) {
+      let del = supabase.from("hs_words").delete().eq("subject", subj);
+      del = gradeVal === 9 ? del.eq("grade", 9) : del.eq("grade", gradeVal);
+      await del;
+    }
 
     let inserted = 0;
     for (let i = 0; i < rows.length; i += 200) {
@@ -33,6 +42,7 @@ Deno.serve(async (req) => {
         definition: e.definition || null,
         example: e.example || null,
         subject: subj,
+        grade: typeof e.grade === "number" ? e.grade : gradeVal,
         unit: e.unit,
         unit_name: e.unit_name ?? `第${e.unit}关`,
         order_index: e.order_index,

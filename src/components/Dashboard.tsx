@@ -41,8 +41,9 @@ import { toast } from "sonner";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
 import LoginRequired from "./dashboard/LoginRequired";
+import { isPrimaryZone, usesZoneWordBank, zoneName } from "@/lib/zones";
 
-interface DashboardProps { grade: 7 | 8 | 9; }
+interface DashboardProps { grade: number; }
 
 const Dashboard = ({ grade }: DashboardProps) => {
   const navigate = useNavigate();
@@ -58,6 +59,8 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [selectedHSLevel, setSelectedHSLevel] = useState<{ id: string; name: string; words: HSWord[]; mode?: "learn" | "quiz" } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const isHighSchool = Number(grade) >= 9;
+  const isPrimary = isPrimaryZone(Number(grade));
+  const useZoneBank = usesZoneWordBank(Number(grade));
   const [friendBattleMatchId, setFriendBattleMatchId] = useState<string | null>(null);
   const [wrongWordsToReview, setWrongWordsToReview] = useState<any[] | null>(null);
   const [wrongReviewSubject, setWrongReviewSubject] = useState<"english" | "math" | "science">("english");
@@ -136,17 +139,17 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
 
   if (activeView === "battle-select") {
-    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "freematch-select") {
-    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="free" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("freematch"); }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "battle2v2-select") {
-    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool}
+    return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
       onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
       onBack={() => setActiveView("home")} />;
   }
@@ -260,12 +263,12 @@ const Dashboard = ({ grade }: DashboardProps) => {
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-gaming text-xl">学习关卡</h2>
-                <Badge variant="energy">{isHighSchool ? "高中分区" : `${grade}年级`}</Badge>
+                <Badge variant="energy">{zoneName(Number(grade))}分区</Badge>
               </div>
-              {isHighSchool ? (
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+              {useZoneBank ? (
+                <HSLevelProgress key={`hs-${grade}-${refreshKey}`} grade={Number(grade)} onSelectLevel={handleSelectHSLevel} />
               ) : (
-                <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+                <LevelProgress key={refreshKey} grade={grade as 7 | 8} onSelectLevel={handleSelectLevel} />
               )}
             </div>
           </div>
@@ -273,16 +276,16 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
         {activeView === "learn" && (
           <div className="max-w-3xl mx-auto space-y-6">
-            {isHighSchool ? (
+            {useZoneBank ? (
               <div>
-                <h2 className="font-gaming text-xl mb-4">🎓 高中分区</h2>
-                <HSLevelProgress key={`hs-${refreshKey}`} onSelectLevel={handleSelectHSLevel} />
+                <h2 className="font-gaming text-xl mb-4">{isPrimary ? "🧒" : "🎓"} {zoneName(Number(grade))}分区</h2>
+                <HSLevelProgress key={`hs-${grade}-${refreshKey}`} grade={Number(grade)} onSelectLevel={handleSelectHSLevel} />
               </div>
             ) : (
               <>
                 <div>
                   <h2 className="font-gaming text-xl mb-4">📚 {grade}年级单词</h2>
-                  <LevelProgress key={refreshKey} grade={grade} onSelectLevel={handleSelectLevel} />
+                  <LevelProgress key={refreshKey} grade={grade as 7 | 8} onSelectLevel={handleSelectLevel} />
                 </div>
                 <div className="pt-4 border-t border-border/50">
                   <h2 className="font-gaming text-xl mb-4">🔢 0580数学词汇</h2>

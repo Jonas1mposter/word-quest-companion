@@ -135,6 +135,17 @@ const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighScho
 
   const primarySubjects = [
     {
+      id: "mixed" as BattleSubject,
+      name: "综合词汇",
+      description: "科学、数学混合出题",
+      icon: Sparkles,
+      color: "from-purple-500 to-pink-500",
+      borderColor: "border-purple-500/50",
+      bgColor: "bg-purple-500/10",
+      badge: "推荐",
+      badgeColor: "bg-purple-500",
+    },
+    {
       id: "science" as BattleSubject,
       name: "科学词汇",
       description: "本年级课本单元词汇",
@@ -142,10 +153,20 @@ const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighScho
       color: "from-green-500 to-emerald-500",
       borderColor: "border-green-500/50",
       bgColor: "bg-green-500/10",
-      badge: "推荐",
-      badgeColor: "bg-green-500",
+    },
+    {
+      id: "math" as BattleSubject,
+      name: "数学词汇",
+      description: "本年级数学术语词汇",
+      icon: Calculator,
+      color: "from-amber-500 to-orange-500",
+      borderColor: "border-amber-500/50",
+      bgColor: "bg-amber-500/10",
+      badge: "新",
+      badgeColor: "bg-amber-500",
     },
   ];
+
 
   const isPrimary = zoneGrade >= 1 && zoneGrade <= 6;
   const subjects = isPrimary ? primarySubjects : isHighSchool ? hsSubjects : juniorSubjects;

@@ -204,7 +204,7 @@ const BattleArena = ({
 
   useEffect(() => {
     if (!profile) return;
-    if (initialMatchId) loadMatch(initialMatchId);
+    if (initialMatchId) loadMatch(initialMatchId, false);
     else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => joinQueue());
     return () => {
       leaveQueue();

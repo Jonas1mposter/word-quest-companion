@@ -126,6 +126,8 @@ const RankDisplay = ({ tier, stars, wins, losses, compact = false }: RankDisplay
               tier === "gold" && "from-yellow-400 to-amber-500",
               tier === "platinum" && "from-cyan-300 to-cyan-500",
               tier === "diamond" && "from-blue-400 to-purple-500",
+              tier === "star" && "from-fuchsia-300 to-violet-500",
+              tier === "ace" && "from-orange-400 to-red-500",
               tier === "champion" && "from-purple-500 to-pink-500"
             )}>
               <TierIcon className="w-6 h-6 text-white drop-shadow-lg" />

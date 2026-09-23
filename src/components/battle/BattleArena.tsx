@@ -83,6 +83,7 @@ const BattleArena = ({
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
+  const [opponentNameCard, setOpponentNameCard] = useState<NameCardData | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);

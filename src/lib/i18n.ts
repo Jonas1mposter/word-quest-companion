@@ -85,6 +85,7 @@ const EXACT: Record<string, string> = {
   "对战记录": "Match history", "暂无记录": "No records yet", "全部复习": "Review all",
   "周榜": "Weekly", "总榜": "All-time", "我的排名": "My rank",
   "青铜": "Bronze", "白银": "Silver", "黄金": "Gold", "铂金": "Platinum", "钻石": "Diamond",
+  "星耀": "Star", "王牌": "Ace", "狄邦巅峰": "Dipont Peak",
   "大师": "Master", "宗师": "Grandmaster", "王者": "Champion", "冠军": "Champion",
   "普通": "Common", "稀有": "Rare", "史诗": "Epic", "传说": "Legendary", "神话": "Mythic",
   "已解锁": "Unlocked", "未解锁": "Locked", "已装备": "Equipped", "装备": "Equip", "卸下": "Unequip",

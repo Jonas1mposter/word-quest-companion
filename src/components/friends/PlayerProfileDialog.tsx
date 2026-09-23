@@ -57,7 +57,7 @@ const rarityColor: Record<string, string> = {
 
 const tierName: Record<string, string> = {
   bronze: "青铜", silver: "白银", gold: "黄金",
-  platinum: "铂金", diamond: "钻石", champion: "冠军",
+  platinum: "铂金", diamond: "钻石", star: "星耀", ace: "王牌", champion: "狄邦巅峰",
 };
 
 export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) => {

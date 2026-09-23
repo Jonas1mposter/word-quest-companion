@@ -49,6 +49,7 @@ const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => (
           return (
             <Button
               key={tab.id}
+              data-tour={`nav-${tab.id}`}
               variant={isActive ? "default" : "ghost"}
               size="sm"
               onClick={() => onSelect(tab.id)}

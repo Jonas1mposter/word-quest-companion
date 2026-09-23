@@ -1,9 +1,9 @@
-import { Star, Crown, Shield, Gem, Award, Medal } from "lucide-react";
+import { Star, Crown, Shield, Gem, Award, Medal, Sparkles, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "champion";
+type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "star" | "ace" | "champion";
 
 interface RankDisplayProps {
   tier: RankTier;
@@ -13,12 +13,14 @@ interface RankDisplayProps {
   compact?: boolean;
 }
 
-// Rank tier configuration - 与 RankedBattle.tsx 保持一致
+// Rank tier configuration - 与 profile-card/constants.ts 保持一致
 // 青铜：30星晋级，失败不扣星
 // 白银：40星晋级，失败扣1星
 // 黄金：50星晋级，失败扣1星，1星保护
 // 铂金：50星晋级，失败扣1星
 // 钻石：60星晋级，失败扣2星
+// 星耀：70星晋级，失败扣2星
+// 王牌：80星晋级，失败扣2星
 // 狄邦巅峰：最高段位，失败扣2星
 const RANK_CONFIG: Record<RankTier, {
   starsToPromote: number;
@@ -62,6 +64,20 @@ const RANK_CONFIG: Record<RankTier, {
     bgGradient: "from-blue-300/20 to-purple-400/20",
     icon: Gem,
   },
+  star: {
+    starsToPromote: 70,
+    name: "星耀",
+    color: "text-fuchsia-400",
+    bgGradient: "from-fuchsia-300/20 to-violet-500/20",
+    icon: Sparkles,
+  },
+  ace: {
+    starsToPromote: 80,
+    name: "王牌",
+    color: "text-orange-400",
+    bgGradient: "from-orange-400/20 to-red-500/20",
+    icon: Flame,
+  },
   champion: {
     starsToPromote: 999,
     name: "狄邦巅峰",
@@ -71,7 +87,7 @@ const RANK_CONFIG: Record<RankTier, {
   },
 };
 
-const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond", "champion"];
+const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond", "star", "ace", "champion"];
 
 const RankDisplay = ({ tier, stars, wins, losses, compact = false }: RankDisplayProps) => {
   const config = RANK_CONFIG[tier];

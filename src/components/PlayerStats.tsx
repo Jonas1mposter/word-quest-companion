@@ -78,6 +78,10 @@ const PlayerStats = ({
         return "platinum";
       case "diamond":
         return "diamond";
+      case "star":
+        return "diamond";
+      case "ace":
+        return "champion";
       case "champion":
         return "champion";
       default:

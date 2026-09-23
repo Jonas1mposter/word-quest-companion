@@ -42,6 +42,8 @@ const Leaderboard = ({ entries, currentUser }: LeaderboardProps) => {
       case "gold": return "gold";
       case "platinum": return "platinum";
       case "diamond": return "diamond";
+      case "star": return "diamond";
+      case "ace": return "champion";
       case "champion": return "champion";
       default: return "secondary";
     }

@@ -3,9 +3,9 @@ import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
 
-const TIER_ORDER = ["bronze", "silver", "gold", "platinum", "diamond", "champion"] as const;
+const TIER_ORDER = ["bronze", "silver", "gold", "platinum", "diamond", "star", "ace", "champion"] as const;
 const STARS_TO_PROMOTE: Record<string, number> = {
-  bronze: 30, silver: 40, gold: 50, platinum: 50, diamond: 60, champion: 999,
+  bronze: 30, silver: 40, gold: 50, platinum: 50, diamond: 60, star: 70, ace: 80, champion: 999,
 };
 const computeRank = (
   tier: string, stars: number, points: number,

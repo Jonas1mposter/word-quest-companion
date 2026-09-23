@@ -1,4 +1,4 @@
-export type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "champion";
+export type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "star" | "ace" | "champion";
 
 export const RANK_CONFIG: Record<RankTier, {
   starsToPromote: number;
@@ -10,14 +10,16 @@ export const RANK_CONFIG: Record<RankTier, {
   gold: { starsToPromote: 50, starsLostOnLose: 1, protectionStars: 1 },
   platinum: { starsToPromote: 50, starsLostOnLose: 1, protectionStars: 0 },
   diamond: { starsToPromote: 60, starsLostOnLose: 2, protectionStars: 0 },
+  star: { starsToPromote: 70, starsLostOnLose: 2, protectionStars: 0 },
+  ace: { starsToPromote: 80, starsLostOnLose: 2, protectionStars: 0 },
   champion: { starsToPromote: 999, starsLostOnLose: 2, protectionStars: 0 },
 };
 
-export const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond", "champion"];
+export const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond", "star", "ace", "champion"];
 
 export const tierNames: Record<RankTier, string> = {
   bronze: "青铜", silver: "白银", gold: "黄金",
-  platinum: "铂金", diamond: "钻石", champion: "狄邦巅峰",
+  platinum: "铂金", diamond: "钻石", star: "星耀", ace: "王牌", champion: "狄邦巅峰",
 };
 
 export const tierColors: Record<RankTier, { gradient: string; text: string; bg: string }> = {
@@ -26,6 +28,8 @@ export const tierColors: Record<RankTier, { gradient: string; text: string; bg: 
   gold: { gradient: "from-yellow-400 to-amber-500", text: "text-yellow-500", bg: "bg-yellow-500/20" },
   platinum: { gradient: "from-cyan-300 to-cyan-500", text: "text-cyan-400", bg: "bg-cyan-400/20" },
   diamond: { gradient: "from-blue-300 to-purple-400", text: "text-blue-400", bg: "bg-blue-400/20" },
+  star: { gradient: "from-fuchsia-300 to-violet-500", text: "text-fuchsia-400", bg: "bg-fuchsia-400/20" },
+  ace: { gradient: "from-orange-400 to-red-500", text: "text-orange-400", bg: "bg-orange-400/20" },
   champion: { gradient: "from-purple-500 to-pink-500", text: "text-purple-400", bg: "bg-purple-400/20" },
 };
 

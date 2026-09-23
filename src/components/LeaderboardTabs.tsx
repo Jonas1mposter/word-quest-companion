@@ -18,7 +18,7 @@ interface LeaderboardEntry {
 }
 
 // 段位配置
-type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "champion";
+type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "star" | "ace" | "champion";
 
 const tierConfig: Record<RankTier, { 
   name: string; 
@@ -31,7 +31,9 @@ const tierConfig: Record<RankTier, {
   gold: { name: "黄金", gradient: "from-yellow-400 to-amber-500", textColor: "text-yellow-500", icon: "shield" },
   platinum: { name: "铂金", gradient: "from-cyan-300 to-cyan-500", textColor: "text-cyan-400", icon: "shield" },
   diamond: { name: "钻石", gradient: "from-blue-300 to-purple-400", textColor: "text-blue-400", icon: "shield" },
-  champion: { name: "巅峰", gradient: "from-purple-500 to-pink-500", textColor: "text-purple-400", icon: "crown" },
+  star: { name: "星耀", gradient: "from-fuchsia-300 to-violet-500", textColor: "text-fuchsia-400", icon: "shield" },
+  ace: { name: "王牌", gradient: "from-orange-400 to-red-500", textColor: "text-orange-400", icon: "shield" },
+  champion: { name: "狄邦巅峰", gradient: "from-purple-500 to-pink-500", textColor: "text-purple-400", icon: "crown" },
 };
 
 interface LeaderboardTabsProps {
@@ -50,7 +52,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
   const [showFreeMatchLeaderboard, setShowFreeMatchLeaderboard] = useState(false);
 
   const tierOrder: Record<string, number> = {
-    champion: 6, diamond: 5, platinum: 4, gold: 3, silver: 2, bronze: 1,
+    champion: 8, ace: 7, star: 6, diamond: 5, platinum: 4, gold: 3, silver: 2, bronze: 1,
   };
 
   useEffect(() => {
@@ -176,6 +178,8 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
       case "gold": return "gold";
       case "platinum": return "platinum";
       case "diamond": return "diamond";
+      case "star": return "diamond";
+      case "ace": return "champion";
       case "champion": return "champion";
       default: return "secondary";
     }

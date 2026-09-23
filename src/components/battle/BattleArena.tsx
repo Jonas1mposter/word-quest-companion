@@ -116,7 +116,7 @@ const BattleArena = ({
     setQuizType(QUIZ_TYPES[idx % QUIZ_TYPES.length]);
   }, []);
 
-  const loadMatch = useCallback(async (matchId: string) => {
+  const loadMatch = useCallback(async (matchId: string, showIntel = true) => {
     const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
     if (!match || !profile) return;
     const words = (match.words as any[]) || [];
@@ -125,6 +125,21 @@ const BattleArena = ({
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
     const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId!).single();
     setOpponentProfile(opp);
+
+    // 预讯过场：拉取对手佩戴的名片
+    if (showIntel && opponentId) {
+      const { data: cardRows } = await supabase
+        .from('user_name_cards')
+        .select('rank_position, name_cards (id, name, description, background_gradient, icon, category, rarity)')
+        .eq('profile_id', opponentId)
+        .eq('is_equipped', true)
+        .limit(1);
+      const row: any = cardRows?.[0];
+      if (row?.name_cards) {
+        setOpponentNameCard({ ...row.name_cards, rank_position: row.rank_position, is_equipped: true, is_owned: true });
+      }
+    }
+
     if (words.length > 0) generateOptions(words, 0);
 
     const channel = supabase.channel(`match-${matchId}`)

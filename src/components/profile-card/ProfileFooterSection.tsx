@@ -10,6 +10,7 @@ import { Award, Pencil, X, Check, Shield, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NameCardData, rarityColors, rarityLabels, getUnlockCondition } from "./constants";
 import { getNameCardGradientStyle } from "./utils";
+import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
 
 interface Props {
   username: string;
@@ -79,12 +80,16 @@ export const ProfileFooterSection = ({
             <div
               className={cn(
                 "flex-1 p-4 cursor-pointer border-l border-border/50 hover:bg-secondary/30 transition-all",
-                equippedNameCard && "relative overflow-hidden"
+                equippedNameCard && nameCardFxClass(equippedNameCard.rarity)
               )}
               style={equippedNameCard ? {
                 background: getNameCardGradientStyle(equippedNameCard.background_gradient),
+                ...nameCardFxStyle(equippedNameCard.rarity),
               } : undefined}
             >
+              {equippedNameCard && (
+                <NameCardFx rarity={equippedNameCard.rarity} background={getNameCardGradientStyle(equippedNameCard.background_gradient)} />
+              )}
               <div className="flex items-center gap-2 relative z-10">
                 {equippedNameCard ? (
                   <>
@@ -123,19 +128,20 @@ export const ProfileFooterSection = ({
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground font-medium">已获得 ({userNameCards.length})</div>
                   {userNameCards.map((card) => {
-                    const isCustomGradient = card.background_gradient?.startsWith("linear-gradient");
+                    const bg = getNameCardGradientStyle(card.background_gradient || "");
                     return (
                       <Card
                         key={card.id}
                         className={cn(
-                          "cursor-pointer transition-all hover:scale-[1.02]",
-                          !isCustomGradient && `bg-gradient-to-r ${card.background_gradient}`,
+                          "cursor-pointer transition-all hover:scale-[1.02] border-0",
+                          nameCardFxClass(card.rarity),
                           card.is_equipped && "ring-2 ring-white"
                         )}
-                        style={isCustomGradient ? { background: card.background_gradient } : undefined}
+                        style={{ background: bg, ...nameCardFxStyle(card.rarity) }}
                         onClick={() => { onEquipNameCard(card); setNameCardDialogOpen(false); }}
                       >
-                        <CardContent className="p-4 flex items-center gap-3 text-white">
+                        <NameCardFx rarity={card.rarity} background={bg} />
+                        <CardContent className="p-4 flex items-center gap-3 text-white relative z-10">
                           <BadgeIcon icon={card.icon || "Award"} className="w-8 h-8" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">

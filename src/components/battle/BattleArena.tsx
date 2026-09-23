@@ -350,6 +350,51 @@ const BattleArena = ({
     );
   }
 
+  if (phase === "loading") {
+    const card = opponentNameCard;
+    const bg = card ? getNameCardGradientStyle(card.background_gradient || "") : undefined;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-lg w-full">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className={cn("w-6 h-6 rounded-full border-2 animate-spin", theme.accentSpinner)} />
+            <h2 className="text-xl font-gaming text-muted-foreground tracking-widest">正在加载预讯...</h2>
+          </div>
+
+          <p className="text-xs text-muted-foreground mb-3 tracking-[0.3em]">—— 对手情报 ——</p>
+          <p className={cn("text-2xl font-gaming mb-4 animate-pulse", theme.accentText)}>
+            {opponentProfile?.username || "神秘对手"}
+          </p>
+
+          {card ? (
+            <div
+              className={cn("relative w-full h-36 rounded-xl overflow-hidden border border-border/50 shadow-2xl", nameCardFxClass(card.rarity))}
+              style={{ background: bg, ...nameCardFxStyle(card.rarity) }}
+            >
+              <NameCardFx rarity={card.rarity} background={bg} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                <BadgeIcon icon={card.icon || "Award"} className="w-10 h-10 text-white drop-shadow-lg" />
+                <div className="text-lg font-gaming text-white drop-shadow-md">{card.name}</div>
+                {card.rank_position && (
+                  <div className="text-xs text-white/90 bg-black/30 rounded-full px-3 py-0.5">#{card.rank_position}</div>
+                )}
+                <span className={cn("text-[10px] uppercase tracking-widest bg-black/30 rounded-full px-2 py-0.5", rarityColors[card.rarity])}>
+                  {rarityLabels[card.rarity] || card.rarity}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-36 rounded-xl border border-dashed border-border/50 flex items-center justify-center bg-secondary/20">
+              <span className="text-sm text-muted-foreground">对方未佩戴名片</span>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-6 animate-pulse">数据同步中，即将开战…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "countdown") {
     const mkPlayerProfile = (p: any) => p ? {
       id: p.id, username: p.username, level: p.level,

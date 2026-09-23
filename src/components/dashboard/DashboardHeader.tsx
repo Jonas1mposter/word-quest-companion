@@ -31,7 +31,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             <div>
               <h1 className="font-gaming text-xl text-glow-purple">狄邦单词通</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80" title="点击切换分区">
+                <Badge data-tour="zone" onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80" title="点击切换分区">
                   <GraduationCap className="w-3 h-3" />
                   {zoneBadgeLabel(grade)}
                 </Badge>
@@ -48,7 +48,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             )}
             {user && (
               <>
-                <Button variant="outline" size="sm" onClick={() => navigate('/shop')}
+                <Button data-tour="shop" variant="outline" size="sm" onClick={() => navigate("/shop")}
                   className="border-amber-400/60 text-amber-400 hover:bg-amber-400/10">
                   <ShoppingBag className="w-4 h-4 mr-2" />商城
                 </Button>
@@ -58,7 +58,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                     <Crown className="w-4 h-4 mr-2" />后台
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" title="新手教程" onClick={() => window.dispatchEvent(new Event("open-onboarding"))}>
+                <Button data-tour="help" variant="ghost" size="icon" title="新手教程" onClick={() => window.dispatchEvent(new Event("open-onboarding"))}>
                   <HelpCircle className="w-5 h-5" />
                 </Button>
                 <SettingsSheet />

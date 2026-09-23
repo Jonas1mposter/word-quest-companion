@@ -253,14 +253,14 @@ const Dashboard = ({ grade }: DashboardProps) => {
         {activeView === "home" && (
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="space-y-6">
-              <PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={refreshProfile} />
+              <div data-tour="stats"><PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={refreshProfile} /></div>
               {profile && (
                 <RankDisplay tier={profile.rank_tier as any} stars={profile.rank_stars}
                   wins={profile.wins} losses={profile.losses} />
               )}
-              <DailyQuest key={refreshKey} onQuestUpdate={() => refreshProfile()} />
+              <div data-tour="quests"><DailyQuest key={refreshKey} onQuestUpdate={() => refreshProfile()} /></div>
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" data-tour="levels">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-gaming text-xl">学习关卡</h2>
                 <Badge variant="energy">{zoneName(Number(grade))}分区</Badge>

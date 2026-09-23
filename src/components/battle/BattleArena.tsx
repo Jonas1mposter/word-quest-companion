@@ -178,13 +178,18 @@ const BattleArena = ({
     }, 2000);
     pollRef.current = pollId;
 
-    setPhase("countdown");
+    if (showIntel) {
+      setPhase("loading");
+      setTimeout(() => setPhase("countdown"), 6000);
+    } else {
+      setPhase("countdown");
+    }
   }, [profile, generateOptions]);
 
   const handleMatchFound = useCallback((matchId: string) => {
     sounds.playMatchFound();
     setPhase("found");
-    setTimeout(() => loadMatch(matchId), 1000);
+    setTimeout(() => loadMatch(matchId, true), 1000);
   }, [loadMatch, sounds]);
 
   const { joinQueue, leaveQueue, error: queueError } = useMatchQueue({

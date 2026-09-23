@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { Crown, GraduationCap, LogOut, ShoppingBag, User } from "lucide-react";
+import { Crown, GraduationCap, HelpCircle, LogOut, ShoppingBag, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
@@ -58,6 +58,9 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                     <Crown className="w-4 h-4 mr-2" />后台
                   </Button>
                 )}
+                <Button variant="ghost" size="icon" title="新手教程" onClick={() => window.dispatchEvent(new Event("open-onboarding"))}>
+                  <HelpCircle className="w-5 h-5" />
+                </Button>
                 <SettingsSheet />
                 <Button variant="ghost" size="icon" onClick={onSignOut}>
                   <LogOut className="w-5 h-5" />

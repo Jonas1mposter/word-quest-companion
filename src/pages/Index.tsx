@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { seedWordsIfNeeded } from "@/lib/seedData";
 import Dashboard from "@/components/Dashboard";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
+import OnboardingTour from "@/components/OnboardingTour";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -11,6 +12,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [grade, setGrade] = useState<number>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   const hasResolvedGradeSelection = (() => {
     if (!profile || typeof window === "undefined") return false;
@@ -38,6 +40,21 @@ const Index = () => {
     setShowGradeDialog(false);
   }, [loading, profile, gradeAutoDetected, hasResolvedGradeSelection]);
 
+  // First-time onboarding: new accounts (few XP, no matches) that haven't seen the tour
+  useEffect(() => {
+    if (loading || !profile) return;
+    let done = false;
+    try { done = window.localStorage.getItem(`onboarding-done:${profile.id}`) === "1"; } catch {}
+    const isNew = (profile.total_xp ?? profile.xp ?? 0) < 50 && (profile.wins ?? 0) + (profile.losses ?? 0) === 0;
+    if (!done && isNew) setShowTour(true);
+  }, [loading, profile?.id]);
+
+  useEffect(() => {
+    const open = () => setShowTour(true);
+    window.addEventListener("open-onboarding", open);
+    return () => window.removeEventListener("open-onboarding", open);
+  }, []);
+
   // Seed word data on first load
   useEffect(() => {
     seedWordsIfNeeded();
@@ -63,6 +80,11 @@ const Index = () => {
 
   if (!user || !profile) return null;
 
+  const closeTour = () => {
+    try { window.localStorage.setItem(`onboarding-done:${profile.id}`, "1"); } catch {}
+    setShowTour(false);
+  };
+
   return (
     <>
       <Dashboard grade={grade} />
@@ -70,6 +92,7 @@ const Index = () => {
         open={showGradeDialog}
         onClose={() => setShowGradeDialog(false)}
       />
+      <OnboardingTour open={showTour && !showGradeDialog} onClose={closeTour} />
     </>
   );
 };

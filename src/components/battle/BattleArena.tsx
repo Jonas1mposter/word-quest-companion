@@ -13,6 +13,10 @@ import BattleQuizCard, { BattleQuizType } from "./BattleQuizCard";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
 import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
+import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
+import { getNameCardGradientStyle } from "@/components/profile-card/utils";
+import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
+import { BadgeIcon } from "@/components/ui/badge-icon";
 
 interface Word {
   id: string;
@@ -35,7 +39,7 @@ interface MatchData {
   winner_id: string | null;
 }
 
-type BattlePhase = "searching" | "found" | "countdown" | "battle" | "result";
+type BattlePhase = "searching" | "found" | "loading" | "countdown" | "battle" | "result";
 
 const QUIZ_TYPES: BattleQuizType[] = ["meaning", "reverse", "spelling", "listening"];
 
@@ -79,6 +83,7 @@ const BattleArena = ({
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
+  const [opponentNameCard, setOpponentNameCard] = useState<NameCardData | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
@@ -111,7 +116,7 @@ const BattleArena = ({
     setQuizType(QUIZ_TYPES[idx % QUIZ_TYPES.length]);
   }, []);
 
-  const loadMatch = useCallback(async (matchId: string) => {
+  const loadMatch = useCallback(async (matchId: string, showIntel = true) => {
     const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
     if (!match || !profile) return;
     const words = (match.words as any[]) || [];
@@ -120,6 +125,21 @@ const BattleArena = ({
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
     const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId!).single();
     setOpponentProfile(opp);
+
+    // 预讯过场：拉取对手佩戴的名片
+    if (showIntel && opponentId) {
+      const { data: cardRows } = await supabase
+        .from('user_name_cards')
+        .select('rank_position, name_cards (id, name, description, background_gradient, icon, category, rarity)')
+        .eq('profile_id', opponentId)
+        .eq('is_equipped', true)
+        .limit(1);
+      const row: any = cardRows?.[0];
+      if (row?.name_cards) {
+        setOpponentNameCard({ ...row.name_cards, rank_position: row.rank_position, is_equipped: true, is_owned: true });
+      }
+    }
+
     if (words.length > 0) generateOptions(words, 0);
 
     const channel = supabase.channel(`match-${matchId}`)
@@ -158,13 +178,18 @@ const BattleArena = ({
     }, 2000);
     pollRef.current = pollId;
 
-    setPhase("countdown");
+    if (showIntel) {
+      setPhase("loading");
+      setTimeout(() => setPhase("countdown"), 6000);
+    } else {
+      setPhase("countdown");
+    }
   }, [profile, generateOptions]);
 
   const handleMatchFound = useCallback((matchId: string) => {
     sounds.playMatchFound();
     setPhase("found");
-    setTimeout(() => loadMatch(matchId), 1000);
+    setTimeout(() => loadMatch(matchId, true), 1000);
   }, [loadMatch, sounds]);
 
   const { joinQueue, leaveQueue, error: queueError } = useMatchQueue({
@@ -179,7 +204,7 @@ const BattleArena = ({
 
   useEffect(() => {
     if (!profile) return;
-    if (initialMatchId) loadMatch(initialMatchId);
+    if (initialMatchId) loadMatch(initialMatchId, false);
     else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => joinQueue());
     return () => {
       leaveQueue();
@@ -320,6 +345,51 @@ const BattleArena = ({
           <Icon className={cn("w-20 h-20 mx-auto mb-4 animate-bounce", theme.accentText)} />
           <h2 className={cn("text-3xl font-gaming mb-2", theme.accentText)}>对手已找到！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "loading") {
+    const card = opponentNameCard;
+    const bg = card ? getNameCardGradientStyle(card.background_gradient || "") : undefined;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-lg w-full">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className={cn("w-6 h-6 rounded-full border-2 animate-spin", theme.accentSpinner)} />
+            <h2 className="text-xl font-gaming text-muted-foreground tracking-widest">正在加载预讯...</h2>
+          </div>
+
+          <p className="text-xs text-muted-foreground mb-3 tracking-[0.3em]">—— 对手情报 ——</p>
+          <p className={cn("text-2xl font-gaming mb-4 animate-pulse", theme.accentText)}>
+            {opponentProfile?.username || "神秘对手"}
+          </p>
+
+          {card ? (
+            <div
+              className={cn("relative w-full h-36 rounded-xl overflow-hidden border border-border/50 shadow-2xl", nameCardFxClass(card.rarity))}
+              style={{ background: bg, ...nameCardFxStyle(card.rarity) }}
+            >
+              <NameCardFx rarity={card.rarity} background={bg} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                <BadgeIcon icon={card.icon || "Award"} className="w-10 h-10 text-white drop-shadow-lg" />
+                <div className="text-lg font-gaming text-white drop-shadow-md">{card.name}</div>
+                {card.rank_position && (
+                  <div className="text-xs text-white/90 bg-black/30 rounded-full px-3 py-0.5">#{card.rank_position}</div>
+                )}
+                <span className={cn("text-[10px] uppercase tracking-widest bg-black/30 rounded-full px-2 py-0.5", rarityColors[card.rarity])}>
+                  {rarityLabels[card.rarity] || card.rarity}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-36 rounded-xl border border-dashed border-border/50 flex items-center justify-center bg-secondary/20">
+              <span className="text-sm text-muted-foreground">对方未佩戴名片</span>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-6 animate-pulse">数据同步中，即将开战…</p>
         </div>
       </div>
     );

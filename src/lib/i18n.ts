@@ -107,10 +107,7 @@ const PARTS: [RegExp, string][] = [
   [/单元/g, " Unit "],
   [/个词/g, " words"],
   [/关卡/g, " levels"],
-  [/秒/g, "s"],
   [/分钟/g, " min"],
-  [/胜/g, " W "],
-  [/负/g, " L "],
 ];
 
 const HAN = /[\u4e00-\u9fff]/;

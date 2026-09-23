@@ -1179,6 +1179,7 @@ export type Database = {
           avatar_url: string | null
           background_type: string | null
           background_value: string | null
+          bot_wins: number
           class: string | null
           coins: number
           created_at: string
@@ -1218,6 +1219,7 @@ export type Database = {
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
+          bot_wins?: number
           class?: string | null
           coins?: number
           created_at?: string
@@ -1257,6 +1259,7 @@ export type Database = {
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
+          bot_wins?: number
           class?: string | null
           coins?: number
           created_at?: string
@@ -2364,6 +2367,7 @@ export type Database = {
         Returns: undefined
       }
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
+      bump_bot_win: { Args: { p_id: string }; Returns: undefined }
       bump_lifetime_coins: {
         Args: { p_amount: number; p_id: string }
         Returns: undefined

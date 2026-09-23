@@ -1174,6 +1174,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ace_reach_count: number
           active_kill_sound_pack_id: string | null
           avatar_url: string | null
           background_type: string | null
@@ -1212,6 +1213,7 @@ export type Database = {
           xp_to_next_level: number
         }
         Insert: {
+          ace_reach_count?: number
           active_kill_sound_pack_id?: string | null
           avatar_url?: string | null
           background_type?: string | null
@@ -1250,6 +1252,7 @@ export type Database = {
           xp_to_next_level?: number
         }
         Update: {
+          ace_reach_count?: number
           active_kill_sound_pack_id?: string | null
           avatar_url?: string | null
           background_type?: string | null

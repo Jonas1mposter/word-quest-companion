@@ -39,6 +39,10 @@ Deno.serve(async (req) => {
     if (xpGain > 0) {
       await admin.rpc("add_season_pass_xp", { p_profile_id: profile.id, p_xp: xpGain });
     }
+    if (result === "win") {
+      await admin.rpc("bump_bot_win", { p_id: profile.id });
+    }
+    await admin.rpc("award_badges_for_profile", { p_id: profile.id });
 
     return json({ ok: true, xpEarned: xpGain, coinsEarned: coinsGain });
   } catch (e) {

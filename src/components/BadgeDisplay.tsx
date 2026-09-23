@@ -56,15 +56,20 @@ const tierSeries: Record<
   tier_streak: { title: "坚持不懈", metric: "streak", thresholds: [3, 10, 50, 100], unit: "天连续登录" },
   tier_xp: { title: "勇攀高峰", metric: "total_xp", thresholds: [100, 500, 1000, 5000], unit: "点累计经验" },
   tier_leaderboard: { title: "声名远扬", metric: "leaderboard_appearances", thresholds: [1, 5, 10, 20], unit: "次登榜" },
+  tier_peak: { title: "至高巅峰", metric: "ace_reach_count", thresholds: [1, 2, 5, 10], unit: "次登上王牌及以上" },
+  tier_bot: { title: "机械终结者", metric: "bot_wins", thresholds: [10, 50, 100, 300], unit: "次战胜人机" },
 };
 
-const groupOrder = ["series", "special", "common"];
+const groupOrder = ["series", "rank", "special", "common"];
 
 const groupTitles: Record<string, string> = {
   series: "系列成就",
+  rank: "段位荣誉",
   special: "特殊荣誉",
   common: "起航",
 };
+
+const RANK_BADGE_ORDER = ["铂金之证", "钻石之证", "星耀之证", "王牌之证", "巅峰之证"];
 
 const romanIdx = (name: string) => {
   if (/\bIV\b/.test(name)) return 3;
@@ -139,12 +144,14 @@ const BadgeDisplay = () => {
   // group badges: collapse tier_* into one "series" group with only the representative badge per series
   // (highest earned tier, or lowest locked tier if none earned)
   const { grouped, seriesRepMap } = useMemo(() => {
-    const g: Record<string, BadgeItem[]> = { series: [], special: [], common: [] };
+    const g: Record<string, BadgeItem[]> = { series: [], rank: [], special: [], common: [] };
     // bucket tier badges by series first
     const bySeries: Record<string, BadgeItem[]> = {};
     for (const b of badges) {
       if (b.category in tierSeries) {
         (bySeries[b.category] ||= []).push(b);
+      } else if (b.category === "rank_tier") {
+        g.rank.push(b);
       } else if (b.category === "special") {
         g.special.push(b);
       } else {
@@ -166,6 +173,7 @@ const BadgeDisplay = () => {
     g.series.sort((a, b) => seriesOrder.indexOf(a.category) - seriesOrder.indexOf(b.category));
     g.special.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
     g.common.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+    g.rank.sort((a, b) => RANK_BADGE_ORDER.indexOf(a.name) - RANK_BADGE_ORDER.indexOf(b.name));
     return { grouped: g, seriesRepMap: repMap };
   }, [badges]);
 

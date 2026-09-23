@@ -13,6 +13,10 @@ import BattleQuizCard, { BattleQuizType } from "./BattleQuizCard";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
 import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
+import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
+import { getNameCardGradientStyle } from "@/components/profile-card/utils";
+import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
+import { BadgeIcon } from "@/components/ui/badge-icon";
 
 interface Word {
   id: string;
@@ -35,7 +39,7 @@ interface MatchData {
   winner_id: string | null;
 }
 
-type BattlePhase = "searching" | "found" | "countdown" | "battle" | "result";
+type BattlePhase = "searching" | "found" | "loading" | "countdown" | "battle" | "result";
 
 const QUIZ_TYPES: BattleQuizType[] = ["meaning", "reverse", "spelling", "listening"];
 

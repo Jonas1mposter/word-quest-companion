@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.grant_rank_rewards() FROM PUBLIC, anon, authenticated;

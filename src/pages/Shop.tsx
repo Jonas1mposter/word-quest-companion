@@ -17,6 +17,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
 import { reloadKillStreakIcons } from "@/components/battle/KillStreakBanner";
+import { BadgeIcon } from "@/components/ui/badge-icon";
+import NameCardFx, { nameCardFxClass, nameCardFxStyle, RARITY_GLOW } from "@/components/NameCardFx";
+import { getNameCardGradientStyle } from "@/components/profile-card/utils";
 
 type DrawCard = {
   id?: string;
@@ -56,6 +59,13 @@ export default function Shop() {
   const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
   const [packBusy, setPackBusy] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [flipped, setFlipped] = useState<Set<number>>(new Set());
+  const [revealKey, setRevealKey] = useState(0);
+  const flip = (i: number) => setFlipped((s) => new Set(s).add(i));
+  const flipAll = () => {
+    if (!results) return;
+    results.forEach((_, i) => setTimeout(() => flip(i), i * 120));
+  };
 
   const loadPacks = async () => {
     const { data: packs } = await supabase
@@ -111,6 +121,8 @@ export default function Shop() {
         return;
       }
 
+      setFlipped(new Set());
+      setRevealKey((k) => k + 1);
       setResults((payload?.results as DrawCard[]) ?? []);
       if (payload?.refund > 0) {
         toast.info(`奖池有 ${(payload.refund / 50)} 张已满，返还 ${payload.refund} 狄邦豆`);
@@ -359,53 +371,86 @@ export default function Shop() {
       </div>
 
       <Dialog open={!!results} onOpenChange={(o) => !o && setResults(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" />抽卡结果
+              <Sparkles className="w-5 h-5 text-amber-400" />召唤结果
+              <span className="text-xs text-muted-foreground font-normal ml-2">点击卡背翻开 · 光芒越亮越稀有</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto py-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-h-[65vh] overflow-y-auto py-3 px-1">
             {results?.map((c, i) => (
-              <Card
-                key={i}
-                className={cn(
-                  "overflow-hidden border-2",
-                  c.refunded ? "border-dashed opacity-70" : "border-transparent",
-                )}
-              >
-                <CardContent
-                  className={cn(
-                    "p-3 h-32 flex flex-col items-center justify-center text-center bg-gradient-to-br",
-                    c.refunded
-                      ? "from-muted/30 to-muted/10 text-muted-foreground"
-                      : RARITY_STYLE[c.rarity || "common"],
-                  )}
-                >
-                  {c.refunded ? (
-                    <>
-                      <Coins className="w-6 h-6 mb-1" />
-                      <div className="text-xs">奖池已满</div>
-                      <div className="text-[10px]">返还 50 豆</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl mb-1">{c.icon || "🎴"}</div>
-                      <div className="font-gaming text-sm truncate w-full">{c.name}</div>
-                      <Badge variant="outline" className="mt-1 text-[10px] border-current">
-                        {RARITY_LABEL[c.rarity || "common"]}
-                      </Badge>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <RevealCard key={`${revealKey}-${i}`} card={c} flipped={flipped.has(i)} onFlip={() => flip(i)} />
             ))}
           </div>
-          <DialogFooter>
-            <Button onClick={() => setResults(null)}>知道了</Button>
+          <DialogFooter className="gap-2">
+            {results && flipped.size < results.length ? (
+              <Button onClick={flipAll}><Sparkles className="w-4 h-4 mr-1" />全部翻开</Button>
+            ) : (
+              <Button onClick={() => setResults(null)}>知道了</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+const RANK_OF: Record<string, number> = { common: 0, rare: 1, epic: 2, legendary: 3, mythology: 4 };
+
+function RevealCard({ card, flipped, onFlip }: { card: DrawCard; flipped: boolean; onFlip: () => void }) {
+  const r = card.refunded ? "common" : card.rarity || "common";
+  const high = (RANK_OF[r] ?? 0) >= 3;
+  const bg = card.background_gradient ? getNameCardGradientStyle(card.background_gradient) : undefined;
+  const glow = RARITY_GLOW[r];
+
+  if (!flipped) {
+    return (
+      <button
+        onClick={onFlip}
+        className={cn("relative aspect-[3/4] rounded-xl border border-border bg-card nc-card nc-glow transition-transform hover:-translate-y-1", high && "nc-shake")}
+        style={nameCardFxStyle(r)}
+        aria-label="翻开卡牌"
+      >
+        <span className="nc-pattern" aria-hidden />
+        <span className="absolute inset-3 rounded-lg border" style={{ borderColor: glow }} aria-hidden />
+        <span className="relative z-10 flex h-full flex-col items-center justify-center gap-2">
+          <span className="font-gaming text-2xl tracking-widest text-primary">狄邦</span>
+          <span className="text-[10px] text-muted-foreground">TAP TO REVEAL</span>
+        </span>
+      </button>
+    );
+  }
+
+  if (card.refunded) {
+    return (
+      <div className="nc-flip aspect-[3/4] rounded-xl border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center text-muted-foreground text-center p-2">
+        <Coins className="w-6 h-6 mb-1" />
+        <div className="text-xs">奖池已满</div>
+        <div className="text-[10px]">已返还狄邦豆</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative nc-flip">
+      {high && <span className="nc-burst" style={{ background: glow }} aria-hidden />}
+      <div
+        className={cn("relative aspect-[3/4] rounded-xl", nameCardFxClass(r))}
+        style={{ background: bg, ...nameCardFxStyle(r) }}
+      >
+        <NameCardFx rarity={r} background={bg} />
+        <div className="relative z-10 flex h-full flex-col items-center justify-between p-3 text-center text-white">
+          <span className="self-start rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-bold tracking-wider">
+            {RARITY_LABEL[r]}
+          </span>
+          <BadgeIcon icon={card.icon || "Award"} className="w-10 h-10 drop-shadow-lg" />
+          <div className="w-full">
+            <div className="font-gaming text-sm truncate drop-shadow">{card.name}</div>
+            {card.description && <div className="text-[10px] opacity-80 line-clamp-2">{card.description}</div>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

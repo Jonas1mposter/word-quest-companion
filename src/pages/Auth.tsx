@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const Auth = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -30,7 +31,8 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background bg-grid-pattern flex items-center justify-center p-6">
       <Card className="w-full max-w-md card-glow">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center relative">
+          <div className="absolute right-2 top-2"><LanguageToggle /></div>
           <CardTitle className="font-gaming text-2xl text-glow-purple">狄邦单词通</CardTitle>
           <p className="text-muted-foreground text-sm mt-2">请使用学校微软账号登录</p>
         </CardHeader>

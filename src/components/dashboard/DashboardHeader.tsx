@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 import { zoneBadgeLabel } from "@/lib/zones";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const logoDashboard = "/placeholder.svg";
 
@@ -39,6 +40,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             {!user && (
               <Button variant="hero" size="sm" onClick={() => navigate("/auth")}>
                 <User className="w-4 h-4 mr-2" />登录

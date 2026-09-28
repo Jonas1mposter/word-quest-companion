@@ -73,7 +73,7 @@ const HomeLobby = ({
     }
     setUploading(true);
     try {
-      const fileName = `lobby/${profile.user_id}/${Date.now()}.${ext}`;
+      const fileName = `${profile.user_id}/lobby-${Date.now()}.${ext}`;
       if (customImage) {
         const oldPath = customImage.split("/profile-backgrounds/")[1];
         if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);

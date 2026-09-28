@@ -9,6 +9,7 @@ import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "../NameCardFx";
 import { getNameCardGradientStyle } from "../profile-card/utils";
 import { cn } from "@/lib/utils";
 import { zoneName } from "@/lib/zones";
+import type { DashboardView } from "./DashboardNav";
 
 interface EquippedCard {
   name: string;
@@ -23,7 +24,7 @@ interface HomeLobbyProps {
   playerData: any;
   refreshKey: number;
   onEnergyPurchased: () => void;
-  onNavigate: (view: "learn" | "seasonpass" | "friends" | "team" | "bot" | "profile") => void;
+  onNavigate: (view: DashboardView) => void;
   onStartMatch: () => void;
   onFreeMatch: () => void;
 }

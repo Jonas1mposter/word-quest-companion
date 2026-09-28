@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge as UIBadge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trophy, Sparkles, Swords, Coins, Flame } from "lucide-react";
+import { BadgeIcon } from "@/components/ui/badge-icon";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -144,7 +145,7 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
                 <div className="flex gap-2 flex-wrap">
                   {equippedBadges.map(b => (
                     <div key={b.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs", rarityColor[b.badge.rarity || "common"])} title={b.badge.description || ""}>
-                      {b.badge.icon && <span>{b.badge.icon}</span>}
+                      <BadgeIcon icon={b.badge.icon} className="h-3.5 w-3.5" />
                       <span>{b.badge.name}</span>
                     </div>
                   ))}
@@ -174,7 +175,7 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
                     {badges.map(b => (
                       <div key={b.id} className={cn("flex items-center gap-2 p-2 rounded-md border", rarityColor[b.badge.rarity || "common"])}>
-                        <div className="text-xl">{b.badge.icon || "🏅"}</div>
+                        <BadgeIcon icon={b.badge.icon} className="h-6 w-6 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium truncate">{b.badge.name}</div>
                           {b.badge.description && (

@@ -211,7 +211,7 @@
 
 @layer utilities {
   .text-glow-purple {
-    text-shadow: 0 0 20px hsl(265 89% 66% / 0.6), 0 0 40px hsl(265 89% 66% / 0.3);
+    text-shadow: 0 0 20px hsl(355 100% 63% / 0.55), 0 0 40px hsl(355 100% 63% / 0.25);
   }
 
   .text-glow-gold {

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./BattleQuizCard";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
+import DacBadge from "./DacBadge";
 import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
 import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
 import { getNameCardGradientStyle } from "@/components/profile-card/utils";
@@ -484,6 +485,7 @@ const BattleArena = ({
             comboCount={comboCount}
           />
         )}
+        <DacBadge />
       </div>
     );
   }

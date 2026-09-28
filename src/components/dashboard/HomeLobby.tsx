@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Swords, ChevronRight, Award } from "lucide-react";
+import { Swords, ChevronRight, Award, ImagePlus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
@@ -41,6 +42,65 @@ const HomeLobby = ({
 }: HomeLobbyProps) => {
   const [card, setCard] = useState<EquippedCard | null>(null);
   const [showModes, setShowModes] = useState(false);
+  const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCustomImage(profile?.lobby_card_image ?? null);
+  }, [profile?.lobby_card_image]);
+
+  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !profile?.user_id) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+      toast.error("请上传 JPG、PNG、GIF 或 WebP 格式的图片");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("图片大小不能超过 5MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fileName = `lobby/${profile.user_id}/${Date.now()}.${ext}`;
+      if (customImage) {
+        const oldPath = customImage.split("/profile-backgrounds/")[1];
+        if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
+      }
+      const { error: upErr } = await supabase.storage
+        .from("profile-backgrounds")
+        .upload(fileName, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("profile-backgrounds").getPublicUrl(fileName);
+      const url = urlData.publicUrl;
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ lobby_card_image: url })
+        .eq("id", profile.id);
+      if (dbErr) throw dbErr;
+      setCustomImage(url);
+      toast.success("名片图片已更新！");
+    } catch (e) {
+      console.error("lobby card upload failed:", e);
+      toast.error("上传失败，请重试");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!profile?.id) return;
+    if (customImage) {
+      const oldPath = customImage.split("/profile-backgrounds/")[1];
+      if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
+    }
+    await supabase.from("profiles").update({ lobby_card_image: null }).eq("id", profile.id);
+    setCustomImage(null);
+    toast.success("已恢复名片原始样式");
+  };
 
   useEffect(() => {
     if (!profile?.id) { setCard(null); return; }

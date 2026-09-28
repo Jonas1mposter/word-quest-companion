@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Swords, Bot, Users, Globe, BookOpen, ChevronRight, Award } from "lucide-react";
+import { Swords, ChevronRight, Award } from "lucide-react";
 import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
@@ -164,19 +164,5 @@ const HomeLobby = ({
     </>
   );
 };
-
-const LobbyRow = ({ icon: Icon, label, onClick, last, tour }: { icon: any; label: string; onClick: () => void; last?: boolean; tour?: string }) => (
-  <button
-    onClick={onClick}
-    data-tour={tour}
-    className={cn(
-      "flex w-full items-center justify-between px-4 py-3 text-sm font-medium tracking-wider transition-colors hover:bg-primary/15 hover:text-primary",
-      !last && "border-b border-border/50"
-    )}
-  >
-    <span>{label}</span>
-    <Icon className="h-4 w-4 opacity-70" />
-  </button>
-);
 
 export default HomeLobby;

@@ -11,7 +11,7 @@ const STEPS: Step[] = [
   { target: "zone", title: "你的年级分区", body: "这里显示你所在的分区。点它可以切换年级，每个分区的词库、排位和排行榜都是独立的。" },
   { target: "stats", title: "你的数据", body: "等级、经验、体力、狄邦豆和连续打卡天数都在这里。闯关会消耗体力。" },
   { target: "quests", title: "每日任务", body: "每天完成任务就能领狄邦豆和经验，完成后记得点「领取奖励」。" },
-  { target: "levels", title: "学习关卡", body: "按单元闯关：先看单词卡（可点喇叭听发音），再做练习题。" },
+  { target: "levels", title: "匹配游戏", body: "所有玩法都在这里：点开后选「闯关模式」按单元学单词，或进排位赛冲段位。" },
   { target: "nav-learn", title: "点击「闯关」", body: "来，点一下这个按钮，进入闯关页面。", click: true },
   { target: "nav-wrongbook", title: "点击「错题本」", body: "答错的词会自动收进错题本，点进去看看。", click: true },
   { target: "nav-battle-select", title: "点击「排位赛」", body: "学会了就来对战！排位赛能冲段位（青铜→王者），答得又快又准还能连杀。", click: true },

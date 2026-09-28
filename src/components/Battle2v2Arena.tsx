@@ -62,6 +62,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // DAC：记录当前题目展示时间，用于答题速度检测
+  const questionShownAtRef = useRef(Date.now());
 
   const generateOptions = useCallback((words: Word[], idx: number) => {
     const cur = words[idx]; if (!cur) return;

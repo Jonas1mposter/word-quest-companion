@@ -105,6 +105,8 @@ const BattleArena = ({
   const channelRef = useRef<any>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPlayer1Ref = useRef(false);
+  // DAC：记录当前题目展示时间，用于答题速度检测
+  const questionShownAtRef = useRef(Date.now());
 
   const generateOptions = useCallback((words: Word[], idx: number) => {
     const cur = words[idx];

@@ -7,6 +7,7 @@ import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
 import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "../NameCardFx";
+import BadgeIcon from "../ui/badge-icon";
 import { getNameCardGradientStyle } from "../profile-card/utils";
 import { cn } from "@/lib/utils";
 import { zoneName } from "@/lib/zones";
@@ -18,6 +19,12 @@ interface EquippedCard {
   icon: string | null;
   rarity: string;
   background_gradient: string;
+}
+
+interface EquippedTitle {
+  name: string;
+  icon: string | null;
+  rarity: string;
 }
 
 interface HomeLobbyProps {
@@ -41,6 +48,7 @@ const HomeLobby = ({
   onEnergyPurchased, onNavigate, onStartMatch, onFreeMatch,
 }: HomeLobbyProps) => {
   const [card, setCard] = useState<EquippedCard | null>(null);
+  const [title, setTitle] = useState<EquippedTitle | null>(null);
   const [showModes, setShowModes] = useState(false);
   const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
   const [uploading, setUploading] = useState(false);

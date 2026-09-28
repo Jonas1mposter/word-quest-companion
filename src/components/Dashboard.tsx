@@ -40,6 +40,7 @@ import SubjectBattleSelector, { BattleSubject } from "./SubjectBattleSelector";
 import { toast } from "sonner";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
+import HomeLobby from "./dashboard/HomeLobby";
 import LoginRequired from "./dashboard/LoginRequired";
 import { isPrimaryZone, usesZoneWordBank, zoneName } from "@/lib/zones";
 

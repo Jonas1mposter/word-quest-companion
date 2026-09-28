@@ -30,17 +30,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background bg-grid-pattern flex items-center justify-center p-6">
-      <Card className="w-full max-w-md card-glow">
+      <Card className="w-full max-w-md val-cut val-brackets bg-card border-2 border-border">
+        <div className="h-1 val-hazard opacity-70" />
         <CardHeader className="text-center relative">
           <div className="absolute right-2 top-2"><LanguageToggle /></div>
-          <CardTitle className="font-gaming text-2xl text-glow-purple">狄邦单词通</CardTitle>
-          <p className="text-muted-foreground text-sm mt-2">请使用学校微软账号登录</p>
+          <CardTitle className="font-tactical text-3xl font-bold uppercase text-glow-red">狄邦单词通</CardTitle>
+          <p className="text-muted-foreground text-sm mt-2 tracking-widest">请使用学校微软账号登录</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
             type="button"
-            variant="outline"
-            className="w-full flex items-center justify-center gap-3 h-12 border-border hover:bg-accent text-base"
+            className="w-full flex items-center justify-center gap-3 h-12 text-base rounded-none val-cut-sm bg-primary text-primary-foreground hover:bg-primary/90 font-tactical font-semibold uppercase tracking-wider"
             onClick={handleMicrosoftLogin}
             disabled={oauthLoading}
           >

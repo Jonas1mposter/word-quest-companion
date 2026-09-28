@@ -338,6 +338,42 @@ export type Database = {
           },
         ]
       }
+      code_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          profile_id: string
+          redeemed_at: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          profile_id: string
+          redeemed_at?: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          profile_id?: string
+          redeemed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "redemption_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_redemptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       combo_records: {
         Row: {
           combo_count: number
@@ -1449,6 +1485,42 @@ export type Database = {
           },
         ]
       }
+      redemption_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          reward_type: string
+          reward_value: number
+          uses_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          reward_type?: string
+          reward_value?: number
+          uses_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          reward_type?: string
+          reward_value?: number
+          uses_count?: number
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string
@@ -2468,6 +2540,10 @@ export type Database = {
       }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
+      redeem_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

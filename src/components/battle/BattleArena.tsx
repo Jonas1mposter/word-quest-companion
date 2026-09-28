@@ -387,7 +387,23 @@ const BattleArena = ({
           )}
           <div className="mb-4" />
 
-          {card ? (
+          {opponentProfile?.lobby_card_image ? (
+            <div className="relative w-full h-40 rounded-xl overflow-hidden border border-border/50 shadow-2xl">
+              <img
+                src={opponentProfile.lobby_card_image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ objectPosition: "center 30%" }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              {card && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-black/50 backdrop-blur px-3 py-1">
+                  <BadgeIcon icon={card.icon || "Award"} className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="text-xs font-semibold text-amber-200 tracking-wide">{card.name}</span>
+                </div>
+              )}
+            </div>
+          ) : card ? (
             <div
               className={cn("relative w-full h-36 rounded-xl overflow-hidden border border-border/50 shadow-2xl", nameCardFxClass(card.rarity))}
               style={{ background: bg, ...nameCardFxStyle(card.rarity) }}

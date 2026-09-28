@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Swords, ChevronRight, Award } from "lucide-react";
+import { Swords, ChevronRight, Award, ImagePlus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
@@ -41,6 +42,65 @@ const HomeLobby = ({
 }: HomeLobbyProps) => {
   const [card, setCard] = useState<EquippedCard | null>(null);
   const [showModes, setShowModes] = useState(false);
+  const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCustomImage(profile?.lobby_card_image ?? null);
+  }, [profile?.lobby_card_image]);
+
+  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !profile?.user_id) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+      toast.error("请上传 JPG、PNG、GIF 或 WebP 格式的图片");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("图片大小不能超过 5MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fileName = `lobby/${profile.user_id}/${Date.now()}.${ext}`;
+      if (customImage) {
+        const oldPath = customImage.split("/profile-backgrounds/")[1];
+        if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
+      }
+      const { error: upErr } = await supabase.storage
+        .from("profile-backgrounds")
+        .upload(fileName, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("profile-backgrounds").getPublicUrl(fileName);
+      const url = urlData.publicUrl;
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ lobby_card_image: url })
+        .eq("id", profile.id);
+      if (dbErr) throw dbErr;
+      setCustomImage(url);
+      toast.success("名片图片已更新！");
+    } catch (e) {
+      console.error("lobby card upload failed:", e);
+      toast.error("上传失败，请重试");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!profile?.id) return;
+    if (customImage) {
+      const oldPath = customImage.split("/profile-backgrounds/")[1];
+      if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
+    }
+    await supabase.from("profiles").update({ lobby_card_image: null }).eq("id", profile.id);
+    setCustomImage(null);
+    toast.success("已恢复名片原始样式");
+  };
 
   useEffect(() => {
     if (!profile?.id) { setCard(null); return; }
@@ -91,16 +151,50 @@ const HomeLobby = ({
         <div
           className={cn(
             "relative w-72 max-w-full aspect-[3/4.2] overflow-hidden border border-border/60 val-cut shadow-2xl",
-            card && nameCardFxClass(card.rarity)
+            card && !customImage && nameCardFxClass(card.rarity)
           )}
-          style={card ? { background: cardBg, ...nameCardFxStyle(card.rarity) } : { background: "linear-gradient(160deg, hsl(213 24% 14%), hsl(213 28% 8%))" }}
+          style={
+            customImage
+              ? { backgroundImage: `url(${customImage})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : card
+                ? { background: cardBg, ...nameCardFxStyle(card.rarity) }
+                : { background: "linear-gradient(160deg, hsl(213 24% 14%), hsl(213 28% 8%))" }
+          }
         >
-          {card && <NameCardFx rarity={card.rarity} background={cardBg} />}
-          {!card && (
+          {card && !customImage && <NameCardFx rarity={card.rarity} background={cardBg} />}
+          {!card && !customImage && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Award className="h-16 w-16 text-muted-foreground/30" />
             </div>
           )}
+          {/* 自定义图片按钮 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleUploadImage}
+            className="hidden"
+            disabled={uploading}
+          />
+          <div className="absolute right-2 top-2 z-20 flex gap-1.5">
+            {customImage && (
+              <button
+                onClick={handleRemoveImage}
+                title="恢复原始名片"
+                className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              title="上传自定义名片图片"
+              className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+            </button>
+          </div>
           {/* 底部信息条 */}
           <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/15 bg-black/45 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">

@@ -43,11 +43,10 @@ interface LeaderboardTabsProps {
   currentClass?: string | null;
 }
 
-const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }: LeaderboardTabsProps) => {
+const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTabsProps) => {
   const [rankLeaderboard, setRankLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [winsLeaderboard, setWinsLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [xpLeaderboard, setXpLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [classLeaderboard, setClassLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [activeTab, setActiveTab] = useState("rank");
   const [showFreeMatchLeaderboard, setShowFreeMatchLeaderboard] = useState(false);
 
@@ -119,31 +118,10 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
         })));
       }
 
-      // 班级排行榜 - 使用累计经验值
-      if (currentClass) {
-        const { data: classData } = await supabase
-          .from("profiles")
-          .select("id, username, total_xp, level, rank_tier, rank_stars")
-          .eq("grade", grade)
-          .eq("class", currentClass)
-          .order("total_xp", { ascending: false })
-          .limit(20);
-
-        if (classData) {
-          setClassLeaderboard(classData.map((p: any, index: number) => ({
-            rank: index + 1,
-            username: p.username,
-            profileId: p.id,
-            value: p.total_xp || 0,
-            tier: p.rank_tier,
-            rankStars: p.rank_stars,
-          })));
-        }
-      }
     };
 
     fetchLeaderboards();
-  }, [grade, currentClass]);
+  }, [grade]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -386,7 +364,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
         </CardHeader>
         <CardContent className="p-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={cn("grid w-full mb-4", currentClass ? "grid-cols-4" : "grid-cols-3")}>
+            <TabsList className="grid w-full mb-4 grid-cols-3">
               <TabsTrigger value="rank" className="flex items-center gap-2">
                 <Crown className="w-4 h-4" />
                 <span className="hidden sm:inline">段位</span>
@@ -399,12 +377,6 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
                 <TrendingUp className="w-4 h-4" />
                 <span className="hidden sm:inline">经验值</span>
               </TabsTrigger>
-              {currentClass && (
-                <TabsTrigger value="class" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">{currentClass}班</span>
-                </TabsTrigger>
-              )}
             </TabsList>
             
             <TabsContent value="rank">
@@ -416,11 +388,6 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId, currentClass }:
             <TabsContent value="xp">
               {renderLeaderboard(xpLeaderboard, "xp")}
             </TabsContent>
-            {currentClass && (
-              <TabsContent value="class">
-                {renderLeaderboard(classLeaderboard, "class")}
-              </TabsContent>
-            )}
           </Tabs>
         </CardContent>
       </Card>

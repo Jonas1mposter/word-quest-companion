@@ -171,14 +171,12 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
         return { name: "狄邦排位大师", gradient: "from-purple-600 via-pink-500 to-purple-600", icon: Swords };
       case "xp":
         return { name: "狄邦至高巅峰", gradient: "from-cyan-500 via-blue-500 to-indigo-600", icon: TrendingUp };
-      case "class":
-        return { name: `${currentClass}班学霸`, gradient: "from-green-500 via-emerald-500 to-teal-600", icon: Users };
       default:
         return { name: "", gradient: "", icon: Trophy };
     }
   };
 
-  const renderLeaderboard = (entries: LeaderboardEntry[], type: "rank" | "wins" | "xp" | "class") => {
+  const renderLeaderboard = (entries: LeaderboardEntry[], type: "rank" | "wins" | "xp") => {
     const nameCard = getNameCardInfo(type);
     const IconComponent = nameCard.icon;
     

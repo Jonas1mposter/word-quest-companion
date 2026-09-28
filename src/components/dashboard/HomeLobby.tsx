@@ -151,16 +151,50 @@ const HomeLobby = ({
         <div
           className={cn(
             "relative w-72 max-w-full aspect-[3/4.2] overflow-hidden border border-border/60 val-cut shadow-2xl",
-            card && nameCardFxClass(card.rarity)
+            card && !customImage && nameCardFxClass(card.rarity)
           )}
-          style={card ? { background: cardBg, ...nameCardFxStyle(card.rarity) } : { background: "linear-gradient(160deg, hsl(213 24% 14%), hsl(213 28% 8%))" }}
+          style={
+            customImage
+              ? { backgroundImage: `url(${customImage})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : card
+                ? { background: cardBg, ...nameCardFxStyle(card.rarity) }
+                : { background: "linear-gradient(160deg, hsl(213 24% 14%), hsl(213 28% 8%))" }
+          }
         >
-          {card && <NameCardFx rarity={card.rarity} background={cardBg} />}
-          {!card && (
+          {card && !customImage && <NameCardFx rarity={card.rarity} background={cardBg} />}
+          {!card && !customImage && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Award className="h-16 w-16 text-muted-foreground/30" />
             </div>
           )}
+          {/* 自定义图片按钮 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleUploadImage}
+            className="hidden"
+            disabled={uploading}
+          />
+          <div className="absolute right-2 top-2 z-20 flex gap-1.5">
+            {customImage && (
+              <button
+                onClick={handleRemoveImage}
+                title="恢复原始名片"
+                className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              title="上传自定义名片图片"
+              className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+            </button>
+          </div>
           {/* 底部信息条 */}
           <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/15 bg-black/45 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">

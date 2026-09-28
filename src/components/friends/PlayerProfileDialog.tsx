@@ -142,7 +142,7 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
                   <div className="text-lg font-bold text-white drop-shadow-md truncate">{profile.username}</div>
                   {equippedCard && (
                     <div className="text-xs text-white/90 drop-shadow flex items-center gap-1 mt-0.5">
-                      {equippedCard.icon && <span>{equippedCard.icon}</span>}
+                      {equippedCard.icon && <BadgeIcon icon={equippedCard.icon} className="h-3.5 w-3.5" />}
                       <span>{equippedCard.name}</span>
                     </div>
                   )}

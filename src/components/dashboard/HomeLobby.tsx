@@ -170,7 +170,7 @@ const HomeLobby = ({
         {/* 名片主视觉 */}
         <div
           className={cn(
-            "relative w-72 max-w-full aspect-[3/4.2] overflow-hidden border border-border/60 val-cut shadow-2xl",
+            "relative w-72 max-w-full aspect-[4/7] overflow-hidden border border-border/60 val-cut shadow-2xl",
             card && !customImage && nameCardFxClass(card.rarity)
           )}
           style={

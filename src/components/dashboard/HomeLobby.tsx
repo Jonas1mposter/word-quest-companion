@@ -165,6 +165,7 @@ const HomeLobby = ({
           onFriends={() => onNavigate("friends")}
         />
       )}
+    </>
   );
 };
 

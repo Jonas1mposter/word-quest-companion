@@ -40,6 +40,7 @@ import SubjectBattleSelector, { BattleSubject } from "./SubjectBattleSelector";
 import { toast } from "sonner";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardNav, { DashboardView } from "./dashboard/DashboardNav";
+import HomeLobby from "./dashboard/HomeLobby";
 import LoginRequired from "./dashboard/LoginRequired";
 import { isPrimaryZone, usesZoneWordBank, zoneName } from "@/lib/zones";
 
@@ -251,27 +252,16 @@ const Dashboard = ({ grade }: DashboardProps) => {
 
       <main className="container mx-auto px-4 py-6">
         {activeView === "home" && (
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="space-y-6">
-              <div data-tour="stats"><PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={refreshProfile} /></div>
-              {profile && (
-                <RankDisplay tier={profile.rank_tier as any} stars={profile.rank_stars}
-                  wins={profile.wins} losses={profile.losses} />
-              )}
-              <div data-tour="quests"><DailyQuest key={refreshKey} onQuestUpdate={() => refreshProfile()} /></div>
-            </div>
-            <div className="lg:col-span-2" data-tour="levels">
-              <div className="flex items-center justify-between mb-6 border-l-4 border-primary pl-3">
-                <h2 className="font-tactical text-2xl font-bold uppercase tracking-wider">学习关卡</h2>
-                <Badge variant="energy" className="rounded-none val-cut-sm">{zoneName(Number(grade))}分区</Badge>
-              </div>
-              {useZoneBank ? (
-                <HSLevelProgress key={`hs-${grade}-${refreshKey}`} grade={Number(grade)} onSelectLevel={handleSelectHSLevel} />
-              ) : (
-                <LevelProgress key={refreshKey} grade={grade as 7 | 8} onSelectLevel={handleSelectLevel} />
-              )}
-            </div>
-          </div>
+          <HomeLobby
+            profile={profile}
+            grade={grade}
+            playerData={playerData}
+            refreshKey={refreshKey}
+            onEnergyPurchased={refreshProfile}
+            onNavigate={setActiveView}
+            onStartMatch={() => setActiveView("battle-select")}
+            onFreeMatch={() => setActiveView("freematch-select")}
+          />
         )}
 
         {activeView === "learn" && (

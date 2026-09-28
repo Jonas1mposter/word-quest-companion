@@ -262,6 +262,11 @@ const BattleArena = ({
     return () => clearTimeout(t);
   }, [phase, countdown, endMatch]);
 
+  // DAC：每题切换时重置计时
+  useEffect(() => {
+    if (phase === "battle") questionShownAtRef.current = Date.now();
+  }, [currentQuestion, phase]);
+
   const handleAnswer = useCallback(async (clientCorrect: boolean, answer: string) => {
     if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
     answeringRef.current = true;
@@ -271,7 +276,7 @@ const BattleArena = ({
       let matchEnded = false;
       try {
         const { data, error } = await supabase.functions.invoke('submit-answer', {
-          body: { matchId: matchData.id, questionIndex: idx, answer, quizType },
+          body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
         });
         if (error) {
           const ctx: any = (error as any).context;

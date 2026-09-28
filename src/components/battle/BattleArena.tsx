@@ -475,6 +475,24 @@ const BattleArena = ({
             <div className="flex items-center gap-2">
               <span className="text-2xl font-gaming text-neon-blue">{opponentScore}</span>
               <Badge variant="secondary">{opponentProfile?.username || '对手'}</Badge>
+              {(opponentProfile?.lobby_card_image || opponentNameCard) && (
+                <div
+                  className="w-9 h-12 rounded-sm overflow-hidden border border-border/60 shrink-0"
+                  style={!opponentProfile?.lobby_card_image && opponentNameCard
+                    ? { background: getNameCardGradientStyle(opponentNameCard.background_gradient || "") }
+                    : undefined}
+                  title={opponentNameCard?.name || "对手卡面"}
+                >
+                  {opponentProfile?.lobby_card_image && (
+                    <img
+                      src={opponentProfile.lobby_card_image}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: "center 30%" }}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <Progress value={progressPercent} className="h-2" />

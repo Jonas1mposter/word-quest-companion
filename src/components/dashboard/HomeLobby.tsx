@@ -62,16 +62,10 @@ const HomeLobby = ({
   return (
     <>
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
-      {/* ===== 左栏：玩家数据 + 快速入口 ===== */}
+      {/* ===== 左栏：玩家数据 ===== */}
       <div className="order-2 lg:order-1 space-y-4">
         <div data-tour="stats">
           <PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={onEnergyPurchased} />
-        </div>
-        <div className="border border-border/60 bg-secondary/30 val-cut-sm">
-          <LobbyRow icon={BookOpen} label="进入关卡" tour="levels" onClick={() => onNavigate("learn")} />
-          <LobbyRow icon={Bot} label="人机练习" onClick={() => onNavigate("bot")} />
-          <LobbyRow icon={Users} label="好友对战" onClick={() => onNavigate("friends")} />
-          <LobbyRow icon={Globe} label="自由服" onClick={onFreeMatch} last />
         </div>
       </div>
 
@@ -125,6 +119,7 @@ const HomeLobby = ({
         {/* 匹配按钮 */}
         <button
           onClick={() => setShowModes(true)}
+          data-tour="levels"
           className="val-cut h-14 w-72 max-w-full bg-primary font-tactical text-xl font-bold uppercase tracking-[0.3em] text-primary-foreground shadow-lg shadow-primary/40 transition-all hover:bg-primary/90 hover:shadow-primary/60 active:scale-[0.98]"
         >
           <span className="inline-flex items-center gap-2">
@@ -163,6 +158,7 @@ const HomeLobby = ({
           on2v2={() => onNavigate("battle2v2-select")}
           onBot={() => onNavigate("bot")}
           onFriends={() => onNavigate("friends")}
+          onLevels={() => onNavigate("learn")}
         />
       )}
     </>

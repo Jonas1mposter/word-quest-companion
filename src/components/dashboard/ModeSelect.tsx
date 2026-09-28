@@ -1,4 +1,4 @@
-import { X, Trophy, Globe, Users, Bot, UserPlus } from "lucide-react";
+import { X, Trophy, Globe, Users, Bot, UserPlus, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ModeSelectProps {
@@ -8,6 +8,7 @@ interface ModeSelectProps {
   on2v2: () => void;
   onBot: () => void;
   onFriends: () => void;
+  onLevels: () => void;
 }
 
 interface ModeDef {
@@ -19,9 +20,10 @@ interface ModeDef {
   onClick: () => void;
 }
 
-const ModeSelect = ({ onClose, onRanked, onFree, on2v2, onBot, onFriends }: ModeSelectProps) => {
+const ModeSelect = ({ onClose, onRanked, onFree, on2v2, onBot, onFriends, onLevels }: ModeSelectProps) => {
   const modes: ModeDef[] = [
     { name: "排位赛", description: "冲段位 · 青铜到狄邦巅峰", icon: Trophy, art: "from-primary/80 via-rose-950 to-background", badge: "竞技", onClick: onRanked },
+    { name: "闯关模式", description: "教材同步 · 按单元学单词", icon: BookOpen, art: "from-blue-500/70 via-blue-950 to-background", badge: "主线", onClick: onLevels },
     { name: "自由服", description: "跨年级自由匹配 · 不计段位", icon: Globe, art: "from-sky-500/70 via-cyan-950 to-background", onClick: onFree },
     { name: "2v2 组队", description: "四人同场 · 组队切磋", icon: Users, art: "from-violet-500/70 via-indigo-950 to-background", onClick: on2v2 },
     { name: "人机对战", description: "三档难度 · 随时开练", icon: Bot, art: "from-emerald-500/70 via-green-950 to-background", onClick: onBot },

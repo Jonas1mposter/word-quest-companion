@@ -286,6 +286,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             <XCircle className="w-4 h-4 mr-2" />取消匹配
           </Button>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }
@@ -298,6 +299,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <h2 className="text-3xl font-gaming mb-2 text-primary">4 人已就位！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }
@@ -325,6 +327,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             {countdown > 0 ? countdown : 'GO!'}
           </div>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }

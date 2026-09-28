@@ -209,7 +209,7 @@ const Battle2v2Practice = ({ onBack }: Props) => {
   }
 
   if (phase === "loading") {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><Swords className="w-16 h-16 text-primary animate-pulse" /></div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center"><Swords className="w-16 h-16 text-primary animate-pulse" /><DacBadge status="启动中" /></div>;
   }
 
   if (phase === "countdown") {
@@ -245,6 +245,7 @@ const Battle2v2Practice = ({ onBack }: Props) => {
           </div>
           <div className="text-8xl font-gaming animate-bounce text-primary">{countdown > 0 ? countdown : 'GO!'}</div>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }

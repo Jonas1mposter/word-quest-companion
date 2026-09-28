@@ -348,6 +348,7 @@ const BattleArena = ({
             <XCircle className="w-4 h-4 mr-2" />取消匹配
           </Button>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }
@@ -360,6 +361,7 @@ const BattleArena = ({
           <h2 className={cn("text-3xl font-gaming mb-2", theme.accentText)}>对手已找到！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }
@@ -428,6 +430,7 @@ const BattleArena = ({
 
           <p className="text-xs text-muted-foreground mt-6 animate-pulse">数据同步中，即将开战…</p>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }
@@ -451,6 +454,7 @@ const BattleArena = ({
             {countdown > 0 ? countdown : 'GO!'}
           </div>
         </div>
+        <DacBadge status="启动中" />
       </div>
     );
   }

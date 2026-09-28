@@ -263,7 +263,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
   return (
     <>
       <Card variant="gaming" className="overflow-hidden">
-        <CardHeader className="border-b border-border/50 bg-gradient-to-r from-amber-500/10 via-transparent to-purple-500/10">
+        <CardHeader className="border-b border-border/50 bg-gradient-to-r from-amber-500/10 via-transparent to-primary/10">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-3">
               <Book className="w-6 h-6 text-accent" />
@@ -387,7 +387,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
                     {premium && (
                       <div className={cn(
                         "flex items-center gap-3 p-2 rounded-lg relative",
-                        "bg-gradient-to-br from-amber-500/10 to-purple-500/10",
+                        "bg-gradient-to-br from-amber-500/10 to-primary/10",
                         (!isPremiumUnlocked || claimedRewards.has(premium.id)) && "opacity-50"
                       )}>
                         {!isPremiumUnlocked && (
@@ -397,7 +397,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
                         )}
                         <div className={cn(
                           "w-10 h-10 rounded-lg flex items-center justify-center",
-                          "bg-gradient-to-br from-amber-500/30 to-purple-500/30"
+                          "bg-gradient-to-br from-amber-500/30 to-primary/30"
                         )}>
                           {getRewardIcon(premium.icon)}
                         </div>
@@ -444,7 +444,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="p-4 rounded-lg bg-gradient-to-r from-amber-500/10 to-purple-500/10 border border-accent/30">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-amber-500/10 to-primary/10 border border-accent/30">
               <h4 className="font-gaming mb-2 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-accent" />
                 高级版专属福利

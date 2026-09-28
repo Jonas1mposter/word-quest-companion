@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        gaming: ['Orbitron', 'sans-serif'],
+        gaming: ['Rajdhani', 'Noto Sans SC', 'sans-serif'],
         sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
       },
       colors: {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -235,6 +235,10 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
     return true;
   };
 
+  // DAC：记录测验开始时间，用于过关速度检测
+  const quizStartRef = useRef(Date.now());
+  useEffect(() => { if (phase === "quiz") quizStartRef.current = Date.now(); }, [phase]);
+
   // 处理退出
   const handleBack = () => {
     // 如果已经开始答题（测验阶段且已有进度），显示确认弹窗
@@ -392,6 +396,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
             correctCount: finalCorrect,
             maxCombo,
             isLetterLevel: !!letterMatch,
+            durationMs: Date.now() - quizStartRef.current,
           },
         });
 

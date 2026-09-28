@@ -1195,6 +1195,7 @@ export type Database = {
           leaderboard_appearances: number
           level: number
           lifetime_coins_earned: number
+          lobby_card_image: string | null
           losses: number
           max_combo: number
           max_energy: number
@@ -1235,6 +1236,7 @@ export type Database = {
           leaderboard_appearances?: number
           level?: number
           lifetime_coins_earned?: number
+          lobby_card_image?: string | null
           losses?: number
           max_combo?: number
           max_energy?: number
@@ -1275,6 +1277,7 @@ export type Database = {
           leaderboard_appearances?: number
           level?: number
           lifetime_coins_earned?: number
+          lobby_card_image?: string | null
           losses?: number
           max_combo?: number
           max_energy?: number

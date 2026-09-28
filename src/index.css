@@ -296,7 +296,7 @@
   }
 
   .card-glow {
-    box-shadow: 0 0 0 1px hsl(265 89% 66% / 0.2), 0 8px 32px hsl(0 0% 0% / 0.4);
+    box-shadow: 0 0 0 1px hsl(355 100% 63% / 0.25), 0 8px 32px hsl(0 0% 0% / 0.45);
   }
 
   .card-glow-gold {

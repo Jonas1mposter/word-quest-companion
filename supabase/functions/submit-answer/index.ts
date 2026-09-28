@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, profile } = await requireProfile(req);
-    const { matchId, questionIndex, answer, quizType } = await req.json();
+    const { matchId, questionIndex, answer, quizType, elapsedMs } = await req.json();
 
     if (typeof matchId !== "string" || typeof questionIndex !== "number") {
       return json({ error: "Bad request" }, 400);

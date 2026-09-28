@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Sparkles, BookOpen, BookX, Swords, Globe, Target, Book, Bot,
   Users, Shield, History, Trophy, User, LucideIcon,

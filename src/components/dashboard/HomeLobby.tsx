@@ -60,6 +60,7 @@ const HomeLobby = ({
   const rankName = RANK_NAME[profile?.rank_tier] ?? "青铜";
 
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
       {/* ===== 左栏：玩家数据 + 快速入口 ===== */}
       <div className="order-2 lg:order-1 space-y-4">

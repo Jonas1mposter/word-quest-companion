@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
       correctCount,
       maxCombo = 0,
       isLetterLevel = false,
+      durationMs,
     } = body ?? {};
 
     if (

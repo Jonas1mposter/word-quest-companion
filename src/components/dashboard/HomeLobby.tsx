@@ -111,7 +111,7 @@ const HomeLobby = ({
   };
 
   useEffect(() => {
-    if (!profile?.id) { setCard(null); return; }
+    if (!profile?.id) { setCard(null); setTitle(null); return; }
     supabase
       .from("user_name_cards")
       .select("name_cards (name, icon, rarity, background_gradient)")
@@ -121,6 +121,18 @@ const HomeLobby = ({
       .then(({ data }) => {
         const c = (data as any)?.name_cards;
         setCard(c ?? null);
+      });
+    supabase
+      .from("user_badges")
+      .select("badges (name, icon, rarity)")
+      .eq("profile_id", profile.id)
+      .not("equipped_slot", "is", null)
+      .order("equipped_slot", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        const b = (data as any)?.badges;
+        setTitle(b ?? null);
       });
   }, [profile?.id, refreshKey]);
 
@@ -212,8 +224,17 @@ const HomeLobby = ({
             <div className="mt-1 font-tactical text-xl font-bold uppercase leading-none text-white">
               {playerData.username}
             </div>
-            <div className="mt-0.5 text-xs text-white/70">
-              {card ? card.name : "未佩戴名片"} · {rankName}
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-white/70">
+              {title ? (
+                <>
+                  <BadgeIcon icon={title.icon ?? ""} className="h-3.5 w-3.5 text-amber-300" />
+                  <span className="font-semibold text-amber-200">{title.name}</span>
+                </>
+              ) : (
+                <span>{card ? card.name : "未佩戴称号"}</span>
+              )}
+              <span className="text-white/40">·</span>
+              <span>{rankName}</span>
             </div>
           </div>
         </div>

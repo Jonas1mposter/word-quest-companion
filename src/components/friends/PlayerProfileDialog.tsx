@@ -5,6 +5,7 @@ import { Badge as UIBadge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trophy, Sparkles, Swords, Coins, Flame } from "lucide-react";
 import { BadgeIcon } from "@/components/ui/badge-icon";
+import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -17,6 +18,7 @@ interface ProfileData {
   id: string;
   username: string;
   avatar_url: string | null;
+  lobby_card_image: string | null;
   grade: number;
   level: number;
   total_xp: number;
@@ -74,7 +76,7 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
       setLoading(true);
       const [{ data: p }, { data: b }, { data: c }] = await Promise.all([
         supabase.from("profiles")
-          .select("id, username, avatar_url, grade, level, total_xp, coins, rank_tier, rank_stars, rank_points, wins, losses, free_match_wins, free_match_losses, streak, max_combo, ranked_wins, perfect_clears")
+          .select("id, username, avatar_url, lobby_card_image, grade, level, total_xp, coins, rank_tier, rank_stars, rank_points, wins, losses, free_match_wins, free_match_losses, streak, max_combo, ranked_wins, perfect_clears")
           .eq("id", profileId).maybeSingle(),
         supabase.from("user_badges")
           .select("id, earned_at, equipped_slot, badge:badges(id, name, description, icon, rarity)")
@@ -111,13 +113,26 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Header card */}
+            {/* Header card — 展示对方卡面 */}
             <div
-              className="relative rounded-xl p-4 border border-border/50 overflow-hidden"
-              style={equippedCard?.background_gradient ? { background: equippedCard.background_gradient } : undefined}
+              className={cn(
+                "relative rounded-xl border border-border/50 overflow-hidden h-36",
+                equippedCard && nameCardFxClass(equippedCard.rarity || "common"),
+              )}
+              style={equippedCard?.background_gradient ? { background: equippedCard.background_gradient, ...nameCardFxStyle(equippedCard.rarity || "common") } : undefined}
             >
-              <div className={cn("absolute inset-0", !equippedCard && "bg-gradient-to-br from-primary/20 to-accent/10")} />
-              <div className="relative flex items-center gap-4">
+              {profile.lobby_card_image && (
+                <img src={profile.lobby_card_image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+              {!profile.lobby_card_image && equippedCard && (
+                <NameCardFx rarity={equippedCard.rarity || "common"} background={equippedCard.background_gradient || undefined} />
+              )}
+              <div className={cn(
+                "absolute inset-0",
+                !equippedCard && !profile.lobby_card_image && "bg-gradient-to-br from-primary/20 to-accent/10",
+                profile.lobby_card_image && "bg-gradient-to-t from-black/80 via-black/30 to-transparent",
+              )} />
+              <div className="relative flex items-center gap-4 p-4 h-full">
                 <div className="w-16 h-16 rounded-full bg-background/40 backdrop-blur flex items-center justify-center text-2xl font-bold overflow-hidden ring-2 ring-white/30">
                   {profile.avatar_url ? (
                     <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />

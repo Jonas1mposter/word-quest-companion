@@ -51,6 +51,7 @@ const App = () => {
               <Route path="/shop" element={<Shop />} />
               <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="/season-pass-manual" element={<SeasonPassManual />} />
+              <Route path="/dev-selector" element={<DevSelectorPreview />} />
               <Route path="*" element={<NotFound />} />
 
             </Routes>

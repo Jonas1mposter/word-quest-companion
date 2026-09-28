@@ -164,7 +164,6 @@ const HomeLobby = ({
           onFriends={() => onNavigate("friends")}
         />
       )}
-    </div>
   );
 };
 

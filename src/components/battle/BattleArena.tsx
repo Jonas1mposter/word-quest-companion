@@ -145,7 +145,9 @@ const BattleArena = ({
     const channel = supabase.channel(`match-${matchId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'match_answers', filter: `match_id=eq.${matchId}` }, (payload) => {
         const a = payload.new as any;
-        if (a.player_id !== profile.id && a.is_correct) setOpponentScore(prev => prev + 1);
+        if (a.player_id === profile.id) return;
+        const delta = a.is_correct ? 1 : (matchType === 'ranked' ? -1 : 0);
+        if (delta !== 0) setOpponentScore(prev => prev + delta);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const u = payload.new as any;
@@ -169,7 +171,7 @@ const BattleArena = ({
         .single();
       if (!m) return;
       const oppScore = isPlayer1Ref.current ? m.player2_score : m.player1_score;
-      setOpponentScore(prev => (oppScore > prev ? oppScore : prev));
+      setOpponentScore(oppScore);
       if (m.winner_id) winnerIdRef.current = m.winner_id;
       if (m.status === 'completed' && !matchEndedRef.current) {
         matchEndedRef.current = true;
@@ -288,6 +290,10 @@ const BattleArena = ({
       }
       if (serverCorrect) {
         const ns = myScoreRef.current + 1;
+        myScoreRef.current = ns;
+        setMyScoreDisplay(ns);
+      } else if (matchType === 'ranked') {
+        const ns = myScoreRef.current - 1;
         myScoreRef.current = ns;
         setMyScoreDisplay(ns);
       }
@@ -500,6 +506,9 @@ const BattleArena = ({
               <p className="text-4xl font-gaming text-neon-blue">{opponentScore}</p>
             </div>
           </div>
+          {matchType === 'ranked' && (
+            <p className="text-xs text-muted-foreground -mt-2 mb-4">排位计分：答对 +1，答错 -1，按净分定胜负</p>
+          )}
           {rewards && (
             <div className="flex items-center justify-center gap-4 mb-4">
               <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-gaming">

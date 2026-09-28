@@ -108,8 +108,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       const { data: m } = await supabase.from('ranked_matches')
         .select('team1_score, team2_score, status, winner_team').eq('id', matchId).single();
       if (!m) return;
-      setTeam1Score(prev => (m.team1_score ?? 0) > prev ? m.team1_score! : prev);
-      setTeam2Score(prev => (m.team2_score ?? 0) > prev ? m.team2_score! : prev);
+      setTeam1Score(m.team1_score ?? 0);
+      setTeam2Score(m.team2_score ?? 0);
       if (m.winner_team !== null && m.winner_team !== undefined) winnerTeamRef.current = m.winner_team;
       if (m.status === 'completed' && !matchEndedRef.current) {
         matchEndedRef.current = true; setPhase("result");

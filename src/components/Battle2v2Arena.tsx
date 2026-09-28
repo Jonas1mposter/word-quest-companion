@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./battle/BattleQuizCard";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
+import DacBadge from "./battle/DacBadge";
 
 interface Word { id: string; word: string; meaning: string; phonetic?: string | null; example?: string | null; }
 interface MatchData {
@@ -374,6 +375,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             options={options} wordOptions={wordOptions}
             onAnswer={handleAnswer} answerAnimation={answerAnimation} comboCount={comboCount} />
         )}
+        <DacBadge />
       </div>
     );
   }

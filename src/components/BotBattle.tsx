@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import BattleQuizCard, { BattleQuizType } from "./battle/BattleQuizCard";
 import KillStreakBanner from "./battle/KillStreakBanner";
+import DacBadge from "./battle/DacBadge";
 
 type Difficulty = "easy" | "medium" | "hard";
 type Phase = "select" | "loading" | "countdown" | "battle" | "result";
@@ -285,6 +286,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
             comboCount={comboCount}
           />
         )}
+        <DacBadge />
       </div>
     );
   }

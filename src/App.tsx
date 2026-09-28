@@ -19,6 +19,7 @@ import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
 import NotFound from "./pages/NotFound";
+import DevDacPreview from "./pages/DevDacPreview";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => {
               <Route path="/shop" element={<Shop />} />
               <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="/season-pass-manual" element={<SeasonPassManual />} />
+              <Route path="/dev-dac" element={<DevDacPreview />} />
               <Route path="*" element={<NotFound />} />
 
             </Routes>

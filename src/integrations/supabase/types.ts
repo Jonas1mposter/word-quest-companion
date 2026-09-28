@@ -2540,7 +2540,10 @@ export type Database = {
       }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
-      redeem_code: { Args: { p_code: string }; Returns: Json }
+      redeem_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

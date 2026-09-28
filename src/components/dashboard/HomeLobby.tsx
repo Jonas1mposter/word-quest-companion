@@ -9,6 +9,7 @@ import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "../NameCardFx";
 import { getNameCardGradientStyle } from "../profile-card/utils";
 import { cn } from "@/lib/utils";
 import { zoneName } from "@/lib/zones";
+import ModeSelect from "./ModeSelect";
 import type { DashboardView } from "./DashboardNav";
 
 interface EquippedCard {
@@ -39,6 +40,7 @@ const HomeLobby = ({
   onEnergyPurchased, onNavigate, onStartMatch, onFreeMatch,
 }: HomeLobbyProps) => {
   const [card, setCard] = useState<EquippedCard | null>(null);
+  const [showModes, setShowModes] = useState(false);
 
   useEffect(() => {
     if (!profile?.id) { setCard(null); return; }
@@ -58,6 +60,7 @@ const HomeLobby = ({
   const rankName = RANK_NAME[profile?.rank_tier] ?? "青铜";
 
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
       {/* ===== 左栏：玩家数据 + 快速入口 ===== */}
       <div className="order-2 lg:order-1 space-y-4">
@@ -121,7 +124,7 @@ const HomeLobby = ({
 
         {/* 匹配按钮 */}
         <button
-          onClick={onStartMatch}
+          onClick={() => setShowModes(true)}
           className="val-cut h-14 w-72 max-w-full bg-primary font-tactical text-xl font-bold uppercase tracking-[0.3em] text-primary-foreground shadow-lg shadow-primary/40 transition-all hover:bg-primary/90 hover:shadow-primary/60 active:scale-[0.98]"
         >
           <span className="inline-flex items-center gap-2">
@@ -151,6 +154,18 @@ const HomeLobby = ({
         )}
       </div>
     </div>
+
+      {showModes && (
+        <ModeSelect
+          onClose={() => setShowModes(false)}
+          onRanked={onStartMatch}
+          onFree={onFreeMatch}
+          on2v2={() => onNavigate("battle2v2-select")}
+          onBot={() => onNavigate("bot")}
+          onFriends={() => onNavigate("friends")}
+        />
+      )}
+    </>
   );
 };
 

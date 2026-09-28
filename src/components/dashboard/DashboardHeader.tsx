@@ -23,19 +23,22 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
   const [zoneOpen, setZoneOpen] = useState(false);
   return (
     <>
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container mx-auto px-4 py-4">
+    <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b-2 border-primary/70">
+      <div className="h-0.5 val-hazard opacity-60" />
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img alt="狄邦单词通" className="w-10 h-10 rounded-lg shadow-md" src={logoDashboard} />
+            <div className="val-cut-sm bg-primary p-[2px]">
+              <img alt="狄邦单词通" className="w-10 h-10 val-cut-sm bg-background object-cover" src={logoDashboard} />
+            </div>
             <div>
-              <h1 className="font-gaming text-xl text-glow-purple">狄邦单词通</h1>
+              <h1 className="font-tactical text-2xl font-bold uppercase text-glow-red leading-none">狄邦单词通</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge data-tour="zone" onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80" title="点击切换分区">
+                <Badge data-tour="zone" onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 rounded-none val-cut-sm" title="点击切换分区">
                   <GraduationCap className="w-3 h-3" />
                   {zoneBadgeLabel(grade)}
                 </Badge>
-                {(grade === 7 || grade === 8) && className && <Badge variant="secondary" className="text-xs">{className}班</Badge>}
+                {(grade === 7 || grade === 8) && className && <Badge variant="secondary" className="text-xs rounded-none">{className}班</Badge>}
               </div>
             </div>
           </div>

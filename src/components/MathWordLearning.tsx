@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,6 +71,10 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
     return options.sort(() => Math.random() - 0.5);
   }, [words]);
 
+  // DAC：记录测验开始时间，用于过关速度检测
+  const quizStartRef = useRef(Date.now());
+  useEffect(() => { if (phase === "quiz") quizStartRef.current = Date.now(); }, [phase]);
+
   useEffect(() => {
     if (phase === "quiz" && currentWord) {
       setQuizOptions(generateOptions(currentWord));
@@ -118,6 +122,7 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
             correctCount: finalCorrect,
             maxCombo,
             isLetterLevel: false,
+            durationMs: Date.now() - quizStartRef.current,
           },
         });
         if (error || (data && data.error)) {

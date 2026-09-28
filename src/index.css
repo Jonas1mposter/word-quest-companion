@@ -38,7 +38,7 @@
     --input: 250 15% 94%;
     --ring: 265 89% 55%;
 
-    --radius: 0.375rem;
+    --radius: 0.125rem;
 
     /* Custom gaming colors */
     --neon-blue: 200 100% 50%;
@@ -191,7 +191,8 @@
   }
 
   h1, h2, h3, .font-gaming {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', 'Noto Sans SC', sans-serif;
+    letter-spacing: 0.04em;
   }
 
   /* iOS specific fixes */

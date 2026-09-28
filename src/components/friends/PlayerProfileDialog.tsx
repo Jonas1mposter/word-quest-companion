@@ -116,13 +116,13 @@ export const PlayerProfileDialog = ({ profileId, open, onOpenChange }: Props) =>
             {/* Header card — 展示对方卡面 */}
             <div
               className={cn(
-                "relative rounded-xl border border-border/50 overflow-hidden h-36",
+                "relative rounded-xl border border-border/50 overflow-hidden h-44",
                 equippedCard && nameCardFxClass(equippedCard.rarity || "common"),
               )}
               style={equippedCard?.background_gradient ? { background: equippedCard.background_gradient, ...nameCardFxStyle(equippedCard.rarity || "common") } : undefined}
             >
               {profile.lobby_card_image && (
-                <img src={profile.lobby_card_image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <img src={profile.lobby_card_image} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 30%" }} />
               )}
               {!profile.lobby_card_image && equippedCard && (
                 <NameCardFx rarity={equippedCard.rarity || "common"} background={equippedCard.background_gradient || undefined} />

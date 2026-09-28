@@ -82,36 +82,37 @@
   }
 
   .dark {
-    --background: 230 25% 8%;
-    --foreground: 210 40% 98%;
+    /* Valorant-style: off-black, tactical red, off-white */
+    --background: 213 28% 8%;
+    --foreground: 40 20% 92%;
 
-    --card: 230 25% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 213 24% 11%;
+    --card-foreground: 40 20% 92%;
 
-    --popover: 230 25% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 213 26% 10%;
+    --popover-foreground: 40 20% 92%;
 
-    --primary: 265 89% 66%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 355 100% 63%;
+    --primary-foreground: 40 20% 96%;
 
-    --secondary: 230 25% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 213 20% 16%;
+    --secondary-foreground: 40 20% 92%;
 
-    --muted: 230 20% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 213 18% 18%;
+    --muted-foreground: 215 15% 60%;
 
     --accent: 45 100% 60%;
-    --accent-foreground: 230 25% 8%;
+    --accent-foreground: 213 28% 8%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 40 20% 96%;
 
     --success: 142 76% 45%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 40 20% 96%;
 
-    --border: 230 20% 20%;
-    --input: 230 20% 18%;
-    --ring: 265 89% 66%;
+    --border: 213 16% 22%;
+    --input: 213 18% 16%;
+    --ring: 355 100% 63%;
 
     /* Custom gaming colors */
     --neon-blue: 200 100% 60%;
@@ -132,17 +133,17 @@
     --rank-champion: 265 89% 66%;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(265 89% 66% / 0.3) 0%, hsl(200 100% 60% / 0.2) 50%, hsl(330 85% 60% / 0.2) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(230 25% 14%) 0%, hsl(230 25% 10%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(355 100% 63% / 0.25) 0%, hsl(213 28% 8% / 0) 55%, hsl(45 100% 55% / 0.12) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(213 24% 13%) 0%, hsl(213 26% 9%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(45 100% 55%) 0%, hsl(35 100% 45%) 100%);
-    --gradient-purple: linear-gradient(135deg, hsl(265 89% 66%) 0%, hsl(285 85% 55%) 100%);
+    --gradient-purple: linear-gradient(135deg, hsl(355 100% 63%) 0%, hsl(330 85% 55%) 100%);
     --gradient-success: linear-gradient(135deg, hsl(142 76% 45%) 0%, hsl(160 70% 40%) 100%);
 
     /* Shadows */
-    --shadow-glow-purple: 0 0 30px hsl(265 89% 66% / 0.4);
+    --shadow-glow-purple: 0 0 30px hsl(355 100% 63% / 0.35);
     --shadow-glow-gold: 0 0 30px hsl(45 100% 55% / 0.4);
     --shadow-glow-blue: 0 0 30px hsl(200 100% 60% / 0.3);
-    --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.45);
 
     --sidebar-background: 230 25% 10%;
     --sidebar-foreground: 210 40% 98%;

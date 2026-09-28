@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings, Volume2, VolumeX, Music, Bell, Moon, Sun, Vibrate, Gamepad2, Info, Shield, LogOut, Lock, School, User, Trash2, FileText, Mail, ExternalLink, Play } from "lucide-react";
+import { Settings, Volume2, VolumeX, Music, Bell, Moon, Sun, Vibrate, Gamepad2, Info, Shield, LogOut, Lock, School, User, Trash2, FileText, Mail, ExternalLink, Play, Gift, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +89,32 @@ export const SettingsSheet = () => {
   // Class selection state
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [classLoading, setClassLoading] = useState(false);
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+
+  const handleRedeem = async () => {
+    const code = redeemCode.trim();
+    if (!code) {
+      toast.error("请输入兑换码");
+      return;
+    }
+    setRedeemLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("redeem-code", { body: { code } });
+      if (error) throw error;
+      if (data?.ok) {
+        toast.success(data.message ?? "兑换成功！");
+        setRedeemCode("");
+      } else {
+        toast.error(data?.message ?? "兑换失败，请检查兑换码");
+      }
+    } catch (e) {
+      console.error("redeem failed", e);
+      toast.error("兑换失败，请稍后重试");
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
 
   // Account deletion state
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -307,6 +333,27 @@ export const SettingsSheet = () => {
                     {profile?.grade && <p className="text-xs text-muted-foreground">
                         当前年级: {profile.grade}年级
                       </p>}
+                  </div>
+
+                  {/* Redeem Code */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-4 h-4 text-primary" />
+                      <Label>兑换码</Label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="输入兑换码"
+                        value={redeemCode}
+                        onChange={e => setRedeemCode(e.target.value.toUpperCase())}
+                        onKeyDown={e => { if (e.key === "Enter") handleRedeem(); }}
+                        disabled={redeemLoading}
+                        className="uppercase"
+                      />
+                      <Button size="sm" onClick={handleRedeem} disabled={redeemLoading || !redeemCode.trim()}>
+                        {redeemLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "兑换"}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Password Change */}

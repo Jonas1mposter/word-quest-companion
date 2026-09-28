@@ -65,7 +65,7 @@ const HomeLobby = ({
           <PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={onEnergyPurchased} />
         </div>
         <div className="border border-border/60 bg-secondary/30 val-cut-sm">
-          <LobbyRow icon={BookOpen} label="进入关卡" onClick={() => onNavigate("learn")} />
+          <LobbyRow icon={BookOpen} label="进入关卡" tour="levels" onClick={() => onNavigate("learn")} />
           <LobbyRow icon={Bot} label="人机练习" onClick={() => onNavigate("bot")} />
           <LobbyRow icon={Users} label="好友对战" onClick={() => onNavigate("friends")} />
           <LobbyRow icon={Globe} label="自由服" onClick={onFreeMatch} last />
@@ -154,9 +154,10 @@ const HomeLobby = ({
   );
 };
 
-const LobbyRow = ({ icon: Icon, label, onClick, last }: { icon: any; label: string; onClick: () => void; last?: boolean }) => (
+const LobbyRow = ({ icon: Icon, label, onClick, last, tour }: { icon: any; label: string; onClick: () => void; last?: boolean; tour?: string }) => (
   <button
     onClick={onClick}
+    data-tour={tour}
     className={cn(
       "flex w-full items-center justify-between px-4 py-3 text-sm font-medium tracking-wider transition-colors hover:bg-primary/15 hover:text-primary",
       !last && "border-b border-border/50"

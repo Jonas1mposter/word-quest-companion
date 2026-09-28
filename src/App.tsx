@@ -19,6 +19,7 @@ import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
 import NotFound from "./pages/NotFound";
+import DevSelectorPreview from "./pages/DevSelectorPreview";
 
 const queryClient = new QueryClient();
 

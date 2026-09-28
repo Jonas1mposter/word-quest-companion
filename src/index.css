@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -38,7 +38,7 @@
     --input: 250 15% 94%;
     --ring: 265 89% 55%;
 
-    --radius: 0.75rem;
+    --radius: 0.375rem;
 
     /* Custom gaming colors */
     --neon-blue: 200 100% 50%;
@@ -223,10 +223,76 @@
   }
 
   .bg-grid-pattern {
-    background-image: 
-      linear-gradient(hsl(265 89% 66% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(265 89% 66% / 0.03) 1px, transparent 1px);
+    background-image:
+      linear-gradient(hsl(355 100% 63% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(355 100% 63% / 0.04) 1px, transparent 1px);
     background-size: 50px 50px;
+  }
+
+  /* ===== Valorant-style tactical utilities ===== */
+  .font-tactical {
+    font-family: 'Rajdhani', 'Noto Sans SC', sans-serif;
+    letter-spacing: 0.08em;
+  }
+
+  /* Angular cut corners */
+  .val-cut {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .val-cut-sm {
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .val-cut-tab {
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+
+  /* Diagonal hazard stripes */
+  .val-hazard {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      hsl(355 100% 63% / 0.55) 0px,
+      hsl(355 100% 63% / 0.55) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  }
+  .val-hazard-faint {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      hsl(40 20% 92% / 0.05) 0px,
+      hsl(40 20% 92% / 0.05) 6px,
+      transparent 6px,
+      transparent 14px
+    );
+  }
+
+  /* Corner brackets (position relative parent) */
+  .val-brackets {
+    position: relative;
+  }
+  .val-brackets::before,
+  .val-brackets::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+  }
+  .val-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid hsl(var(--primary));
+    border-left: 2px solid hsl(var(--primary));
+  }
+  .val-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid hsl(var(--primary));
+    border-right: 2px solid hsl(var(--primary));
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 18px hsl(355 100% 63% / 0.55), 0 0 40px hsl(355 100% 63% / 0.25);
   }
 
   .card-glow {

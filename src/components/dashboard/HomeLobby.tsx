@@ -12,6 +12,7 @@ import { getNameCardGradientStyle } from "../profile-card/utils";
 import { cn } from "@/lib/utils";
 import { zoneName } from "@/lib/zones";
 import ModeSelect from "./ModeSelect";
+import LobbyCardCropper from "./LobbyCardCropper";
 import type { DashboardView } from "./DashboardNav";
 
 interface EquippedCard {
@@ -52,13 +53,14 @@ const HomeLobby = ({
   const [showModes, setShowModes] = useState(false);
   const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCustomImage(profile?.lobby_card_image ?? null);
   }, [profile?.lobby_card_image]);
 
-  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !profile?.user_id) return;
@@ -71,16 +73,21 @@ const HomeLobby = ({
       toast.error("图片大小不能超过 5MB");
       return;
     }
+    setCropFile(file);
+  };
+
+  const uploadCroppedImage = async (blob: Blob) => {
+    if (!profile?.user_id) return;
     setUploading(true);
     try {
-      const fileName = `${profile.user_id}/lobby-${Date.now()}.${ext}`;
+      const fileName = `${profile.user_id}/lobby-${Date.now()}.jpg`;
       if (customImage) {
         const oldPath = customImage.split("/profile-backgrounds/")[1];
         if (oldPath) await supabase.storage.from("profile-backgrounds").remove([oldPath]);
       }
       const { error: upErr } = await supabase.storage
         .from("profile-backgrounds")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, blob, { upsert: true, contentType: "image/jpeg" });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("profile-backgrounds").getPublicUrl(fileName);
       const url = urlData.publicUrl;
@@ -90,6 +97,7 @@ const HomeLobby = ({
         .eq("id", profile.id);
       if (dbErr) throw dbErr;
       setCustomImage(url);
+      setCropFile(null);
       toast.success("名片图片已更新！");
     } catch (e) {
       console.error("lobby card upload failed:", e);
@@ -192,7 +200,7 @@ const HomeLobby = ({
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/gif,image/webp"
-            onChange={handleUploadImage}
+            onChange={handleFileSelect}
             className="hidden"
             disabled={uploading}
           />
@@ -272,6 +280,14 @@ const HomeLobby = ({
         )}
       </div>
     </div>
+
+      {cropFile && (
+        <LobbyCardCropper
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onConfirm={uploadCroppedImage}
+        />
+      )}
 
       {showModes && (
         <ModeSelect

@@ -22,11 +22,6 @@ interface EquippedCard {
   background_gradient: string;
 }
 
-interface EquippedTitle {
-  name: string;
-  icon: string | null;
-  rarity: string;
-}
 
 interface HomeLobbyProps {
   profile: any;
@@ -49,7 +44,6 @@ const HomeLobby = ({
   onEnergyPurchased, onNavigate, onStartMatch, onFreeMatch,
 }: HomeLobbyProps) => {
   const [card, setCard] = useState<EquippedCard | null>(null);
-  const [title, setTitle] = useState<EquippedTitle | null>(null);
   const [showModes, setShowModes] = useState(false);
   const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
   const [uploading, setUploading] = useState(false);
@@ -119,7 +113,7 @@ const HomeLobby = ({
   };
 
   useEffect(() => {
-    if (!profile?.id) { setCard(null); setTitle(null); return; }
+    if (!profile?.id) { setCard(null); return; }
     supabase
       .from("user_name_cards")
       .select("name_cards (name, icon, rarity, background_gradient)")
@@ -129,18 +123,6 @@ const HomeLobby = ({
       .then(({ data }) => {
         const c = (data as any)?.name_cards;
         setCard(c ?? null);
-      });
-    supabase
-      .from("user_badges")
-      .select("badges (name, icon, rarity)")
-      .eq("profile_id", profile.id)
-      .not("equipped_slot", "is", null)
-      .order("equipped_slot", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        const b = (data as any)?.badges;
-        setTitle(b ?? null);
       });
   }, [profile?.id, refreshKey]);
 
@@ -233,13 +215,13 @@ const HomeLobby = ({
               {playerData.username}
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-white/70">
-              {title ? (
+              {card ? (
                 <>
-                  <BadgeIcon icon={title.icon ?? ""} className="h-3.5 w-3.5 text-amber-300" />
-                  <span className="font-semibold text-amber-200">{title.name}</span>
+                  <BadgeIcon icon={card.icon ?? ""} className="h-3.5 w-3.5 text-amber-300" />
+                  <span className="font-semibold text-amber-200">{card.name}</span>
                 </>
               ) : (
-                <span>{card ? card.name : "未佩戴称号"}</span>
+                <span>未佩戴称号</span>
               )}
               <span className="text-white/40">·</span>
               <span>{rankName}</span>

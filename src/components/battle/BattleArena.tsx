@@ -84,7 +84,6 @@ const BattleArena = ({
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [opponentNameCard, setOpponentNameCard] = useState<NameCardData | null>(null);
-  const [opponentTitle, setOpponentTitle] = useState<{ name: string; icon: string | null } | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
@@ -139,15 +138,6 @@ const BattleArena = ({
       if (row?.name_cards) {
         setOpponentNameCard({ ...row.name_cards, rank_position: row.rank_position, is_equipped: true, is_owned: true });
       }
-      const { data: badgeRows } = await supabase
-        .from('user_badges')
-        .select('badges (name, icon)')
-        .eq('profile_id', opponentId)
-        .not('equipped_slot', 'is', null)
-        .order('equipped_slot', { ascending: true })
-        .limit(1);
-      const badge: any = badgeRows?.[0]?.badges;
-      if (badge) setOpponentTitle({ name: badge.name, icon: badge.icon });
     }
 
     if (words.length > 0) generateOptions(words, 0);
@@ -375,10 +365,10 @@ const BattleArena = ({
           <p className={cn("text-2xl font-gaming animate-pulse", theme.accentText)}>
             {opponentProfile?.username || "神秘对手"}
           </p>
-          {opponentTitle && (
+          {opponentNameCard && (
             <div className="mt-1 mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1">
-              <BadgeIcon icon={opponentTitle.icon || "Award"} className="w-3.5 h-3.5 text-amber-300" />
-              <span className="text-xs font-semibold text-amber-200 tracking-wide">{opponentTitle.name}</span>
+              <BadgeIcon icon={opponentNameCard.icon || "Award"} className="w-3.5 h-3.5 text-amber-300" />
+              <span className="text-xs font-semibold text-amber-200 tracking-wide">{opponentNameCard.name}</span>
             </div>
           )}
           <div className="mb-4" />

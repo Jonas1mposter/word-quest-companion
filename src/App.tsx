@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { initializeNativeApp } from "@/lib/capacitor";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import DevNavPreview from "./pages/DevNavPreview";
 import Admin from "./pages/Admin";
 import Teacher from "./pages/Teacher";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/callback" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/dev-nav" element={<DevNavPreview />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/teacher" element={<Teacher />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />

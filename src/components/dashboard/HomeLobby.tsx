@@ -153,6 +153,18 @@ const HomeLobby = ({
         )}
       </div>
     </div>
+
+      {showModes && (
+        <ModeSelect
+          onClose={() => setShowModes(false)}
+          onRanked={onStartMatch}
+          onFree={onFreeMatch}
+          on2v2={() => onNavigate("battle2v2-select")}
+          onBot={() => onNavigate("bot")}
+          onFriends={() => onNavigate("friends")}
+        />
+      )}
+    </div>
   );
 };
 

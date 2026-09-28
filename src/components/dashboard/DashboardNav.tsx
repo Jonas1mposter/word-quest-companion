@@ -37,9 +37,9 @@ interface DashboardNavProps {
 }
 
 const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => (
-  <nav className="sticky top-[73px] z-40 bg-background/60 backdrop-blur-lg border-b border-border/30">
+  <nav className="sticky top-[70px] z-40 bg-secondary/40 backdrop-blur-lg border-b border-border/40">
     <div className="container mx-auto px-2">
-      <div className="flex gap-0.5 py-1.5 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1 py-1.5 overflow-x-auto scrollbar-hide">
         {TABS.map(tab => {
           const isActive =
             activeView === tab.id ||
@@ -47,17 +47,19 @@ const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => (
             (tab.id === "battle2v2-select" && activeView === "battle2v2") ||
             (tab.id === "freematch-select" && activeView === "freematch");
           return (
-            <Button
+            <button
               key={tab.id}
               data-tour={`nav-${tab.id}`}
-              variant={isActive ? "default" : "ghost"}
-              size="sm"
               onClick={() => onSelect(tab.id)}
-              className="px-2 py-1 h-8 text-xs whitespace-nowrap"
+              className={`val-cut-tab px-3 h-8 text-xs whitespace-nowrap font-tactical font-semibold uppercase flex items-center transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
             >
               <tab.icon className="w-3.5 h-3.5 mr-1" />
               {tab.label}
-            </Button>
+            </button>
           );
         })}
       </div>

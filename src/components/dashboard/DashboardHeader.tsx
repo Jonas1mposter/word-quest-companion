@@ -45,19 +45,19 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
           <div className="flex items-center gap-2">
             <LanguageToggle />
             {!user && (
-              <Button variant="hero" size="sm" onClick={() => navigate("/auth")}>
+              <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="rounded-none val-cut-sm font-tactical font-semibold">
                 <User className="w-4 h-4 mr-2" />登录
               </Button>
             )}
             {user && (
               <>
                 <Button data-tour="shop" variant="outline" size="sm" onClick={() => navigate("/shop")}
-                  className="border-amber-400/60 text-amber-400 hover:bg-amber-400/10">
+                  className="rounded-none val-cut-sm border-amber-400/60 text-amber-400 hover:bg-amber-400/10 font-tactical font-semibold">
                   <ShoppingBag className="w-4 h-4 mr-2" />商城
                 </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}
-                    className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+                    className="rounded-none val-cut-sm border-accent text-accent hover:bg-accent hover:text-accent-foreground font-tactical font-semibold">
                     <Crown className="w-4 h-4 mr-2" />后台
                   </Button>
                 )}

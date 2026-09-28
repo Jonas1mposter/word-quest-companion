@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Shield, Users, Crown, BookOpen, Award, Coins,
-  MessageSquareText, Swords,
+  MessageSquareText, Swords, ShieldAlert,
 } from "lucide-react";
 import { useAdminData } from "./admin/useAdminData";
 import { UsersTab } from "./admin/UsersTab";
@@ -16,6 +16,7 @@ import { WordsTab } from "./admin/WordsTab";
 import { ExamplesTab } from "./admin/ExamplesTab";
 import { RewardsTab } from "./admin/RewardsTab";
 import { MatchesTab } from "./admin/MatchesTab";
+import { DacTab } from "./admin/DacTab";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />用户管理
             </TabsTrigger>
@@ -108,6 +109,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="matches" className="flex items-center gap-2">
               <Swords className="w-4 h-4" />对局管理
+            </TabsTrigger>
+            <TabsTrigger value="dac" className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" />DAC
             </TabsTrigger>
           </TabsList>
 
@@ -130,6 +134,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="matches">
             <MatchesTab matchCount={matchCount} setMatchCount={setMatchCount} refresh={fetchMatchCount} />
+          </TabsContent>
+          <TabsContent value="dac">
+            <DacTab />
           </TabsContent>
         </Tabs>
       </div>

@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, profile } = await requireProfile(req);
-    const { matchId, questionIndex, answer, quizType } = await req.json();
+    const { matchId, questionIndex, answer, quizType, elapsedMs } = await req.json();
 
     if (typeof matchId !== "string" || typeof questionIndex !== "number") {
       return json({ error: "Bad request" }, 400);
@@ -59,6 +59,36 @@ Deno.serve(async (req) => {
       answer: String(answer ?? ""),
       is_correct: isCorrect,
     });
+
+    // ===== DAC (Dipont Anti-Cheat)：答题速度检测 =====
+    // 答对且速度快到人类不可能（<1.2s）时记录可疑标记，不影响本次计分
+    if (isCorrect) {
+      let fastest: number | null =
+        typeof elapsedMs === "number" && elapsedMs >= 0 ? elapsedMs : null;
+      // 服务端口径：与上一题的作答间隔（不依赖客户端上报）
+      const { data: prev } = await admin
+        .from("match_answers")
+        .select("answered_at")
+        .eq("match_id", matchId)
+        .eq("player_id", profile.id)
+        .lt("question_index", questionIndex)
+        .order("question_index", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (prev?.answered_at) {
+        const serverDelta = Date.now() - new Date(prev.answered_at).getTime();
+        if (fastest === null || serverDelta < fastest) fastest = serverDelta;
+      }
+      if (fastest !== null && fastest < 1200) {
+        await admin.rpc("dac_flag", {
+          p_profile_id: profile.id,
+          p_source: "submit-answer",
+          p_reason: "impossible_answer_speed",
+          p_severity: fastest < 600 ? "high" : "medium",
+          p_meta: { matchId, questionIndex, elapsedMs: fastest, match_type: match.match_type, mode: match.mode },
+        });
+      }
+    }
 
     const isRanked = match.match_type === "ranked";
     const delta = isCorrect ? 1 : (isRanked ? -1 : 0);

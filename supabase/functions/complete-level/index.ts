@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
       correctCount,
       maxCombo = 0,
       isLetterLevel = false,
+      durationMs,
     } = body ?? {};
 
     if (
@@ -26,6 +27,21 @@ Deno.serve(async (req) => {
       return json({ error: "Bad request" }, 400);
     }
     if (profile.energy < 1) return json({ error: "Not enough energy" }, 400);
+
+    // ===== DAC (Dipont Anti-Cheat)：过关速度检测 =====
+    // 每题平均用时低于 1.2s 视为可疑（<0.6s 为高危），记录标记但不影响结算
+    if (typeof durationMs === "number" && durationMs >= 0) {
+      const perWord = durationMs / totalWords;
+      if (perWord < 1200) {
+        await admin.rpc("dac_flag", {
+          p_profile_id: profile.id,
+          p_source: "complete-level",
+          p_reason: "impossible_level_speed",
+          p_severity: perWord < 600 ? "high" : "medium",
+          p_meta: { levelId, levelName, totalWords, correctCount, durationMs, perWordMs: Math.round(perWord) },
+        });
+      }
+    }
 
     const accuracy = correctCount / totalWords;
     const baseXp = 5;

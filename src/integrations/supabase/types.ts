@@ -373,6 +373,44 @@ export type Database = {
           },
         ]
       }
+      dac_flags: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json
+          profile_id: string
+          reason: string
+          severity: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          profile_id: string
+          reason: string
+          severity?: string
+          source: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          profile_id?: string
+          reason?: string
+          severity?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dac_flags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_quests: {
         Row: {
           created_at: string
@@ -2377,6 +2415,16 @@ export type Database = {
       }
       bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
       bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
+      dac_flag: {
+        Args: {
+          p_meta?: Json
+          p_profile_id: string
+          p_reason: string
+          p_severity?: string
+          p_source: string
+        }
+        Returns: undefined
+      }
       equip_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       find_match: {
         Args: {

@@ -107,7 +107,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
         .select("*")
         .eq("profile_id", profileId)
         .eq("season_id", seasonData.id)
-        .single();
+        .maybeSingle();
 
       if (passData) {
         setUserPass(passData);

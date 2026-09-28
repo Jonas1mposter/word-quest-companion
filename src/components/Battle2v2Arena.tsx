@@ -62,6 +62,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // DAC：记录当前题目展示时间，用于答题速度检测
+  const questionShownAtRef = useRef(Date.now());
 
   const generateOptions = useCallback((words: Word[], idx: number) => {
     const cur = words[idx]; if (!cur) return;
@@ -214,6 +216,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     return () => clearTimeout(t);
   }, [phase, countdown, endMatch]);
 
+  // DAC：每题切换时重置计时
+  useEffect(() => {
+    if (phase === "battle") questionShownAtRef.current = Date.now();
+  }, [currentQuestion, phase]);
+
   const handleAnswer = useCallback(async (clientCorrect: boolean, answer: string) => {
     if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
     answeringRef.current = true;
@@ -223,7 +230,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       let matchEnded = false;
       try {
         const { data, error } = await supabase.functions.invoke('submit-answer', {
-          body: { matchId: matchData.id, questionIndex: idx, answer, quizType },
+          body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
         });
         if (error) {
           const ctx: any = (error as any).context;

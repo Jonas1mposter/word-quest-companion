@@ -1,6 +1,6 @@
 import {
-  Sparkles, BookOpen, BookX, Swords, Globe, Target, Book, Bot,
-  Users, Shield, History, Trophy, User, LucideIcon,
+  Sparkles, BookX, Target, Book,
+  Shield, History, Trophy, User, LucideIcon,
 } from "lucide-react";
 
 export type DashboardView =
@@ -14,16 +14,9 @@ interface Tab { id: DashboardView; label: string; icon: LucideIcon; }
 
 const TABS: Tab[] = [
   { id: "home", label: "主页", icon: Sparkles },
-  { id: "learn", label: "闯关", icon: BookOpen },
   { id: "wrongbook", label: "错题本", icon: BookX },
-  { id: "battle-select", label: "排位赛", icon: Swords },
-  { id: "battle2v2-select", label: "2v2 排位", icon: Swords },
-  { id: "battle2v2-practice", label: "2v2 练习", icon: Bot },
-  { id: "freematch-select", label: "自由服", icon: Globe },
-  { id: "bot", label: "人机", icon: Bot },
   { id: "challenge", label: "挑战赛", icon: Target },
   { id: "seasonpass", label: "手册", icon: Book },
-  { id: "friends", label: "好友", icon: Users },
   { id: "team", label: "战队", icon: Shield },
   { id: "history", label: "战绩", icon: History },
   { id: "leaderboard", label: "排行榜", icon: Trophy },

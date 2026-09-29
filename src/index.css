@@ -880,3 +880,93 @@
 .nc-shake { animation: nc-shake .45s ease-in-out 2; }
 .nc-burst { position: absolute; inset: 0; border-radius: 9999px; animation: nc-burst .8s ease-out forwards; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .nc-sheen::after, .nc-holo, .nc-border, .nc-particle, .nc-glow { animation: none; } }
+
+/* ===== 经典界面模式（ui-classic）：恢复紫蓝游戏风 ===== */
+.ui-classic {
+  --background: 230 25% 8%;
+  --foreground: 210 40% 98%;
+
+  --card: 230 25% 12%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 230 25% 10%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 265 89% 66%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 230 25% 18%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 230 20% 20%;
+  --muted-foreground: 215 20% 65%;
+
+  --accent: 45 100% 60%;
+  --accent-foreground: 230 25% 8%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+
+  --success: 142 76% 45%;
+  --success-foreground: 210 40% 98%;
+
+  --border: 230 20% 20%;
+  --input: 230 20% 18%;
+  --ring: 265 89% 66%;
+
+  --radius: 0.75rem;
+
+  --gradient-hero: linear-gradient(135deg, hsl(265 89% 66% / 0.3) 0%, hsl(200 100% 60% / 0.2) 50%, hsl(330 85% 60% / 0.2) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(230 25% 14%) 0%, hsl(230 25% 10%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(45 100% 55%) 0%, hsl(35 100% 45%) 100%);
+  --gradient-purple: linear-gradient(135deg, hsl(265 89% 66%) 0%, hsl(285 85% 55%) 100%);
+  --gradient-success: linear-gradient(135deg, hsl(142 76% 45%) 0%, hsl(160 70% 40%) 100%);
+
+  --shadow-glow-purple: 0 0 30px hsl(265 89% 66% / 0.4);
+  --shadow-glow-gold: 0 0 30px hsl(45 100% 55% / 0.4);
+  --shadow-glow-blue: 0 0 30px hsl(200 100% 60% / 0.3);
+  --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.3);
+
+  --sidebar-background: 230 25% 10%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 265 89% 66%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 230 25% 18%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 230 20% 20%;
+  --sidebar-ring: 265 89% 66%;
+}
+
+/* 经典模式下中和 Valorant 战术风格工具类 */
+.ui-classic h1, .ui-classic h2, .ui-classic h3, .ui-classic .font-gaming {
+  font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+  letter-spacing: normal;
+}
+.ui-classic .font-tactical {
+  font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+  letter-spacing: normal;
+}
+.ui-classic .val-cut, .ui-classic .val-cut-sm, .ui-classic .val-cut-tab {
+  clip-path: none;
+  border-radius: var(--radius);
+}
+.ui-classic .val-cut-tab {
+  border-radius: calc(var(--radius) - 4px);
+}
+.ui-classic .val-hazard { display: none; }
+.ui-classic .val-hazard-faint { background-image: none; }
+.ui-classic .val-brackets::before, .ui-classic .val-brackets::after { display: none; }
+.ui-classic .text-glow-red {
+  text-shadow: 0 0 20px hsl(265 89% 66% / 0.55), 0 0 40px hsl(265 89% 66% / 0.25);
+}
+.ui-classic .text-glow-purple {
+  text-shadow: 0 0 20px hsl(265 89% 66% / 0.6), 0 0 40px hsl(265 89% 66% / 0.3);
+}
+.ui-classic .bg-grid-pattern {
+  background-image:
+    linear-gradient(hsl(265 89% 66% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(265 89% 66% / 0.05) 1px, transparent 1px);
+}
+.ui-classic .card-glow {
+  box-shadow: 0 0 0 1px hsl(265 89% 66% / 0.25), 0 8px 32px hsl(0 0% 0% / 0.3);
+}

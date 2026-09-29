@@ -1,7 +1,9 @@
 import {
-  Sparkles, BookX, Target, Book,
-  Shield, History, Trophy, User, LucideIcon,
+  Sparkles, BookOpen, BookX, Swords, Globe, Target, Book, Bot,
+  Users, Shield, History, Trophy, User, LucideIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUiMode } from "@/hooks/useUiMode";
 
 export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn" | "hslearn"
@@ -23,40 +25,93 @@ const TABS: Tab[] = [
   { id: "profile", label: "个人", icon: User },
 ];
 
+const CLASSIC_TABS: Tab[] = [
+  { id: "home", label: "主页", icon: Sparkles },
+  { id: "learn", label: "闯关", icon: BookOpen },
+  { id: "wrongbook", label: "错题本", icon: BookX },
+  { id: "battle-select", label: "排位赛", icon: Swords },
+  { id: "battle2v2-select", label: "2v2 排位", icon: Swords },
+  { id: "battle2v2-practice", label: "2v2 练习", icon: Bot },
+  { id: "freematch-select", label: "自由服", icon: Globe },
+  { id: "bot", label: "人机", icon: Bot },
+  { id: "challenge", label: "挑战赛", icon: Target },
+  { id: "seasonpass", label: "手册", icon: Book },
+  { id: "friends", label: "好友", icon: Users },
+  { id: "team", label: "战队", icon: Shield },
+  { id: "history", label: "战绩", icon: History },
+  { id: "leaderboard", label: "排行榜", icon: Trophy },
+  { id: "profile", label: "个人", icon: User },
+];
+
 interface DashboardNavProps {
   activeView: DashboardView;
   onSelect: (view: DashboardView) => void;
 }
 
-const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => (
-  <nav className="sticky top-[70px] z-40 bg-secondary/40 backdrop-blur-lg border-b border-border/40">
-    <div className="container mx-auto px-2">
-      <div className="flex gap-1 py-1.5 overflow-x-auto scrollbar-hide">
-        {TABS.map(tab => {
-          const isActive =
-            activeView === tab.id ||
-            (tab.id === "battle-select" && activeView === "battle") ||
-            (tab.id === "battle2v2-select" && activeView === "battle2v2") ||
-            (tab.id === "freematch-select" && activeView === "freematch");
-          return (
-            <button
-              key={tab.id}
-              data-tour={`nav-${tab.id}`}
-              onClick={() => onSelect(tab.id)}
-              className={`val-cut-tab px-3 h-8 text-xs whitespace-nowrap font-tactical font-semibold uppercase flex items-center transition-colors ${
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
-            >
-              <tab.icon className="w-3.5 h-3.5 mr-1" />
-              {tab.label}
-            </button>
-          );
-        })}
+const DashboardNav = ({ activeView, onSelect }: DashboardNavProps) => {
+  const { isClassic } = useUiMode();
+
+  if (isClassic) {
+    return (
+      <nav className="sticky top-[73px] z-40 bg-background/60 backdrop-blur-lg border-b border-border/30">
+        <div className="container mx-auto px-2">
+          <div className="flex gap-0.5 py-1.5 overflow-x-auto scrollbar-hide">
+            {CLASSIC_TABS.map(tab => {
+              const isActive =
+                activeView === tab.id ||
+                (tab.id === "battle-select" && activeView === "battle") ||
+                (tab.id === "battle2v2-select" && activeView === "battle2v2") ||
+                (tab.id === "freematch-select" && activeView === "freematch");
+              return (
+                <Button
+                  key={tab.id}
+                  data-tour={`nav-${tab.id}`}
+                  variant={isActive ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => onSelect(tab.id)}
+                  className="px-2 py-1 h-8 text-xs whitespace-nowrap"
+                >
+                  <tab.icon className="w-3.5 h-3.5 mr-1" />
+                  {tab.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  return (
+    <nav className="sticky top-[70px] z-40 bg-secondary/40 backdrop-blur-lg border-b border-border/40">
+      <div className="container mx-auto px-2">
+        <div className="flex gap-1 py-1.5 overflow-x-auto scrollbar-hide">
+          {TABS.map(tab => {
+            const isActive =
+              activeView === tab.id ||
+              (tab.id === "battle-select" && activeView === "battle") ||
+              (tab.id === "battle2v2-select" && activeView === "battle2v2") ||
+              (tab.id === "freematch-select" && activeView === "freematch");
+            return (
+              <button
+                key={tab.id}
+                data-tour={`nav-${tab.id}`}
+                onClick={() => onSelect(tab.id)}
+                className={`val-cut-tab px-3 h-8 text-xs whitespace-nowrap font-tactical font-semibold uppercase flex items-center transition-colors ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+              >
+                <tab.icon className="w-3.5 h-3.5 mr-1" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  </nav>
-);
+    </nav>
+  );
+};
 
 export default DashboardNav;

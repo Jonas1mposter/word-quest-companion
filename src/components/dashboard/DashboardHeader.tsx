@@ -7,6 +7,8 @@ import { useState } from "react";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 import { zoneBadgeLabel } from "@/lib/zones";
 import LanguageToggle from "@/components/LanguageToggle";
+import { useUiMode } from "@/hooks/useUiMode";
+import { Sparkles, Crosshair } from "lucide-react";
 
 const logoDashboard = "/placeholder.svg";
 
@@ -21,6 +23,7 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const [zoneOpen, setZoneOpen] = useState(false);
+  const { isClassic, toggle } = useUiMode();
   return (
     <>
     <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b-2 border-primary/70">
@@ -28,6 +31,15 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              title={isClassic ? "切换到战术界面" : "切换到经典界面"}
+              className="shrink-0"
+            >
+              {isClassic ? <Crosshair className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+            </Button>
             <div className="val-cut-sm bg-primary p-[2px]">
               <img alt="狄邦单词通" className="w-10 h-10 val-cut-sm bg-background object-cover" src={logoDashboard} />
             </div>

@@ -1,7 +1,9 @@
 import {
-  Sparkles, BookX, Target, Book,
-  Shield, History, Trophy, User, LucideIcon,
+  Sparkles, BookOpen, BookX, Swords, Globe, Target, Book, Bot,
+  Users, Shield, History, Trophy, User, LucideIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUiMode } from "@/hooks/useUiMode";
 
 export type DashboardView =
   | "home" | "learn" | "mathlearn" | "sciencelearn" | "hslearn"
@@ -17,6 +19,24 @@ const TABS: Tab[] = [
   { id: "wrongbook", label: "错题本", icon: BookX },
   { id: "challenge", label: "挑战赛", icon: Target },
   { id: "seasonpass", label: "手册", icon: Book },
+  { id: "team", label: "战队", icon: Shield },
+  { id: "history", label: "战绩", icon: History },
+  { id: "leaderboard", label: "排行榜", icon: Trophy },
+  { id: "profile", label: "个人", icon: User },
+];
+
+const CLASSIC_TABS: Tab[] = [
+  { id: "home", label: "主页", icon: Sparkles },
+  { id: "learn", label: "闯关", icon: BookOpen },
+  { id: "wrongbook", label: "错题本", icon: BookX },
+  { id: "battle-select", label: "排位赛", icon: Swords },
+  { id: "battle2v2-select", label: "2v2 排位", icon: Swords },
+  { id: "battle2v2-practice", label: "2v2 练习", icon: Bot },
+  { id: "freematch-select", label: "自由服", icon: Globe },
+  { id: "bot", label: "人机", icon: Bot },
+  { id: "challenge", label: "挑战赛", icon: Target },
+  { id: "seasonpass", label: "手册", icon: Book },
+  { id: "friends", label: "好友", icon: Users },
   { id: "team", label: "战队", icon: Shield },
   { id: "history", label: "战绩", icon: History },
   { id: "leaderboard", label: "排行榜", icon: Trophy },

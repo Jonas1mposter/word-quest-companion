@@ -98,7 +98,45 @@ Deno.serve(async (req) => {
           inserted++;
         }
       }
-      summary[category] = { holders: topIds.length, new: inserted };
+      // Weekly coin/XP rewards (idempotent via weekly_leaderboard_rewards)
+      const weekStart = currentWeekStart();
+      let rewarded = 0;
+      for (let i = 0; i < topIds.length; i++) {
+        const pid = topIds[i];
+        const rw = weeklyReward(i + 1);
+        const { data: existing } = await supabase
+          .from("weekly_leaderboard_rewards")
+          .select("id")
+          .eq("profile_id", pid)
+          .eq("category", category)
+          .eq("week_start", weekStart)
+          .maybeSingle();
+        if (existing) continue;
+        const { error: rwErr } = await supabase.from("weekly_leaderboard_rewards").insert({
+          profile_id: pid,
+          category,
+          week_start: weekStart,
+          rank_position: i + 1,
+          coins: rw.coins,
+          xp: rw.xp,
+        });
+        if (rwErr) continue; // unique conflict = already paid
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("coins, xp, total_xp, lifetime_coins_earned")
+          .eq("id", pid)
+          .maybeSingle();
+        if (p) {
+          await supabase.from("profiles").update({
+            coins: (p.coins ?? 0) + rw.coins,
+            xp: (p.xp ?? 0) + rw.xp,
+            total_xp: (p.total_xp ?? 0) + rw.xp,
+            lifetime_coins_earned: (p.lifetime_coins_earned ?? 0) + rw.coins,
+          }).eq("id", pid);
+          rewarded++;
+        }
+      }
+      summary[category] = { holders: topIds.length, new: inserted, rewarded };
     }
 
     // --- Champion team ---

@@ -19,6 +19,21 @@ const LEADERBOARD_CARDS: Record<string, CardConfig> = {
   leaderboard_xp: { name: "狄邦至高巅峰", orderBy: "total_xp", limit: 10 },
 };
 
+// Weekly coin/XP rewards by rank position (top 10 per board)
+const weeklyReward = (pos: number): { coins: number; xp: number } =>
+  pos === 1 ? { coins: 500, xp: 200 }
+  : pos === 2 ? { coins: 300, xp: 150 }
+  : pos === 3 ? { coins: 200, xp: 100 }
+  : { coins: 100, xp: 50 };
+
+// Monday (UTC) of the current week, as YYYY-MM-DD — idempotency key
+const currentWeekStart = (): string => {
+  const now = new Date();
+  const day = (now.getUTCDay() + 6) % 7; // Monday = 0
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day));
+  return monday.toISOString().slice(0, 10);
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -83,7 +98,45 @@ Deno.serve(async (req) => {
           inserted++;
         }
       }
-      summary[category] = { holders: topIds.length, new: inserted };
+      // Weekly coin/XP rewards (idempotent via weekly_leaderboard_rewards)
+      const weekStart = currentWeekStart();
+      let rewarded = 0;
+      for (let i = 0; i < topIds.length; i++) {
+        const pid = topIds[i];
+        const rw = weeklyReward(i + 1);
+        const { data: existing } = await supabase
+          .from("weekly_leaderboard_rewards")
+          .select("id")
+          .eq("profile_id", pid)
+          .eq("category", category)
+          .eq("week_start", weekStart)
+          .maybeSingle();
+        if (existing) continue;
+        const { error: rwErr } = await supabase.from("weekly_leaderboard_rewards").insert({
+          profile_id: pid,
+          category,
+          week_start: weekStart,
+          rank_position: i + 1,
+          coins: rw.coins,
+          xp: rw.xp,
+        });
+        if (rwErr) continue; // unique conflict = already paid
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("coins, xp, total_xp, lifetime_coins_earned")
+          .eq("id", pid)
+          .maybeSingle();
+        if (p) {
+          await supabase.from("profiles").update({
+            coins: (p.coins ?? 0) + rw.coins,
+            xp: (p.xp ?? 0) + rw.xp,
+            total_xp: (p.total_xp ?? 0) + rw.xp,
+            lifetime_coins_earned: (p.lifetime_coins_earned ?? 0) + rw.coins,
+          }).eq("id", pid);
+          rewarded++;
+        }
+      }
+      summary[category] = { holders: topIds.length, new: inserted, rewarded };
     }
 
     // --- Champion team ---

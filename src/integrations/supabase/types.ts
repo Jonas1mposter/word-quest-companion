@@ -2437,6 +2437,47 @@ export type Database = {
           },
         ]
       }
+      weekly_leaderboard_rewards: {
+        Row: {
+          category: string
+          coins: number
+          created_at: string
+          id: string
+          profile_id: string
+          rank_position: number
+          week_start: string
+          xp: number
+        }
+        Insert: {
+          category: string
+          coins?: number
+          created_at?: string
+          id?: string
+          profile_id: string
+          rank_position: number
+          week_start: string
+          xp?: number
+        }
+        Update: {
+          category?: string
+          coins?: number
+          created_at?: string
+          id?: string
+          profile_id?: string
+          rank_position?: number
+          week_start?: string
+          xp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_leaderboard_rewards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       words: {
         Row: {
           created_at: string

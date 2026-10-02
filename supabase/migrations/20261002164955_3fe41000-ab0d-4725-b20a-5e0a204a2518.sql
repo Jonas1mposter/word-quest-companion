@@ -1,0 +1,2 @@
+GRANT SELECT ON public.weekly_leaderboard_rewards TO authenticated;
+CREATE POLICY "Admins can view weekly rewards" ON public.weekly_leaderboard_rewards FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));

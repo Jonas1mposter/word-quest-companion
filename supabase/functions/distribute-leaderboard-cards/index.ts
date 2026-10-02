@@ -19,6 +19,21 @@ const LEADERBOARD_CARDS: Record<string, CardConfig> = {
   leaderboard_xp: { name: "狄邦至高巅峰", orderBy: "total_xp", limit: 10 },
 };
 
+// Weekly coin/XP rewards by rank position (top 10 per board)
+const weeklyReward = (pos: number): { coins: number; xp: number } =>
+  pos === 1 ? { coins: 500, xp: 200 }
+  : pos === 2 ? { coins: 300, xp: 150 }
+  : pos === 3 ? { coins: 200, xp: 100 }
+  : { coins: 100, xp: 50 };
+
+// Monday (UTC) of the current week, as YYYY-MM-DD — idempotency key
+const currentWeekStart = (): string => {
+  const now = new Date();
+  const day = (now.getUTCDay() + 6) % 7; // Monday = 0
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day));
+  return monday.toISOString().slice(0, 10);
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 

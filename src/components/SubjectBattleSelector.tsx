@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 export type BattleSubject =
   | "mixed" | "english" | "math" | "science"
-  | "economics" | "physics" | "chemistry" | "biology" | "hsmath";
+  | "economics" | "physics" | "chemistry" | "biology" | "hsmath" | "sat";
 
 interface SubjectBattleSelectorProps {
   onSelectSubject: (subject: BattleSubject) => void;
@@ -43,6 +43,7 @@ const SubjectBattleSelector = ({ onSelectSubject, onBack, battleType, isHighScho
     { id: "chemistry", name: "化学词汇", description: "化学学科专业术语", icon: FlaskConical, art: "from-sky-500/70 via-cyan-950 to-background" },
     { id: "biology", name: "生物词汇", description: "生物学科专业术语", icon: FlaskConical, art: "from-emerald-500/70 via-green-950 to-background" },
     { id: "hsmath", name: "数学词汇", description: "高中数学专业术语", icon: Calculator, art: "from-violet-500/70 via-indigo-950 to-background" },
+    { id: "sat", name: "SAT词汇", description: "SAT/ACT 考试核心词汇", icon: BookOpen, art: "from-red-500/70 via-rose-950 to-background", badge: "新" },
   ];
 
   const juniorSubjects: SubjectDef[] = [

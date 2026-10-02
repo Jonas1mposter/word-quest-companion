@@ -35,6 +35,7 @@ export const HS_SUBJECT_CONFIG: Record<string, { name: string; color: string; gr
   biology: { name: "生物", color: "text-green-500", gradient: "from-green-500 to-emerald-600" },
   math: { name: "数学", color: "text-purple-500", gradient: "from-purple-500 to-indigo-500" },
   science: { name: "科学", color: "text-green-500", gradient: "from-green-500 to-emerald-600" },
+  sat: { name: "SAT", color: "text-red-500", gradient: "from-red-500 to-rose-700" },
 };
 
 const HSLevelProgress = ({ grade = 9, onSelectLevel }: HSLevelProgressProps) => {

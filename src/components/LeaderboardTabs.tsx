@@ -197,6 +197,15 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
           </CardContent>
         </Card>
 
+        {/* 每周前十奖励说明 */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1 font-semibold text-gold"><Coins className="h-3 w-3" />每周结算奖励</span>
+          <span>🥇 第1名 500豆+200经验</span>
+          <span>🥈 第2名 300豆+150经验</span>
+          <span>🥉 第3名 200豆+100经验</span>
+          <span>第4-10名 100豆+50经验</span>
+        </div>
+
         {/* 排行榜列表 */}
         <div className="divide-y divide-border/30 rounded-lg overflow-hidden border border-border/50">
           {entries.map((entry) => (

@@ -28,14 +28,37 @@ Deno.serve(async (req) => {
       .eq("coins", profile.coins);
     if (cErr) return json({ error: "Concurrent update" }, 409);
 
+    const now = new Date().toISOString();
     const { error: pErr } = await admin
       .from("user_season_pass")
-      .update({ is_premium: true, purchased_at: new Date().toISOString() })
+      .update({ is_premium: true, purchased_at: now })
       .eq("id", passId);
     if (pErr) {
       // refund
       await admin.from("profiles").update({ coins: profile.coins }).eq("id", profile.id);
       return json({ error: "Upgrade failed" }, 500);
+    }
+
+    // Premium applies to the same season across all grade zones: upgrade every
+    // pass this profile holds for a season with the same name.
+    const { data: seasonRow } = await admin
+      .from("seasons")
+      .select("name")
+      .eq("id", pass.season_id)
+      .maybeSingle();
+    if (seasonRow?.name) {
+      const { data: siblings } = await admin
+        .from("seasons")
+        .select("id")
+        .eq("name", seasonRow.name);
+      const siblingIds = (siblings ?? []).map((s) => s.id);
+      if (siblingIds.length > 1) {
+        await admin
+          .from("user_season_pass")
+          .update({ is_premium: true, purchased_at: now })
+          .eq("profile_id", profile.id)
+          .in("season_id", siblingIds);
+      }
     }
 
     return json({ ok: true, newCoins: profile.coins - PREMIUM_COST });

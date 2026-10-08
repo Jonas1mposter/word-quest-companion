@@ -1,3 +1,4 @@
+import SyllableWord from "@/components/SyllableWord";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -188,7 +189,7 @@ const QuizCard = ({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-gaming">{word.word}</span>
+                <span className="text-2xl font-gaming"><SyllableWord word={word.word} /></span>
                 <button
                   onClick={speakWord}
                   className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -258,7 +259,7 @@ const QuizCard = ({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-gaming">{word.word}</span>
+                <span className="text-2xl font-gaming"><SyllableWord word={word.word} /></span>
                 <button
                   onClick={speakWord}
                   className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -324,7 +325,7 @@ const QuizCard = ({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-3">
-                  <span className="text-2xl font-gaming text-success">{word.word}</span>
+                  <span className="text-2xl font-gaming text-success"><SyllableWord word={word.word} /></span>
                   <button
                     onClick={speakWord}
                     className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -406,7 +407,7 @@ const QuizCard = ({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-3">
-                  <span className="text-2xl font-gaming text-success">{word.word}</span>
+                  <span className="text-2xl font-gaming text-success"><SyllableWord word={word.word} /></span>
                   <button
                     onClick={speakWord}
                     className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -492,7 +493,7 @@ const QuizCard = ({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-3">
-                  <span className="text-2xl font-gaming text-success">{word.word}</span>
+                  <span className="text-2xl font-gaming text-success"><SyllableWord word={word.word} /></span>
                   <button
                     onClick={speakWord}
                     className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"

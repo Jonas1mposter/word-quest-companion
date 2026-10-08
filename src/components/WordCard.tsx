@@ -1,3 +1,4 @@
+import SyllableWord from "@/components/SyllableWord";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ const WordCard = ({
       <Card variant="glow" className="p-8 max-w-lg mx-auto animate-scale-in">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <h2 className="text-4xl font-gaming text-glow-purple">{word}</h2>
+            <h2 className="text-4xl font-gaming text-glow-purple"><SyllableWord word={word} /></h2>
             <button
               onClick={speakWord}
               className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -134,7 +135,7 @@ const WordCard = ({
           }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-4xl font-gaming text-glow-purple">{word}</h2>
+            <h2 className="text-4xl font-gaming text-glow-purple"><SyllableWord word={word} /></h2>
             <button
               onClick={(e) => {
                 e.stopPropagation();

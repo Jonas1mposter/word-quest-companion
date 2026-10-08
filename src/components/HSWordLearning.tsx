@@ -1,3 +1,4 @@
+import SyllableWord from "@/components/SyllableWord";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -239,7 +240,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
           <Card className="border-2 border-amber-500/30">
             <CardContent className="p-6 text-center space-y-4">
               <div className="flex items-center justify-center gap-2">
-                <h2 className="text-3xl font-bold">{currentWord?.word}</h2>
+                <h2 className="text-3xl font-bold"><SyllableWord word={currentWord?.word} /></h2>
                 <Button variant="ghost" size="icon" onClick={handleSpeak} disabled={speaking}>
                   <Volume2 className={cn("w-5 h-5", speaking && "text-primary animate-pulse")} />
                 </Button>
@@ -324,7 +325,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
             <CardContent className="p-6 text-center space-y-4">
               <p className="text-sm text-muted-foreground">选择正确的中文释义</p>
               <div className="flex items-center justify-center gap-2">
-                <h2 className="text-2xl font-bold">{currentWord?.word}</h2>
+                <h2 className="text-2xl font-bold"><SyllableWord word={currentWord?.word} /></h2>
                 <Button variant="ghost" size="icon" onClick={handleSpeak} disabled={speaking}>
                   <Volume2 className={cn("w-4 h-4", speaking && "text-primary animate-pulse")} />
                 </Button>

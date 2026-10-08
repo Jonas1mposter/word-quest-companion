@@ -20,7 +20,11 @@ Deno.serve(async (req) => {
     for (const t of ["words", "hs_words", "math_words", "science_words"]) (await fetchAll(t)).forEach((w) => w && all.add(w.trim()));
     const done = new Set(await fetchAll("word_syllables"));
     const todo = [...all].filter((w) => !done.has(w));
-    const batch = todo.slice(0, 60);
+    const body = await req.json().catch(() => ({}));
+    const W = body.workers || 1, me = body.worker || 0;
+    const hash = (w: string) => [...w].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const mine = todo.filter((w) => hash(w) % W === me);
+    const batch = mine.slice(0, 60);
     if (!batch.length) return new Response(JSON.stringify({ remaining: 0 }), { headers: cors });
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
@@ -62,7 +66,7 @@ Deno.serve(async (req) => {
     });
     const { error } = await sb.from("word_syllables").upsert(rows);
     if (error) throw error;
-    return new Response(JSON.stringify({ remaining: todo.length - batch.length, sample: rows.slice(0, 5) }), { headers: cors });
+    return new Response(JSON.stringify({ remaining: mine.length - batch.length, sample: rows.slice(0, 5) }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: cors });
   }

@@ -2478,6 +2478,24 @@ export type Database = {
           },
         ]
       }
+      word_syllables: {
+        Row: {
+          created_at: string
+          syllables: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          syllables: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          syllables?: string
+          word?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           created_at: string

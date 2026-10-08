@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     for (const t of ["words", "hs_words", "math_words", "science_words"]) (await fetchAll(t)).forEach((w) => w && all.add(w.trim()));
     const done = new Set(await fetchAll("word_syllables"));
     const todo = [...all].filter((w) => !done.has(w));
-    const batch = todo.slice(0, 120);
+    const batch = todo.slice(0, 60);
     if (!batch.length) return new Response(JSON.stringify({ remaining: 0 }), { headers: cors });
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {

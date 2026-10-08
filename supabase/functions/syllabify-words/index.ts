@@ -23,22 +23,38 @@ Deno.serve(async (req) => {
     const batch = todo.slice(0, 120);
     if (!batch.length) return new Response(JSON.stringify({ remaining: 0 }), { headers: cors });
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`, "Content-Type": "application/json" },
+      headers: { "Lovable-API-Key": Deno.env.get("LOVABLE_API_KEY")!, "X-Lovable-AIG-SDK": "fetch", "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You split English words into dictionary syllables (Merriam-Webster style), using '·' between syllables, e.g. vocabulary -> vo·cab·u·lar·y, abandon -> a·ban·don, economics -> ec·o·nom·ics. One-syllable words stay unchanged. For phrases, split each word and keep spaces. Keep the original letters, case, hyphens and punctuation exactly; only insert '·'. Reply ONLY with a JSON object mapping each input to its split." },
-          { role: "user", content: JSON.stringify(batch) },
-        ],
-        response_format: { type: "json_object" },
+        model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        instructions: "You split English words into dictionary syllables (Merriam-Webster style), using '·' between syllables, e.g. vocabulary -> vo·cab·u·lar·y, abandon -> a·ban·don, economics -> ec·o·nom·ics. One-syllable words stay unchanged. For phrases, split each word and keep spaces. Keep the original letters, case, hyphens and punctuation exactly; only insert '·'. Return one item per input word.",
+        input: JSON.stringify(batch),
+        text: { format: { type: "json_schema", name: "syllables", strict: true, schema: {
+          type: "object", additionalProperties: false, required: ["items"],
+          properties: { items: { type: "array", items: { type: "object", additionalProperties: false, required: ["word", "syllables"],
+            properties: { word: { type: "string" }, syllables: { type: "string" } } } } },
+        } } },
       }),
     });
-    if (!res.ok) throw new Error(`AI ${res.status} ${await res.text()}`);
-    const j = await res.json();
-    let txt: string = j.choices[0].message.content.trim().replace(/^```json|```$/g, "");
-    const map = JSON.parse(txt) as Record<string, string>;
+    if (!res.ok || !res.body) throw new Error(`AI ${res.status} ${await res.text()}`);
+    let txt = "", buf = "";
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      const lines = buf.split("\n"); buf = lines.pop()!;
+      for (const l of lines) {
+        if (!l.startsWith("data:")) continue;
+        try { const ev = JSON.parse(l.slice(5)); if (ev.type === "response.output_text.delta") txt += ev.delta; } catch { /* skip */ }
+      }
+    }
+    const map: Record<string, string> = {};
+    (JSON.parse(txt).items as { word: string; syllables: string }[]).forEach((i) => (map[i.word] = i.syllables));
     const rows = batch.map((w) => {
       const s = typeof map[w] === "string" ? map[w] : w;
       // safety: letters must be unchanged

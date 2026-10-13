@@ -1,3 +1,4 @@
+import { showBanScreen } from "@/components/BanScreen";
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 

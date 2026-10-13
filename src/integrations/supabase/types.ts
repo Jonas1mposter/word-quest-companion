@@ -1300,6 +1300,8 @@ export type Database = {
           avatar_url: string | null
           background_type: string | null
           background_value: string | null
+          ban_reason: string | null
+          banned_until: string | null
           bot_wins: number
           class: string | null
           coins: number
@@ -1344,6 +1346,8 @@ export type Database = {
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
+          ban_reason?: string | null
+          banned_until?: string | null
           bot_wins?: number
           class?: string | null
           coins?: number
@@ -1388,6 +1392,8 @@ export type Database = {
           avatar_url?: string | null
           background_type?: string | null
           background_value?: string | null
+          ban_reason?: string | null
+          banned_until?: string | null
           bot_wins?: number
           class?: string | null
           coins?: number
@@ -2596,6 +2602,10 @@ export type Database = {
       }
       admin_grant_coins: {
         Args: { p_amount: number; p_profile_id: string }
+        Returns: Json
+      }
+      admin_grant_water_coupon: {
+        Args: { p_count?: number; p_profile_id: string }
         Returns: Json
       }
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }

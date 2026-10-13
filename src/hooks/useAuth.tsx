@@ -159,6 +159,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    const bu = (data as any)?.banned_until;
+    if (bu && new Date(bu) > new Date()) {
+      const permanent = new Date(bu).getFullYear() > 2100;
+      const reason = (data as any)?.ban_reason;
+      alert(`你的账号已被${permanent ? "永久封禁" : `封禁至 ${new Date(bu).toLocaleString()}`}${reason ? `\n原因：${reason}` : ""}`);
+      await supabase.auth.signOut();
+      return null;
+    }
+
     return data as Profile | null;
   };
 

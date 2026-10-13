@@ -20,6 +20,7 @@ import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
 import NotFound from "./pages/NotFound";
+import { BanScreen } from "@/components/BanScreen";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <BanScreen />
           <HashRouter>
             <Routes>
               <Route path="/" element={<Index />} />

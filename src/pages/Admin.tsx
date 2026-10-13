@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Shield, Users, Crown, BookOpen, Award, Coins,
-  MessageSquareText, Swords, ShieldAlert,
+  MessageSquareText, Swords, ShieldAlert, Ban,
 } from "lucide-react";
 import { useAdminData } from "./admin/useAdminData";
 import { UsersTab } from "./admin/UsersTab";
@@ -17,6 +17,7 @@ import { ExamplesTab } from "./admin/ExamplesTab";
 import { RewardsTab } from "./admin/RewardsTab";
 import { MatchesTab } from "./admin/MatchesTab";
 import { DacTab } from "./admin/DacTab";
+import { ModerationTab } from "./admin/ModerationTab";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-8 max-w-5xl">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />用户管理
             </TabsTrigger>
@@ -112,6 +113,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="dac" className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />DAC
+            </TabsTrigger>
+            <TabsTrigger value="moderation" className="flex items-center gap-2">
+              <Ban className="w-4 h-4" />封禁/水吧券
             </TabsTrigger>
           </TabsList>
 
@@ -134,6 +138,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="matches">
             <MatchesTab matchCount={matchCount} setMatchCount={setMatchCount} refresh={fetchMatchCount} />
+          </TabsContent>
+          <TabsContent value="moderation">
+            <ModerationTab users={users} />
           </TabsContent>
           <TabsContent value="dac">
             <DacTab />

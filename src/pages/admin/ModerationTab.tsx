@@ -78,7 +78,7 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
               <b>{sel.username}</b>：
               {bannedActive ? (
                 <span className="text-destructive"> 封禁中，至 {new Date(banInfo!.banned_until!).getFullYear() > 2100 ? "永久" : new Date(banInfo!.banned_until!).toLocaleString()}
-                  {banInfo?.ban_reason ? `（${banInfo.ban_reason}）` : ""}</span>
+                  {banInfo?.ban_reason ? `（${banInfo.ban_reason}）` : ""} · 编号 {banCaseId(selected?.id ?? "", banInfo!.banned_until!)}</span>
               ) : <span className="text-success"> 正常</span>}
             </div>
 

@@ -2594,6 +2594,10 @@ export type Database = {
         Args: { p_profile_id: string; p_xp: number }
         Returns: undefined
       }
+      admin_grant_coins: {
+        Args: { p_amount: number; p_profile_id: string }
+        Returns: Json
+      }
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
       bump_bot_win: { Args: { p_id: string }; Returns: undefined }
       bump_lifetime_coins: {

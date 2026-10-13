@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      backpack_items: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          item_type: string
+          label: string
+          profile_id: string
+          ref_id: string | null
+          source: string
+          status: string
+          used_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          item_type: string
+          label: string
+          profile_id: string
+          ref_id?: string | null
+          source?: string
+          status?: string
+          used_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          item_type?: string
+          label?: string
+          profile_id?: string
+          ref_id?: string | null
+          source?: string
+          status?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backpack_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           category: string
@@ -1264,6 +1311,7 @@ export type Database = {
           free_match_wins: number
           grade: number
           id: string
+          is_priority: boolean
           last_energy_restore: string | null
           last_login_date: string | null
           leaderboard_appearances: number
@@ -1274,6 +1322,8 @@ export type Database = {
           max_combo: number
           max_energy: number
           perfect_clears: number
+          priority_last_claim: string | null
+          priority_since: string | null
           rank_points: number
           rank_stars: number
           rank_tier: string
@@ -1305,6 +1355,7 @@ export type Database = {
           free_match_wins?: number
           grade?: number
           id?: string
+          is_priority?: boolean
           last_energy_restore?: string | null
           last_login_date?: string | null
           leaderboard_appearances?: number
@@ -1315,6 +1366,8 @@ export type Database = {
           max_combo?: number
           max_energy?: number
           perfect_clears?: number
+          priority_last_claim?: string | null
+          priority_since?: string | null
           rank_points?: number
           rank_stars?: number
           rank_tier?: string
@@ -1346,6 +1399,7 @@ export type Database = {
           free_match_wins?: number
           grade?: number
           id?: string
+          is_priority?: boolean
           last_energy_restore?: string | null
           last_login_date?: string | null
           leaderboard_appearances?: number
@@ -1356,6 +1410,8 @@ export type Database = {
           max_combo?: number
           max_energy?: number
           perfect_clears?: number
+          priority_last_claim?: string | null
+          priority_since?: string | null
           rank_points?: number
           rank_stars?: number
           rank_tier?: string
@@ -2546,6 +2602,7 @@ export type Database = {
       }
       bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
       bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
+      claim_priority_weekly: { Args: never; Returns: Json }
       dac_flag: {
         Args: {
           p_meta?: Json
@@ -2597,12 +2654,14 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: undefined
       }
+      purchase_priority: { Args: never; Returns: Json }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
       redeem_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
+      use_backpack_item: { Args: { p_item_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

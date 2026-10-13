@@ -67,6 +67,10 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                   className="rounded-none val-cut-sm border-amber-400/60 text-amber-400 hover:bg-amber-400/10 font-tactical font-semibold">
                   <ShoppingBag className="w-4 h-4 mr-2" />商城
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate("/backpack")}
+                  className="rounded-none val-cut-sm font-tactical font-semibold">
+                  <Backpack className="w-4 h-4 mr-2" />背包
+                </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}
                     className="rounded-none val-cut-sm border-accent text-accent hover:bg-accent hover:text-accent-foreground font-tactical font-semibold">

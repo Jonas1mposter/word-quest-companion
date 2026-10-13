@@ -15,6 +15,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Support from "./pages/Support";
 import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
+import Backpack from "./pages/Backpack";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
@@ -48,6 +49,7 @@ const App = () => {
               <Route path="/documents" element={<Documents />} />
               <Route path="/product-ppt" element={<ProductPPT />} />
               <Route path="/shop" element={<Shop />} />
+              <Route path="/backpack" element={<Backpack />} />
               <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="/season-pass-manual" element={<SeasonPassManual />} />
               <Route path="*" element={<NotFound />} />

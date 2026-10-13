@@ -28,17 +28,13 @@ export const CoinsTab = ({ users, refresh }: Props) => {
     setDistributingCoins(true);
     try {
       const amount = parseInt(coinAmount);
-      const { data: cur, error: fe } = await supabase.from("profiles")
-        .select("coins").eq("id", selectedUser.id).single();
-      if (fe) throw fe;
-      const newCoins = (cur?.coins || 0) + amount;
-      const { error } = await supabase.from("profiles")
-        .update({ coins: newCoins }).eq("id", selectedUser.id);
+      const { data, error } = await supabase.rpc("admin_grant_coins" as any, { p_profile_id: selectedUser.id, p_amount: amount });
       if (error) throw error;
+      const newCoins = (data as any)?.coins;
       toast.success(`成功发放 ${amount} 狄邦豆给 ${selectedUser.username}，当前余额: ${newCoins}`);
       setCoinAmount(""); setSelectedUser(null); setCoinSearchTerm("");
       refresh();
-    } catch { toast.error("发放失败"); }
+    } catch (e: any) { toast.error("发放失败：" + (e?.message || "")); }
     finally { setDistributingCoins(false); }
   };
 

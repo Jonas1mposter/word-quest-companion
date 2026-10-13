@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
     const permanent = hours === null;
     const banDuration = hours === 0 ? "none" : permanent ? "876000h" : `${hours}h`;
-    const { error: aErr } = await admin.auth.admin.updateUserById(target.user_id, { ban_duration: banDuration } as any);
+    const { error: aErr } = await admin.auth.admin.updateUserById(target.user_id, { ban_duration: "none" } as any);
     if (aErr) return json({ error: aErr.message }, 500);
 
     const until = hours === 0 ? null : new Date(Date.now() + (permanent ? 876000 : hours!) * 3600_000).toISOString();

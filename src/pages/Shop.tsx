@@ -1,3 +1,4 @@
+import PriorityAccountCard from "@/components/PriorityAccountCard";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -202,6 +203,8 @@ export default function Shop() {
             <span className="text-muted-foreground text-sm">狄邦豆</span>
           </div>
         </header>
+
+        <PriorityAccountCard />
 
         <Card className="overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent">
           <CardContent className="p-6 space-y-3">

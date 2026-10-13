@@ -146,6 +146,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
+    const bu = (data as any)?.banned_until;
+    if (data && bu && new Date(bu) > new Date()) {
+      showBanScreen({ profileId: data.id, username: data.username, bannedUntil: bu, reason: (data as any)?.ban_reason });
+      await supabase.auth.signOut();
+      return null;
+    }
+
     if (data) {
       // Check daily energy restore
       const today = new Date().toISOString().split('T')[0];
@@ -158,13 +165,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
         return updated as Profile | null;
       }
-    }
-
-    const bu = (data as any)?.banned_until;
-    if (bu && new Date(bu) > new Date()) {
-      showBanScreen({ profileId: data.id, username: data.username, bannedUntil: bu, reason: (data as any)?.ban_reason });
-      await supabase.auth.signOut();
-      return null;
     }
 
     return data as Profile | null;

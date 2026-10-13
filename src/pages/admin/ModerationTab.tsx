@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Ban, CupSoda, Search, Unlock } from "lucide-react";
 import { UserProfile } from "./types";
+import { banCaseId } from "@/components/BanScreen";
 
 const DURATIONS: { label: string; hours: number | null }[] = [
   { label: "1小时", hours: 1 }, { label: "8小时", hours: 8 }, { label: "1天", hours: 24 },
@@ -78,7 +79,7 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
               <b>{sel.username}</b>：
               {bannedActive ? (
                 <span className="text-destructive"> 封禁中，至 {new Date(banInfo!.banned_until!).getFullYear() > 2100 ? "永久" : new Date(banInfo!.banned_until!).toLocaleString()}
-                  {banInfo?.ban_reason ? `（${banInfo.ban_reason}）` : ""} · 编号 {banCaseId(selected?.id ?? "", banInfo!.banned_until!)}</span>
+                  {banInfo?.ban_reason ? `（${banInfo.ban_reason}）` : ""} · 编号 {banCaseId(sel?.id ?? "", banInfo!.banned_until!)}</span>
               ) : <span className="text-success"> 正常</span>}
             </div>
 

@@ -1,5 +1,6 @@
-// Weekly leaderboard name card distribution
-// Runs every Monday via pg_cron. Idempotent — safe to re-run.
+// Weekly leaderboard name card distribution — per grade zone.
+// Every zone (grade 1-9) gets its own top-10 per board; cards, coins and XP
+// are awarded per zone. Runs weekly via pg_cron. Idempotent — safe to re-run.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -19,12 +20,45 @@ const LEADERBOARD_CARDS: Record<string, CardConfig> = {
   leaderboard_xp: { name: "狄邦至高巅峰", orderBy: "total_xp", limit: 10 },
 };
 
-// Weekly coin/XP rewards by rank position (top 10 per board)
+// Weekly coin/XP rewards by rank position (top 10 per board, per zone)
 const weeklyReward = (pos: number): { coins: number; xp: number } =>
   pos === 1 ? { coins: 500, xp: 200 }
   : pos === 2 ? { coins: 300, xp: 150 }
   : pos === 3 ? { coins: 200, xp: 100 }
   : { coins: 100, xp: 50 };
+
+const TIER_ORDER: Record<string, number> = {
+  champion: 8, ace: 7, star: 6, diamond: 5, platinum: 4, gold: 3, silver: 2, bronze: 1,
+};
+
+interface ProfileLite {
+  id: string;
+  grade: number;
+  rank_tier: string | null;
+  rank_stars: number | null;
+  rank_points: number | null;
+  wins: number | null;
+  total_xp: number | null;
+}
+
+const sortProfiles = (list: ProfileLite[], category: string): ProfileLite[] => {
+  const sorted = [...list];
+  if (category === "leaderboard_rank") {
+    // Match LeaderboardTabs: tier > stars > points
+    sorted.sort((a, b) => {
+      const ta = TIER_ORDER[(a.rank_tier || "bronze").toLowerCase()] || 0;
+      const tb = TIER_ORDER[(b.rank_tier || "bronze").toLowerCase()] || 0;
+      if (tb !== ta) return tb - ta;
+      if ((b.rank_stars || 0) !== (a.rank_stars || 0)) return (b.rank_stars || 0) - (a.rank_stars || 0);
+      return (b.rank_points || 0) - (a.rank_points || 0);
+    });
+  } else if (category === "leaderboard_wins") {
+    sorted.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+  } else {
+    sorted.sort((a, b) => (b.total_xp || 0) - (a.total_xp || 0));
+  }
+  return sorted;
+};
 
 // Monday (UTC) of the current week, as YYYY-MM-DD — idempotency key
 const currentWeekStart = (): string => {
@@ -43,32 +77,48 @@ Deno.serve(async (req) => {
   );
 
   const summary: Record<string, unknown> = {};
-  const top3PerBoard: string[][] = []; // for GOAT
+  const globalTop3PerBoard: string[][] = []; // for GOAT
   const allTopIds = new Set<string>(); // for leaderboard_appearances bump + award sweep
 
   try {
-    // --- Personal leaderboards ---
+    // --- Load all profiles once, group by grade zone ---
+    const { data: allProfiles, error: profilesErr } = await supabase
+      .from("profiles")
+      .select("id, grade, rank_tier, rank_stars, rank_points, wins, total_xp");
+    if (profilesErr) throw profilesErr;
+    const profiles = (allProfiles ?? []) as ProfileLite[];
+    const byZone = new Map<number, ProfileLite[]>();
+    for (const p of profiles) {
+      const g = p.grade ?? 7;
+      if (!byZone.has(g)) byZone.set(g, []);
+      byZone.get(g)!.push(p);
+    }
+    const zones = [...byZone.keys()].sort((a, b) => a - b);
+
+    // --- Personal leaderboards, per zone ---
     for (const [category, cfg] of Object.entries(LEADERBOARD_CARDS)) {
       const { data: card } = await supabase
         .from("name_cards").select("id").eq("name", cfg.name).maybeSingle();
       if (!card) { summary[category] = "card_missing"; continue; }
 
-      let query = supabase.from("profiles").select("id");
-      if (category === "leaderboard_rank") {
-        // Match LeaderboardTabs: tier > stars > points
-        query = query
-          .order("rank_tier", { ascending: false, nullsFirst: false })
-          .order("rank_stars", { ascending: false, nullsFirst: false })
-          .order("rank_points", { ascending: false, nullsFirst: false });
-      } else {
-        query = query.order(cfg.orderBy, { ascending: false, nullsFirst: false });
-      }
-      const { data: top } = await query.limit(cfg.limit);
-      const topIds = (top ?? []).map((p: any) => p.id);
-      top3PerBoard.push(topIds.slice(0, 3));
-      topIds.forEach((id) => allTopIds.add(id));
+      // Global top-3 (for GOAT), computed across all profiles
+      globalTop3PerBoard.push(sortProfiles(profiles, category).slice(0, 3).map((p) => p.id));
 
-      // Remove from users no longer in top
+      // Zone top-10 lists
+      const zoneTops: { zone: number; ids: string[] }[] = [];
+      const positionById = new Map<string, number>(); // first (best) position wins
+      for (const zone of zones) {
+        const top = sortProfiles(byZone.get(zone)!, category).slice(0, cfg.limit);
+        const ids = top.map((p) => p.id);
+        zoneTops.push({ zone, ids });
+        ids.forEach((id, i) => {
+          if (!positionById.has(id)) positionById.set(id, i + 1);
+        });
+        ids.forEach((id) => allTopIds.add(id));
+      }
+      const topIds = [...positionById.keys()];
+
+      // Remove from users no longer in any zone top-10
       if (topIds.length > 0) {
         await supabase.from("user_name_cards")
           .delete()
@@ -76,34 +126,35 @@ Deno.serve(async (req) => {
           .not("profile_id", "in", `(${topIds.join(",")})`);
       }
 
-      // Upsert current top with rank_position
+      // Upsert current holders with their zone rank_position
       let inserted = 0;
-      for (let i = 0; i < topIds.length; i++) {
+      for (const [pid, pos] of positionById.entries()) {
         const { data: exist } = await supabase
           .from("user_name_cards")
           .select("id")
           .eq("name_card_id", card.id)
-          .eq("profile_id", topIds[i])
+          .eq("profile_id", pid)
           .maybeSingle();
         if (exist) {
           await supabase.from("user_name_cards")
-            .update({ rank_position: i + 1 })
+            .update({ rank_position: pos })
             .eq("id", exist.id);
         } else {
           await supabase.from("user_name_cards").insert({
-            profile_id: topIds[i],
+            profile_id: pid,
             name_card_id: card.id,
-            rank_position: i + 1,
+            rank_position: pos,
           });
           inserted++;
         }
       }
-      // Weekly coin/XP rewards (idempotent via weekly_leaderboard_rewards)
+
+      // Weekly coin/XP rewards per zone (idempotent via weekly_leaderboard_rewards)
       const weekStart = currentWeekStart();
       let rewarded = 0;
-      for (let i = 0; i < topIds.length; i++) {
-        const pid = topIds[i];
-        const rw = weeklyReward(i + 1);
+      for (const pid of topIds) {
+        const pos = positionById.get(pid)!;
+        const rw = weeklyReward(pos);
         const { data: existing } = await supabase
           .from("weekly_leaderboard_rewards")
           .select("id")
@@ -116,7 +167,7 @@ Deno.serve(async (req) => {
           profile_id: pid,
           category,
           week_start: weekStart,
-          rank_position: i + 1,
+          rank_position: pos,
           coins: rw.coins,
           xp: rw.xp,
         });
@@ -136,7 +187,7 @@ Deno.serve(async (req) => {
           rewarded++;
         }
       }
-      summary[category] = { holders: topIds.length, new: inserted, rewarded };
+      summary[category] = { zones: zones.length, holders: topIds.length, new: inserted, rewarded };
     }
 
     // --- Champion team ---
@@ -189,10 +240,10 @@ Deno.serve(async (req) => {
       }).eq("id", id);
     }
 
-    // --- GOAT: top-3 on all three leaderboards this week ---
+    // --- GOAT: top-3 on all three leaderboards globally ---
     let goatCount = 0;
-    if (top3PerBoard.length === 3 && top3PerBoard.every((b) => b.length > 0)) {
-      const [a, b, c] = top3PerBoard;
+    if (globalTop3PerBoard.length === 3 && globalTop3PerBoard.every((b) => b.length > 0)) {
+      const [a, b, c] = globalTop3PerBoard;
       const goatIds = a.filter((id) => b.includes(id) && c.includes(id));
       for (const id of goatIds) {
         await supabase.rpc("grant_special_badge", { p_id: id, p_name: "GOAT" });

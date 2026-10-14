@@ -357,7 +357,7 @@ export default function Shop() {
                           ) : owned ? null : pack.price > 0 ? (
                             <Coins className="w-3 h-3 mr-1" />
                           ) : null}
-                          {equipped ? "已装备" : owned ? "装备" : pack.price > 0 ? `${pack.price} 豆` : "赛季限定"}
+                          {equipped ? "已装备" : owned ? "装备" : pack.price > 0 ? `${pack.price} 豆` : pack.code === "champions2024" ? "抽奖券限定" : "赛季限定"}
                         </Button>
 
                       </div>

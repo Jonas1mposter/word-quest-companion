@@ -53,8 +53,8 @@ export default function Backpack() {
         <Card className="cursor-pointer border-primary/40 hover:border-primary" onClick={() => navigate("/lottery")}>
           <CardContent className="p-4 flex items-center gap-3">
             <Ticket className="w-7 h-7 text-primary" />
-            <div className="flex-1"><p className="font-medium">冠军限定抽奖</p><p className="text-xs text-muted-foreground">用抽奖券抽限定名片和 2024 全球冠军赛音效</p></div>
-            <Button size="sm" variant="hero">去抽奖</Button>
+            <div className="flex-1"><p className="font-medium">抽奖大厅</p><p className="text-xs text-muted-foreground">限定活动 · 名片与音效奖池</p></div>
+            <Button size="sm" variant="hero" onClick={(event) => { event.stopPropagation(); navigate("/lottery"); }}>去抽奖</Button>
           </CardContent>
         </Card>
         {isLoading ? <p className="text-muted-foreground">加载中...</p> : items.length === 0 ? (
@@ -72,7 +72,7 @@ export default function Backpack() {
                       <p className="text-xs text-muted-foreground">{new Date(it.created_at).toLocaleDateString()} · 每周奖励</p>
                     </div>
                     {it.status === "unused" ? (
-                      <Button size="sm" variant="hero" disabled={busy === it.id} onClick={() => use(it)}>
+                      <Button size="sm" variant="hero" disabled={busy === it.id} onClick={() => it.item_type === "lottery_ticket" ? navigate("/lottery") : use(it)}>
                         {it.item_type === "water_coupon" ? "使用" : it.item_type === "lottery_ticket" ? "抽奖" : "兑换"}
                       </Button>
                     ) : <span className="text-xs text-muted-foreground">{STATUS[it.status]}</span>}

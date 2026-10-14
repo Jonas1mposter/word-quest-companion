@@ -17,6 +17,7 @@ import Documents from "./pages/Documents";
 import ProductPPT from "./pages/ProductPPT";
 import Backpack from "./pages/Backpack";
 import Lottery from "./pages/Lottery";
+import LotteryHall from "./pages/LotteryHall";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
@@ -53,7 +54,8 @@ const App = () => {
               <Route path="/product-ppt" element={<ProductPPT />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/backpack" element={<Backpack />} />
-              <Route path="/lottery" element={<Lottery />} />
+              <Route path="/lottery" element={<LotteryHall />} />
+              <Route path="/lottery/champions-2024" element={<Lottery />} />
               <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="/season-pass-manual" element={<SeasonPassManual />} />
               <Route path="*" element={<NotFound />} />

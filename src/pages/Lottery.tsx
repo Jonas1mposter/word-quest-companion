@@ -32,13 +32,14 @@ export default function Lottery() {
     queryKey: ["lottery", profile?.id],
     enabled: !!profile,
     queryFn: async () => {
+      if (!profile) return { tickets: [], cards: [], pack: null, owned: new Set<string>() };
       const [tickets, cards, pack, ownedCards, ownedPack] = await Promise.all([
-        supabase.from("backpack_items" as any).select("id").eq("profile_id", profile!.id)
+        supabase.from("backpack_items" as any).select("id").eq("profile_id", profile.id)
           .eq("item_type", "lottery_ticket").eq("status", "unused").order("created_at"),
         supabase.from("name_cards").select("*").eq("category", "lottery").order("rarity"),
         supabase.from("kill_sound_packs").select("*").eq("code", "champions2024").maybeSingle(),
-        supabase.from("user_name_cards").select("name_card_id").eq("profile_id", profile!.id),
-        supabase.from("user_kill_sound_packs").select("pack_id").eq("profile_id", profile!.id),
+        supabase.from("user_name_cards").select("name_card_id").eq("profile_id", profile.id),
+        supabase.from("user_kill_sound_packs").select("pack_id").eq("profile_id", profile.id),
       ]);
       return {
         tickets: (tickets.data as any[]) ?? [],
@@ -64,6 +65,7 @@ export default function Lottery() {
     setResult({ kind: r.kind, label: r.label });
     qc.invalidateQueries({ queryKey: ["lottery"] });
     qc.invalidateQueries({ queryKey: ["backpack"] });
+    qc.invalidateQueries({ queryKey: ["lottery-ticket-count"] });
     refreshProfile();
   };
 
@@ -73,7 +75,7 @@ export default function Lottery() {
     <div className="min-h-screen bg-background bg-grid-pattern p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4 mr-1" />返回</Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/lottery")}><ChevronLeft className="w-4 h-4 mr-1" />抽奖大厅</Button>
           <div className="flex items-center gap-2 font-gaming">
             <Ticket className="w-5 h-5 text-primary" />
             <span className="text-primary">{tickets.length}</span>

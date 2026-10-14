@@ -50,11 +50,13 @@ export default function Backpack() {
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4 mr-1" />返回</Button>
           <h1 className="text-2xl font-gaming flex items-center gap-2"><BackpackIcon className="w-6 h-6 text-primary" />背包</h1>
         </header>
-        <Card><CardContent className="p-4 text-xs text-muted-foreground space-y-1">
-          <p className="font-medium text-foreground">🎟️ 抽奖券限定抽奖</p>
-          <p>100狄邦豆 50% · 200狄邦豆 30% · 史诗/传说限定名片 15% · 神话限定名片 4% · 2024全球冠军赛音效 1%</p>
-          <p>已拥有的名片或音效不会重复，改发 200 狄邦豆。</p>
-        </CardContent></Card>
+        <Card className="cursor-pointer border-primary/40 hover:border-primary" onClick={() => navigate("/lottery")}>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Ticket className="w-7 h-7 text-primary" />
+            <div className="flex-1"><p className="font-medium">冠军限定抽奖</p><p className="text-xs text-muted-foreground">用抽奖券抽限定名片和 2024 全球冠军赛音效</p></div>
+            <Button size="sm" variant="hero">去抽奖</Button>
+          </CardContent>
+        </Card>
         {isLoading ? <p className="text-muted-foreground">加载中...</p> : items.length === 0 ? (
           <Card><CardContent className="p-8 text-center text-muted-foreground">背包空空的。开通优先账户后每周可领奖励。</CardContent></Card>
         ) : (

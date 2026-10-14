@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, Coins, Ticket, IdCard, Volume2, CupSoda, Backpack as BackpackIcon } from "lucide-react";
+import { ChevronLeft, Coins, Ticket, IdCard, Volume2, CupSoda, Award, Gift, Backpack as BackpackIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
-const ICONS: Record<string, any> = { coins: Coins, lottery_ticket: Ticket, name_card: IdCard, sound_pack: Volume2, water_coupon: CupSoda };
+const ICONS: Record<string, any> = { coins: Coins, lottery_ticket: Ticket, name_card: IdCard, sound_pack: Volume2, water_coupon: CupSoda, merit: Award, merit_or_coupon: Gift };
 const STATUS: Record<string, string> = { used: "已兑换", pending: "已提交，等待管理员兑换" };
 
 export default function Backpack() {
@@ -28,7 +28,17 @@ export default function Backpack() {
     },
   });
 
+  const choose = async (it: any, choice: "merit" | "water_coupon") => {
+    setBusy(it.id);
+    const { data, error } = await supabase.rpc("choose_backpack_reward" as any, { p_item_id: it.id, p_choice: choice });
+    setBusy(null);
+    if (error || (data as any)?.error) { toast.error("选择失败，请重试"); return; }
+    toast.success(choice === "merit" ? "已选择 Merit" : "已选择水吧券");
+    qc.invalidateQueries({ queryKey: ["backpack"] });
+  };
+
   const use = async (it: any) => {
+    if (it.item_type === "merit" && !confirm("兑换 Merit？将通知管理员为你线下登记。")) return;
     if (it.item_type === "water_coupon" && !confirm("使用水吧券？将通知管理员为你线下兑换。")) return;
     setBusy(it.id);
     const { data, error } = await supabase.rpc("use_backpack_item" as any, { p_item_id: it.id });
@@ -69,11 +79,16 @@ export default function Backpack() {
                     <Icon className="w-8 h-8 text-yellow-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{it.label}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(it.created_at).toLocaleDateString()} · 每周奖励</p>
+                      <p className="text-xs text-muted-foreground">{new Date(it.created_at).toLocaleDateString()} · {String(it.source || "").startsWith("leaderboard") ? "排行榜月度奖励" : "奖励"}</p>
                     </div>
-                    {it.status === "unused" ? (
+                    {it.status === "unused" && it.item_type === "merit_or_coupon" ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="hero" disabled={busy === it.id} onClick={() => choose(it, "merit")}>选 Merit</Button>
+                        <Button size="sm" variant="outline" disabled={busy === it.id} onClick={() => choose(it, "water_coupon")}>选水吧券</Button>
+                      </div>
+                    ) : it.status === "unused" ? (
                       <Button size="sm" variant="hero" disabled={busy === it.id} onClick={() => it.item_type === "lottery_ticket" ? navigate("/lottery") : use(it)}>
-                        {it.item_type === "water_coupon" ? "使用" : it.item_type === "lottery_ticket" ? "抽奖" : "兑换"}
+                        {it.item_type === "water_coupon" || it.item_type === "merit" ? "使用" : it.item_type === "lottery_ticket" ? "抽奖" : "兑换"}
                       </Button>
                     ) : <span className="text-xs text-muted-foreground">{STATUS[it.status]}</span>}
                   </CardContent>

@@ -2661,6 +2661,10 @@ export type Database = {
       }
       bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
       bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
+      choose_backpack_reward: {
+        Args: { p_choice: string; p_item_id: string }
+        Returns: Json
+      }
       claim_priority_weekly: { Args: never; Returns: Json }
       dac_flag: {
         Args: {

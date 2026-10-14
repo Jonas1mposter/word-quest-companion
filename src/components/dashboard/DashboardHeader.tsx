@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { Backpack, Crown, GraduationCap, HelpCircle, LogOut, ShoppingBag, User } from "lucide-react";
+import { Backpack, Crown, GraduationCap, HelpCircle, LogOut, ShoppingBag, Ticket, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
@@ -70,6 +70,10 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                 <Button variant="outline" size="sm" onClick={() => navigate("/backpack")}
                   className="rounded-none val-cut-sm font-tactical font-semibold">
                   <Backpack className="w-4 h-4 mr-2" />背包
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate("/lottery")}
+                  className="rounded-none val-cut-sm font-tactical font-semibold" title="抽奖大厅">
+                  <Ticket className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">抽奖</span>
                 </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}

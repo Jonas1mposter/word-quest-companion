@@ -163,12 +163,11 @@ const ProfileCard = () => {
     if (editUsername.trim().length > 20) { toast.error("用户名不能超过20个字符"); return; }
     setSavingProfile(true);
     try {
-      const { error } = await supabase.from("profiles")
-        .update({ username: editUsername.trim() }).eq("id", profile.id);
+      if (editUsername.trim() === profile.username) { setProfileEditOpen(false); return; }
+      const { error } = await supabase.rpc("request_username_change" as any, { p_new: editUsername.trim() });
       if (error) throw error;
-      await refreshProfile();
       setProfileEditOpen(false);
-      toast.success("个人信息已更新");
+      toast.success("改名申请已提交，等待管理员审核");
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast.error("更新失败，请重试");

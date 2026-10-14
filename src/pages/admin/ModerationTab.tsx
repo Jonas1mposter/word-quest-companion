@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Ban, CupSoda, Search, Unlock } from "lucide-react";
+import { Ban, CupSoda, Search, Ticket, Unlock } from "lucide-react";
 import { UserProfile } from "./types";
 import { banCaseId } from "@/components/BanScreen";
 
@@ -19,6 +19,7 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
   const [sel, setSel] = useState<UserProfile | null>(null);
   const [reason, setReason] = useState("");
   const [count, setCount] = useState("1");
+  const [ticketCount, setTicketCount] = useState("1");
   const [busy, setBusy] = useState(false);
   const [banInfo, setBanInfo] = useState<{ banned_until: string | null; ban_reason: string | null } | null>(null);
 
@@ -38,6 +39,16 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
     setBusy(false);
     if (error) return toast.error("发放失败：" + error.message);
     toast.success(`已发放 ${count} 张水吧券给 ${sel.username}，已放入背包`);
+  };
+
+  const grantTicket = async () => {
+    if (!sel) return;
+    const n = parseInt(ticketCount) || 1;
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_grant_lottery_ticket" as any, { p_profile_id: sel.id, p_count: n });
+    setBusy(false);
+    if (error) return toast.error("发放失败：" + error.message);
+    toast.success(`已发放 ${n} 张抽奖券给 ${sel.username}，已放入背包`);
   };
 
   const ban = async (hours: number | null, label: string) => {
@@ -88,6 +99,14 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
               <div className="flex gap-2">
                 <Input type="number" min="1" max="100" value={count} onChange={(e) => setCount(e.target.value)} className="w-24" />
                 <Button variant="gold" disabled={busy} onClick={grantCoupon}>发放到背包</Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2"><Ticket className="w-4 h-4 text-primary" />发放抽奖券</h3>
+              <div className="flex gap-2">
+                <Input type="number" min="1" max="100" value={ticketCount} onChange={(e) => setTicketCount(e.target.value)} className="w-24" />
+                <Button variant="gold" disabled={busy} onClick={grantTicket}>发放到背包</Button>
               </div>
             </div>
 

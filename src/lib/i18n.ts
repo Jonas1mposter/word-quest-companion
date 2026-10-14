@@ -91,11 +91,13 @@ const EXACT: Record<string, string> = {
   "已解锁": "Unlocked", "未解锁": "Locked", "已装备": "Equipped", "装备": "Equip", "卸下": "Unequip",
   "勋章已装备": "Badge equipped", "勋章已卸下": "Badge unequipped",
   "单挑": "1v1", "三杀": "Triple kill", "双杀": "Double kill", "四杀": "Quadra kill", "五杀": "Penta kill",
-  "每周结算奖励（按年级分区各发前十）": "Weekly rewards — top 10 in every grade zone",
-  "第1名 500豆+200经验": "#1: 500 Beans + 200 XP",
-  "第2名 300豆+150经验": "#2: 300 Beans + 150 XP",
-  "第3名 200豆+100经验": "#3: 200 Beans + 100 XP",
-  "第4-10名 100豆+50经验": "#4–10: 100 Beans + 50 XP",
+  "每周结算名片，每月发放奖励（按年级分区各发前十）": "Cards weekly, rewards monthly — top 10 in every grade zone",
+  "第1名 5000豆+1000经验+3 Merits+2水吧券": "#1: 5000 Beans + 1000 XP + 3 Merits + 2 Drink Vouchers",
+  "第2名 3000豆+800经验+2 Merits+1水吧券": "#2: 3000 Beans + 800 XP + 2 Merits + 1 Drink Voucher",
+  "第3名 2000豆+700经验+1 Merit+1水吧券": "#3: 2000 Beans + 700 XP + 1 Merit + 1 Drink Voucher",
+  "第4-10名 1000豆+500经验+1 Merit/1水吧券（二选一）": "#4–10: 1000 Beans + 500 XP + 1 Merit or 1 Drink Voucher (your choice)",
+  "水吧券仅限高中分区，其他分区只发 Merit": "Drink Vouchers are high-school zone only; other zones get Merits",
+  "选 Merit": "Pick Merit", "选水吧券": "Pick Voucher", "排行榜月度奖励": "Monthly leaderboard reward",
 };
 
 // Substring replacements for phrases embedded in longer text (applied in order)

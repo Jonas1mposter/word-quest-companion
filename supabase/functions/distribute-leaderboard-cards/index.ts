@@ -21,11 +21,15 @@ const LEADERBOARD_CARDS: Record<string, CardConfig> = {
 };
 
 // Weekly coin/XP rewards by rank position (top 10 per board, per zone)
-const weeklyReward = (pos: number): { coins: number; xp: number } =>
-  pos === 1 ? { coins: 500, xp: 200 }
-  : pos === 2 ? { coins: 300, xp: 150 }
-  : pos === 3 ? { coins: 200, xp: 100 }
-  : { coins: 100, xp: 50 };
+// Monthly rewards (top 10 per board, per zone). Water coupons only in the
+// high-school zone (grade >= 9); other zones get Merits only.
+interface Reward { coins: number; xp: number; merits: number; coupons: number; choice: boolean }
+const monthlyReward = (pos: number, highSchool: boolean): Reward => {
+  if (pos === 1) return { coins: 5000, xp: 1000, merits: 3, coupons: highSchool ? 2 : 0, choice: false };
+  if (pos === 2) return { coins: 3000, xp: 800, merits: 2, coupons: highSchool ? 1 : 0, choice: false };
+  if (pos === 3) return { coins: 2000, xp: 700, merits: 1, coupons: highSchool ? 1 : 0, choice: false };
+  return { coins: 1000, xp: 500, merits: highSchool ? 0 : 1, coupons: 0, choice: highSchool };
+};
 
 const TIER_ORDER: Record<string, number> = {
   champion: 8, ace: 7, star: 6, diamond: 5, platinum: 4, gold: 3, silver: 2, bronze: 1,
@@ -61,11 +65,10 @@ const sortProfiles = (list: ProfileLite[], category: string): ProfileLite[] => {
 };
 
 // Monday (UTC) of the current week, as YYYY-MM-DD — idempotency key
-const currentWeekStart = (): string => {
+// First day of current month (UTC) — monthly idempotency key
+const currentMonthStart = (): string => {
   const now = new Date();
-  const day = (now.getUTCDay() + 6) % 7; // Monday = 0
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day));
-  return monday.toISOString().slice(0, 10);
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
 };
 
 Deno.serve(async (req) => {
@@ -107,6 +110,7 @@ Deno.serve(async (req) => {
       // Zone top-10 lists
       const zoneTops: { zone: number; ids: string[] }[] = [];
       const positionById = new Map<string, number>(); // first (best) position wins
+      const gradeById = new Map(profiles.map((p) => [p.id, p.grade ?? 7]));
       for (const zone of zones) {
         const top = sortProfiles(byZone.get(zone)!, category).slice(0, cfg.limit);
         const ids = top.map((p) => p.id);
@@ -149,12 +153,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Weekly coin/XP rewards per zone (idempotent via weekly_leaderboard_rewards)
-      const weekStart = currentWeekStart();
+      // Monthly coin/XP/item rewards per zone (idempotent via weekly_leaderboard_rewards)
+      const weekStart = currentMonthStart();
       let rewarded = 0;
       for (const pid of topIds) {
         const pos = positionById.get(pid)!;
-        const rw = weeklyReward(pos);
+        const rw = monthlyReward(pos, (gradeById.get(pid) ?? 7) >= 9);
         const { data: existing } = await supabase
           .from("weekly_leaderboard_rewards")
           .select("id")
@@ -184,6 +188,12 @@ Deno.serve(async (req) => {
             total_xp: (p.total_xp ?? 0) + rw.xp,
             lifetime_coins_earned: (p.lifetime_coins_earned ?? 0) + rw.coins,
           }).eq("id", pid);
+          const items: Record<string, unknown>[] = [];
+          const src = `leaderboard:${category}:${weekStart}`;
+          if (rw.merits > 0) items.push({ profile_id: pid, item_type: "merit", amount: rw.merits, label: `${rw.merits} Merit`, source: src });
+          for (let i = 0; i < rw.coupons; i++) items.push({ profile_id: pid, item_type: "water_coupon", amount: 1, label: "水吧券", source: src });
+          if (rw.choice) items.push({ profile_id: pid, item_type: "merit_or_coupon", amount: 1, label: "1 Merit / 1 水吧券（二选一）", source: src });
+          if (items.length) await supabase.from("backpack_items").insert(items);
           rewarded++;
         }
       }

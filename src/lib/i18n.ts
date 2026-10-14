@@ -91,6 +91,11 @@ const EXACT: Record<string, string> = {
   "已解锁": "Unlocked", "未解锁": "Locked", "已装备": "Equipped", "装备": "Equip", "卸下": "Unequip",
   "勋章已装备": "Badge equipped", "勋章已卸下": "Badge unequipped",
   "单挑": "1v1", "三杀": "Triple kill", "双杀": "Double kill", "四杀": "Quadra kill", "五杀": "Penta kill",
+  "每周结算奖励（按年级分区各发前十）": "Weekly rewards — top 10 in every grade zone",
+  "第1名 500豆+200经验": "#1: 500 Beans + 200 XP",
+  "第2名 300豆+150经验": "#2: 300 Beans + 150 XP",
+  "第3名 200豆+100经验": "#3: 200 Beans + 100 XP",
+  "第4-10名 100豆+50经验": "#4–10: 100 Beans + 50 XP",
 };
 
 // Substring replacements for phrases embedded in longer text (applied in order)
@@ -109,6 +114,10 @@ const PARTS: [RegExp, string][] = [
   [/个词/g, " words"],
   [/关卡/g, " levels"],
   [/分钟/g, " min"],
+  [/第\s*(\d+)\s*名/g, "#$1"],
+  [/前\s*(\d+)\s*名/g, "top $1"],
+  [/豆/g, " Beans"],
+  [/分区/g, " zone"],
 ];
 
 const HAN = /[\u4e00-\u9fff]/;

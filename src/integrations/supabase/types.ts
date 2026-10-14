@@ -2499,6 +2499,47 @@ export type Database = {
           },
         ]
       }
+      username_requests: {
+        Row: {
+          created_at: string
+          id: string
+          new_username: string
+          old_username: string
+          profile_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_username: string
+          old_username: string
+          profile_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_username?: string
+          old_username?: string
+          profile_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "username_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_leaderboard_rewards: {
         Row: {
           category: string
@@ -2677,6 +2718,11 @@ export type Database = {
       record_daily_login: { Args: never; Returns: Json }
       redeem_code: {
         Args: { p_code: string; p_user_id: string }
+        Returns: Json
+      }
+      request_username_change: { Args: { p_new: string }; Returns: Json }
+      review_username_request: {
+        Args: { p_approve: boolean; p_request_id: string }
         Returns: Json
       }
       use_backpack_item: { Args: { p_item_id: string }; Returns: Json }

@@ -35,10 +35,10 @@ export default function Backpack() {
     setBusy(null);
     const r = data as any;
     if (error || r?.error) {
-      toast.error(r?.error === "not_available" ? "抽奖券暂未开放使用，先留着吧" : "兑换失败，请重试");
+      toast.error("兑换失败，请重试");
       return;
     }
-    toast.success(r?.pending ? "已通知管理员，请等待线下兑换" : `已兑换：${it.label}`);
+    toast.success(r?.pending ? "已通知管理员，请等待线下兑换" : r?.lottery ? `🎉 限定抽奖获得：${r.label}` : `已兑换：${it.label}`);
     qc.invalidateQueries({ queryKey: ["backpack"] });
     refreshProfile();
   };
@@ -50,6 +50,11 @@ export default function Backpack() {
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4 mr-1" />返回</Button>
           <h1 className="text-2xl font-gaming flex items-center gap-2"><BackpackIcon className="w-6 h-6 text-primary" />背包</h1>
         </header>
+        <Card><CardContent className="p-4 text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-foreground">🎟️ 抽奖券限定抽奖</p>
+          <p>100狄邦豆 50% · 200狄邦豆 30% · 史诗/传说限定名片 15% · 神话限定名片 4% · 2024全球冠军赛音效 1%</p>
+          <p>已拥有的名片或音效不会重复，改发 200 狄邦豆。</p>
+        </CardContent></Card>
         {isLoading ? <p className="text-muted-foreground">加载中...</p> : items.length === 0 ? (
           <Card><CardContent className="p-8 text-center text-muted-foreground">背包空空的。开通优先账户后每周可领奖励。</CardContent></Card>
         ) : (
@@ -66,7 +71,7 @@ export default function Backpack() {
                     </div>
                     {it.status === "unused" ? (
                       <Button size="sm" variant="hero" disabled={busy === it.id} onClick={() => use(it)}>
-                        {it.item_type === "water_coupon" ? "使用" : "兑换"}
+                        {it.item_type === "water_coupon" ? "使用" : it.item_type === "lottery_ticket" ? "抽奖" : "兑换"}
                       </Button>
                     ) : <span className="text-xs text-muted-foreground">{STATUS[it.status]}</span>}
                   </CardContent>

@@ -3,6 +3,8 @@
 // so existing components don't need rewriting. Vocabulary meanings (Chinese
 // definitions of words) are intentionally left as-is.
 
+import DICT from "./i18n-dict.json";
+
 export type Lang = "zh" | "en";
 const KEY = "ui-lang";
 
@@ -124,17 +126,24 @@ const PARTS: [RegExp, string][] = [
 
 const HAN = /[\u4e00-\u9fff]/;
 
+// Full UI dictionary (extracted from source). Exact match first, then
+// longest-first substring replacement for strings built around variables.
+const FULL: Record<string, string> = { ...(DICT as Record<string, string>), ...EXACT };
+const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const SEG_KEYS = Object.keys(FULL).filter((k) => k.length >= 2).sort((a, b) => b.length - a.length);
+const SEG_RE = new RegExp(SEG_KEYS.map(escapeRe).join("|"), "g");
+
 export const translate = (s: string): string => {
   if (!s || !HAN.test(s)) return s;
   const trimmed = s.trim();
-  const exact = EXACT[trimmed];
+  const exact = FULL[trimmed];
   if (exact) return s.replace(trimmed, exact);
   // Subject labels like "🧪 科学词汇"
   const m = trimmed.match(/^(\W*?)\s*([\u4e00-\u9fff].*)$/u);
   if (m && EXACT[m[2]]) return s.replace(m[2], EXACT[m[2]]);
-  let out = s;
+  let out = s.replace(SEG_RE, (m) => ` ${FULL[m]} `);
   for (const [re, rep] of PARTS) out = out.replace(re, rep as any);
-  return out.replace(/ {2,}/g, " ");
+  return out.replace(/ {2,}/g, " ").replace(/ ([,.!?:;)])/g, "$1");
 };
 
 const SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "CODE"]);

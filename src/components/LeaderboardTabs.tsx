@@ -199,11 +199,12 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
 
         {/* 每周前十奖励说明 */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1 font-semibold text-gold"><Coins className="h-3 w-3" />每周结算奖励（按年级分区各发前十）</span>
-          <span>🥇 第1名 500豆+200经验</span>
-          <span>🥈 第2名 300豆+150经验</span>
-          <span>🥉 第3名 200豆+100经验</span>
-          <span>第4-10名 100豆+50经验</span>
+          <span className="flex items-center gap-1 font-semibold text-gold"><Coins className="h-3 w-3" />每周结算名片，每月发放奖励（按年级分区各发前十）</span>
+          <span>🥇 第1名 5000豆+1000经验+3 Merits+2水吧券</span>
+          <span>🥈 第2名 3000豆+800经验+2 Merits+1水吧券</span>
+          <span>🥉 第3名 2000豆+700经验+1 Merit+1水吧券</span>
+          <span>第4-10名 1000豆+500经验+1 Merit/1水吧券（二选一）</span>
+          <span>水吧券仅限高中分区，其他分区只发 Merit</span>
         </div>
 
         {/* 排行榜列表 */}

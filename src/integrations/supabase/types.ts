@@ -2725,6 +2725,10 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
+      report_tab_switch: {
+        Args: { p_count: number; p_mode: string }
+        Returns: undefined
+      }
       request_username_change: { Args: { p_new: string }; Returns: Json }
       review_username_request: {
         Args: { p_approve: boolean; p_request_id: string }

@@ -229,6 +229,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       const idx = currentQuestion;
       let serverCorrect = clientCorrect;
       let matchEnded = false;
+      let dacForfeit: any = null;
       try {
         const { data, error } = await supabase.functions.invoke('submit-answer', {
           body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
@@ -238,7 +239,9 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) matchEnded = true;
         } else if (data?.matchEnded) matchEnded = true;
         else if (data && !data.error) serverCorrect = !!data.isCorrect;
+          if (data?.dacForfeit) dacForfeit = data.dacForfeit;
       } catch (_) { /* network hiccup */ }
+      if (dacForfeit) { endMatch(dacForfeit); return; }
       if (matchEnded) { endMatch(); return; }
 
       setComboCount(prev => serverCorrect ? prev + 1 : 0);

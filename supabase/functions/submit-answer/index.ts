@@ -1,4 +1,5 @@
 import { isAnswerCorrect } from "../_shared/answerMatch.ts";
+import { analyzeTiming } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
@@ -105,6 +106,15 @@ Deno.serve(async (req) => {
         const newScore = (isP1 ? match.player1_score : match.player2_score) + delta;
         await admin.from("ranked_matches").update({ [field]: newScore }).eq("id", matchId);
       }
+    }
+
+    // ===== DAC：答题节奏过于固定 → 通知客户端判负（服务端结算时也会强制判负）=====
+    const { data: mine } = await admin
+      .from("match_answers").select("answered_at, answer")
+      .eq("match_id", matchId).eq("player_id", profile.id);
+    const timing = analyzeTiming((mine ?? []) as any);
+    if (timing.robotic) {
+      return json({ ok: true, isCorrect, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
     }
 
     return json({ ok: true, isCorrect });

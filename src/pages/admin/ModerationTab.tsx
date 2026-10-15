@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Ban, CupSoda, Search, Ticket, Unlock } from "lucide-react";
+import { Award, Ban, CupSoda, Search, Ticket, Unlock } from "lucide-react";
 import { UserProfile } from "./types";
 import { banCaseId } from "@/components/BanScreen";
 
@@ -49,6 +49,26 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
     setBusy(false);
     if (error) return toast.error("发放失败：" + error.message);
     toast.success(`已发放 ${n} 张抽奖券给 ${sel.username}，已放入背包`);
+  };
+
+  const [kind, setKind] = useState<"name_card" | "badge">("name_card");
+  const [itemId, setItemId] = useState("");
+  const [cards, setCards] = useState<{ id: string; name: string; rarity: string }[]>([]);
+  const [badges, setBadges] = useState<{ id: string; name: string; rarity: string }[]>([]);
+  useEffect(() => {
+    supabase.from("name_cards").select("id,name,rarity").order("name").then(({ data }) => setCards(data ?? []));
+    supabase.from("badges").select("id,name,rarity").order("name").then(({ data }) => setBadges(data ?? []));
+  }, []);
+
+  const grantItem = async () => {
+    if (!sel || !itemId) return;
+    const label = (kind === "badge" ? badges : cards).find((i) => i.id === itemId)?.name ?? "";
+    setBusy(true);
+    const { data, error } = await supabase.rpc("admin_grant_collectible" as any, { p_profile_id: sel.id, p_kind: kind, p_item_id: itemId });
+    setBusy(false);
+    if (error) return toast.error("发放失败：" + error.message);
+    if ((data as any)?.already) return toast.info(`${sel.username} 已拥有「${label}」`);
+    toast.success(`已发放「${label}」给 ${sel.username}`);
   };
 
   const ban = async (hours: number | null, label: string) => {
@@ -109,6 +129,25 @@ export const ModerationTab = ({ users }: { users: UserProfile[] }) => {
                 <Button variant="gold" disabled={busy} onClick={grantTicket}>发放到背包</Button>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2"><Award className="w-4 h-4 text-primary" />发放称号 / 勋章</h3>
+              <div className="flex gap-2">
+                <Button size="sm" variant={kind === "name_card" ? "default" : "outline"} onClick={() => { setKind("name_card"); setItemId(""); }}>称号（名片）</Button>
+                <Button size="sm" variant={kind === "badge" ? "default" : "outline"} onClick={() => { setKind("badge"); setItemId(""); }}>勋章</Button>
+              </div>
+              <div className="flex gap-2">
+                <select className="flex-1 h-10 bg-background border border-border px-2 text-sm" value={itemId} onChange={(e) => setItemId(e.target.value)}>
+                  <option value="">选择要发放的{kind === "badge" ? "勋章" : "称号"}…</option>
+                  {(kind === "badge" ? badges : cards).map((i) => (
+                    <option key={i.id} value={i.id}>{i.name}（{i.rarity}）</option>
+                  ))}
+                </select>
+                <Button variant="gold" disabled={busy || !itemId} onClick={grantItem}>发放</Button>
+              </div>
+            </div>
+
+
 
             <div className="space-y-2">
               <h3 className="font-medium flex items-center gap-2"><Ban className="w-4 h-4 text-destructive" />封禁账号</h3>

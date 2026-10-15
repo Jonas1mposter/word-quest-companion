@@ -51,6 +51,7 @@ interface MatchAnswer {
 
 const REASON_LABELS: Record<string, string> = {
   impossible_answer_speed: "答题速度异常（对局）",
+  suspected_answer_lookup: "疑似查答案（比平时慢却几乎全对）",
   impossible_level_speed: "过关速度异常（闯关）",
 };
 

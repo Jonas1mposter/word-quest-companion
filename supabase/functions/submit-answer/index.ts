@@ -1,5 +1,5 @@
 import { isAnswerCorrect } from "../_shared/answerMatch.ts";
-import { analyzeTiming } from "../_shared/answerTiming.ts";
+import { analyzeTiming, analyzeLookup, LOOKUP_MIN_SAMPLES } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
@@ -110,9 +110,30 @@ Deno.serve(async (req) => {
 
     // ===== DAC：答题节奏过于固定 → 通知客户端判负（服务端结算时也会强制判负）=====
     const { data: mine } = await admin
-      .from("match_answers").select("answered_at, answer")
+      .from("match_answers").select("answered_at, answer, is_correct")
       .eq("match_id", matchId).eq("player_id", profile.id);
     const timing = analyzeTiming((mine ?? []) as any);
+    // ===== DAC：疑似拍照/查答案（明显比平时慢却几乎全对）→ 仅记录，管理员复查 =====
+    const checkAt = Math.max(LOOKUP_MIN_SAMPLES, words.length);
+    if (!timing.robotic && (mine?.length ?? 0) === checkAt) {
+      try {
+        const since = new Date(Date.now() - 30 * 86400000).toISOString();
+        const { data: past } = await admin
+          .from("match_answers").select("match_id, answered_at, answer")
+          .eq("player_id", profile.id).neq("match_id", matchId)
+          .gte("answered_at", since).order("answered_at", { ascending: false }).limit(400);
+        const byMatch = new Map<string, any[]>();
+        for (const r of past ?? []) { const a = byMatch.get(r.match_id) ?? []; a.push(r); byMatch.set(r.match_id, a); }
+        const lookup = analyzeLookup((mine ?? []) as any, [...byMatch.values()]);
+        if (lookup.suspicious) {
+          await admin.rpc("dac_flag", {
+            p_profile_id: profile.id, p_source: "submit-answer", p_reason: "suspected_answer_lookup",
+            p_severity: "medium", p_meta: { matchId, ...lookup, match_type: match.match_type, mode: match.mode },
+          });
+        }
+      } catch (_) { /* 检测失败不影响答题 */ }
+    }
+
     if (timing.robotic) {
       return json({ ok: true, isCorrect, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
     }

@@ -275,6 +275,7 @@ const BattleArena = ({
       const idx = currentQuestion;
       let serverCorrect = clientCorrect;
       let matchEnded = false;
+      let dacForfeit: any = null;
       try {
         const { data, error } = await supabase.functions.invoke('submit-answer', {
           body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
@@ -288,11 +289,13 @@ const BattleArena = ({
           matchEnded = true;
         } else if (data && !data.error) {
           serverCorrect = !!data.isCorrect;
+          if (data.dacForfeit) dacForfeit = data.dacForfeit;
         }
       } catch (_) {
         // network hiccup — fall back to client correctness
       }
-      if (matchEnded) {
+if (dacForfeit) { endMatch(dacForfeit); return; }
+            if (matchEnded) {
         endMatch();
         return;
       }

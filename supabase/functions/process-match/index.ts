@@ -1,3 +1,4 @@
+import { analyzeTiming } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 
 const K = 32;
@@ -112,6 +113,10 @@ Deno.serve(async (req) => {
       if (isForfeit && match.status !== "completed") {
         winnerTeam = team1.includes(profile.id) ? 2 : 1;
       }
+      else if (match.status !== "completed" && robotic.size > 0) {
+        const t1Bot = team1.some((id) => robotic.has(id)), t2Bot = team2.some((id) => robotic.has(id));
+        if (t1Bot !== t2Bot) winnerTeam = t1Bot ? 2 : 1;
+      }
 
       if (match.status !== "completed") {
         await admin.from("ranked_matches").update({
@@ -221,6 +226,9 @@ Deno.serve(async (req) => {
     else if (p2 > p1) winnerId = match.player2_id;
     if (isForfeit && match.status !== "completed") {
       winnerId = profile.id === match.player1_id ? match.player2_id : match.player1_id;
+    }
+    else if (match.status !== "completed" && robotic.size === 1) {
+      winnerId = robotic.has(match.player1_id) ? match.player2_id : match.player1_id;
     }
 
     if (match.status !== "completed") {

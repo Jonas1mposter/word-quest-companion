@@ -43,12 +43,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       if (!awayRef.current) return;
       awayRef.current = false;
       const awayMs = Date.now() - awaySinceRef.current;
-      if (awayMs >= AWAY_LIMIT_MS) kick("background_away", { awayMs, count: countRef.current });
+      if (isAwayViolation(awayMs)) kick("background_away", { awayMs, count: countRef.current });
       else setWarn(true);
     };
     // 一直挂在后台不回来：后台计时到点也直接判负
     const timer = window.setInterval(() => {
-      if (awayRef.current && Date.now() - awaySinceRef.current >= AWAY_LIMIT_MS) {
+      if (awayRef.current && isAwayViolation(Date.now() - awaySinceRef.current)) {
         kick("background_away", { awayMs: Date.now() - awaySinceRef.current, count: countRef.current });
       }
     }, 1000);

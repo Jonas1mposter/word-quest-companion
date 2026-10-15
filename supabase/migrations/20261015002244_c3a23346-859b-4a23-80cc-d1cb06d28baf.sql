@@ -1,0 +1,1 @@
+revoke execute on function public.leaderboard_excluded_ids() from anon, public;

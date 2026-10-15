@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
  * status: 准备阶段「启动中」，答题阶段「监控中」。
  * 「监控中」时启用切屏检测：离开页面会被记录到 DAC 并弹出警告。
  */
-const DacBadge = ({ status = "监控中" }: { status?: "启动中" | "监控中" }) => {
+type ForfeitFn = (reason: string, meta: Record<string, number>) => void;
+
+const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | "监控中"; onForfeit?: ForfeitFn }) => {
   const monitoring = status === "监控中";
   const [count, setCount] = useState(0);
   const [warn, setWarn] = useState(false);
@@ -40,8 +42,69 @@ const DacBadge = ({ status = "监控中" }: { status?: "启动中" | "监控中"
     };
   }, [monitoring]);
 
+  // 自动化操控检测（仅鼠标；触屏和键盘不检测）
+  const [kicked, setKicked] = useState(false);
+  const forfeitRef = useRef(onForfeit);
+  forfeitRef.current = onForfeit;
+  useEffect(() => {
+    if (!monitoring || !onForfeit) return;
+    let fired = false;
+    const fire = (reason: string, meta: Record<string, number>) => {
+      if (fired) return; fired = true;
+      setKicked(true);
+      forfeitRef.current?.(reason, meta);
+    };
+    if ((navigator as any).webdriver) { fire("webdriver", {}); return; }
+    let moves: { x: number; y: number; t: number }[] = [];
+    let untrusted = 0, clicks = 0, robotic = 0;
+    let last: { x: number; y: number } | null = null;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      moves.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+      if (moves.length > 200) moves = moves.slice(-200);
+    };
+    const onDown = (e: PointerEvent | MouseEvent) => {
+      if (!e.isTrusted) { untrusted++; if (untrusted >= 2) fire("synthetic_click", { untrusted }); return; }
+      if ((e as PointerEvent).pointerType && (e as PointerEvent).pointerType !== "mouse") return;
+      const now = e.timeStamp;
+      const recent = moves.filter((m) => now - m.t < 1500);
+      const jump = last ? Math.hypot(e.clientX - last.x, e.clientY - last.y) : 0;
+      let bot = false;
+      if (last && jump > 80 && recent.length <= 1) bot = true; // 瞬移点击
+      else if (recent.length >= 6) {
+        let path = 0; const sp: number[] = [];
+        for (let i = 1; i < recent.length; i++) {
+          const d = Math.hypot(recent[i].x - recent[i - 1].x, recent[i].y - recent[i - 1].y);
+          path += d; sp.push(d / Math.max(1, recent[i].t - recent[i - 1].t));
+        }
+        const straight = Math.hypot(recent[recent.length - 1].x - recent[0].x, recent[recent.length - 1].y - recent[0].y);
+        const mean = sp.reduce((a, b) => a + b, 0) / sp.length;
+        const cv = mean > 0 ? Math.sqrt(sp.reduce((a, b) => a + (b - mean) ** 2, 0) / sp.length) / mean : 0;
+        if (straight > 100 && path / straight < 1.005 && cv < 0.05) bot = true; // 完美直线匀速
+      }
+      clicks++; if (bot) robotic++;
+      last = { x: e.clientX, y: e.clientY };
+      moves = [];
+      if (robotic >= 4 && robotic / clicks >= 0.6) fire("robotic_mouse", { clicks, robotic });
+    };
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("click", (onDown as any), true);
+    return () => {
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("click", (onDown as any), true);
+    };
+  }, [monitoring, !!onForfeit]);
+
   return (
     <>
+      {kicked && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] border border-destructive/60 bg-card px-4 py-3 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-destructive" />
+          <span className="text-sm">DAC 检测到疑似 AI/脚本操控，本局判负并已记录</span>
+        </div>
+      )}
       <div className="fixed bottom-3 right-3 z-50 pointer-events-none select-none">
         <div className="val-cut-sm flex items-center gap-1.5 px-2.5 py-1.5 bg-background/85 backdrop-blur border border-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.25)]">
           <ShieldCheck className="w-3.5 h-3.5 text-primary animate-pulse" />

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AWAY_LIMIT_MS, isAwayViolation } from "@/lib/dacAway";
+import { isAwayViolation } from "@/lib/dacAway";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。

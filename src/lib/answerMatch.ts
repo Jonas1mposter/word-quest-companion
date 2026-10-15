@@ -19,9 +19,11 @@ export function acceptedAnswers(target: string): string[] {
     if (noParen) out.add(noParen);
     const inParen = p.replace(/[()]/g, " ").replace(/\s+/g, " ").trim(); // 去掉括号符号但保留内容
     if (inParen) out.add(inParen);
-    const abbr = p.match(/\(([^)]+)\)/g)?.map((m) => m.slice(1, -1).trim());
-    // 括号里是缩写（DWL、kJ）时也算对；括号里是说明（trig、statistics）时不算
-    abbr?.forEach((a) => { if (/^[a-z°µ]{1,6}$/i.test(a) && a.length <= 5) out.add(a); });
+  }
+  // 括号里是缩写（DWL、kJ、°C，含大写或符号）时只打缩写也算对；说明性括号（trig）不算
+  for (const m of String(target ?? "").matchAll(/[(（]([^)）]+)[)）]/g)) {
+    const a = m[1].trim();
+    if (/^[A-Za-z°µ]{1,6}$/.test(a) && /[A-Z°µ]/.test(a)) out.add(clean(a));
   }
   return [...out].filter(Boolean);
 }

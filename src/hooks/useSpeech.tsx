@@ -90,6 +90,14 @@ const speakWithDevice = (text: string, rate: number, accent: SpeechAccent, voice
   synthesis.speak(u);
 };
 
+export const youdaoQuery = (text: string) => {
+  let s = text.replace(/（/g, "(").replace(/）/g, ")");
+  const stripped = s.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  s = stripped || s.replace(/[()]/g, " ").trim();
+  s = s.split("/")[0].trim() || s;
+  return s.toLowerCase();
+};
+
 const pronounce = async (text: string, speed: SpeechSpeed, overrideRate: number | undefined, voice: SpeechSynthesisVoice | null) => {
   const t = String(text ?? "").trim();
   if (!t) return;
@@ -100,9 +108,10 @@ const pronounce = async (text: string, speed: SpeechSpeed, overrideRate: number 
   const rate = overrideRate !== undefined ? overrideRate / SPEED_RATES.normal : PLAYBACK_RATES[speed];
   const key = `${accent}:${t.toLowerCase()}`;
 
-  // 1. 有道真人发音
+  // 1. 有道真人发音（先用整理后的写法：小写、去括号、斜杠取第一个）
+  const ydText = youdaoQuery(t);
   if (!youdaoMissing.has(key)) {
-    const yd = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(t)}&type=${accent === "uk" ? 1 : 2}`;
+    const yd = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(ydText)}&type=${accent === "uk" ? 1 : 2}`;
     if (await playUrl(yd, rate, token)) return;
     youdaoMissing.add(key);
   }

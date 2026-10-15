@@ -1,16 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 
-let cache: Promise<string[]> | null = null;
+let cache: string[] | null = null;
 
-/** Profile ids (admins) that never appear on any leaderboard. */
-export function getLeaderboardExcludedIds(): Promise<string[]> {
-  if (!cache) {
-    cache = (async () => {
-      const { data } = await supabase.rpc("leaderboard_excluded_ids" as any);
-      return ((data as any[]) || []).map((r: any) => (typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id)).filter(Boolean);
-    })().catch(() => []);
+/** Profile ids (admins) that never appear on any leaderboard. Only successful non-empty results are cached. */
+export async function getLeaderboardExcludedIds(): Promise<string[]> {
+  if (cache) return cache;
+  try {
+    const { data, error } = await supabase.rpc("leaderboard_excluded_ids" as any);
+    if (error) return [];
+    const ids = ((data as any[]) || [])
+      .map((r: any) => (typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id))
+      .filter(Boolean);
+    if (ids.length) cache = ids;
+    return ids;
+  } catch {
+    return [];
   }
-  return cache;
 }
 
 /** PostgREST `not in` filter value, or null when nothing to exclude. */

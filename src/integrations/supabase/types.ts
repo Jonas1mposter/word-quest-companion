@@ -2645,6 +2645,10 @@ export type Database = {
         Args: { p_amount: number; p_profile_id: string }
         Returns: Json
       }
+      admin_grant_collectible: {
+        Args: { p_item_id: string; p_kind: string; p_profile_id: string }
+        Returns: Json
+      }
       admin_grant_lottery_ticket: {
         Args: { p_count?: number; p_profile_id: string }
         Returns: Json

@@ -62,19 +62,57 @@ const youdaoMissing = new Set<string>();
 let currentAudio: HTMLAudioElement | null = null;
 let playToken = 0;
 
+// Safari（MacBook / iPhone）只允许"被用户点击解锁过"的音频元素在异步之后播放。
+// 所以全局复用同一个 <audio>，并在用户第一次点击/按键时解锁它和系统朗读。
+const SILENT = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//tQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+let sharedAudio: HTMLAudioElement | null = null;
+const getAudio = () => {
+  if (!sharedAudio && typeof window !== "undefined" && typeof Audio !== "undefined") {
+    sharedAudio = new Audio();
+    sharedAudio.preload = "auto";
+    (sharedAudio as any).playsInline = true;
+  }
+  return sharedAudio;
+};
+let unlocked = false;
+const unlockAudio = () => {
+  if (unlocked) return;
+  unlocked = true;
+  const a = getAudio();
+  if (a) {
+    try { a.muted = true; a.src = SILENT; a.play().then(() => { a.pause(); a.muted = false; }).catch(() => { a.muted = false; unlocked = false; }); } catch { unlocked = false; }
+  }
+  try {
+    const s = getSpeechSynthesisSafe();
+    if (s && "SpeechSynthesisUtterance" in window) { const u = new window.SpeechSynthesisUtterance(" "); u.volume = 0; s.speak(u); }
+  } catch { /* ignore */ }
+};
+if (typeof window !== "undefined") {
+  ["pointerdown", "touchend", "keydown", "click"].forEach((ev) =>
+    window.addEventListener(ev, unlockAudio, { capture: true, passive: true } as any));
+}
+
 const playUrl = (url: string, rate: number, token: number) =>
   new Promise<boolean>((resolve) => {
     if (token !== playToken) return resolve(true);
     try {
-      const a = new Audio(url);
+      const a = getAudio() ?? new Audio();
+      try { a.pause(); } catch { /* ignore */ }
+      a.muted = false;
+      a.src = url;
       a.playbackRate = rate;
+      (a as any).preservesPitch = true;
       currentAudio = a;
       let done = false;
-      const finish = (ok: boolean) => { if (!done) { done = true; resolve(ok); } };
+      const finish = (ok: boolean) => {
+        if (done) return; done = true;
+        a.onerror = null; a.onplaying = null; resolve(ok);
+      };
       a.onerror = () => finish(false);
       a.onplaying = () => finish(true);
-      setTimeout(() => finish(!a.paused), 4000);
-      a.play().catch(() => finish(false));
+      setTimeout(() => finish(!a.paused && a.currentTime > 0), 5000);
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => finish(false));
     } catch { resolve(false); }
   });
 

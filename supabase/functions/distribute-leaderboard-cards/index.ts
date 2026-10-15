@@ -89,7 +89,9 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("id, grade, rank_tier, rank_stars, rank_points, wins, total_xp");
     if (profilesErr) throw profilesErr;
-    const profiles = (allProfiles ?? []) as ProfileLite[];
+    const { data: excludedRows } = await supabase.rpc("leaderboard_excluded_ids");
+    const excluded = new Set(((excludedRows as any[]) ?? []).map((r: any) => typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id));
+    const profiles = ((allProfiles ?? []) as ProfileLite[]).filter((p) => !excluded.has(p.id));
     const byZone = new Map<number, ProfileLite[]>();
     for (const p of profiles) {
       const g = p.grade ?? 7;

@@ -1,3 +1,4 @@
+import { getLeaderboardExcludedIds, excludedInFilter } from "@/lib/leaderboardExclusions";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ const FreeMatchLeaderboard = ({ currentProfileId }: FreeMatchLeaderboardProps) =
         .from("profiles")
         .select("id, username, grade, free_match_wins, free_match_losses, rank_tier")
         .or("free_match_wins.gt.0,free_match_losses.gt.0")
+        .not("id", "in", excludedInFilter(await getLeaderboardExcludedIds()) ?? "(00000000-0000-0000-0000-000000000000)")
         .order("free_match_wins", { ascending: false })
         .limit(50);
 

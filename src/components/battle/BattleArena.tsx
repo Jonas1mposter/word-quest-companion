@@ -289,7 +289,7 @@ const BattleArena = ({
           matchEnded = true;
         } else if (data && !data.error) {
           serverCorrect = !!data.isCorrect;
-          if (data.dacForfeit) dacForfeit = data.dacForfeit;
+          if (data?.dacForfeit) dacForfeit = data.dacForfeit;
         }
       } catch (_) {
         // network hiccup — fall back to client correctness

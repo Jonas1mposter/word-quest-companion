@@ -239,7 +239,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) matchEnded = true;
         } else if (data?.matchEnded) matchEnded = true;
         else if (data && !data.error) serverCorrect = !!data.isCorrect;
-          if (data.dacForfeit) dacForfeit = data.dacForfeit;
+          if (data?.dacForfeit) dacForfeit = data.dacForfeit;
       } catch (_) { /* network hiccup */ }
       if (dacForfeit) { endMatch(dacForfeit); return; }
       if (matchEnded) { endMatch(); return; }

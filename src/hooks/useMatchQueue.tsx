@@ -79,15 +79,34 @@ export const useMatchQueue = ({
     matchFoundRef.current = false;
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('find_match', {
-        _profile_id: profileId,
-        _grade: grade,
-        _match_type: matchType,
-        _elo_rating: eloRating,
-        _subject: subject,
-      });
+      // Retry transient network failures ("Failed to fetch") a few times
+      let data: unknown = null;
+      let rpcError: any = null;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const res = await supabase.rpc('find_match', {
+            _profile_id: profileId,
+            _grade: grade,
+            _match_type: matchType,
+            _elo_rating: eloRating,
+            _subject: subject,
+          });
+          data = res.data;
+          rpcError = res.error;
+        } catch (e) {
+          rpcError = e;
+        }
+        const msg = String(rpcError?.message || '');
+        if (!rpcError || !/fetch|network|load failed/i.test(msg)) break;
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        if (/fetch|network|load failed/i.test(String(rpcError?.message || ''))) {
+          throw new Error('网络连接不稳定，请检查网络后重试');
+        }
+        throw rpcError;
+      }
 
       if (data) {
         await handleMatchResolved(data as string);

@@ -193,11 +193,12 @@ export const useSpeech = () => {
       const voices = synthesis.getVoices();
       if (voices.length === 0) return;
 
+      // Google 开头的声音要连谷歌服务器，在国内 Chrome 上会静默无声，所以优先本机声音
       const preferredVoiceNames = [
-        "Google US English",
-        "Google UK English Female",
-        "Google UK English Male",
-        "Microsoft Zira - English (United States)",
+        "Samantha",
+        "Microsoft Aria",
+        "Microsoft Zira",
+        "Microsoft Jenny",
         "Samantha",
         "Alex",
         "Daniel",
@@ -205,14 +206,14 @@ export const useSpeech = () => {
       ];
 
       for (const name of preferredVoiceNames) {
-        const voice = voices.find((v) => v.name.includes(name));
+        const voice = voices.find((v) => v.name.includes(name) && v.localService);
         if (voice) {
           setPreferredVoice(voice);
           return;
         }
       }
 
-      const nativeEnglishVoice = voices.find((v) => v.lang.startsWith("en") && !v.localService);
+      const nativeEnglishVoice = voices.find((v) => v.lang.startsWith("en") && v.localService);
       if (nativeEnglishVoice) {
         setPreferredVoice(nativeEnglishVoice);
         return;
@@ -247,16 +248,16 @@ const initVoice = () => {
   const voices = synthesis.getVoices();
   if (voices.length === 0) return;
 
-  const names = ["Google US English", "Google UK English Female", "Google UK English Male", "Microsoft Zira - English (United States)", "Samantha", "Alex", "Daniel"];
+  const names = ["Samantha", "Microsoft Aria", "Microsoft Zira", "Microsoft Jenny", "Alex", "Daniel"];
   for (const name of names) {
-    const voice = voices.find((v) => v.name.includes(name));
+    const voice = voices.find((v) => v.name.includes(name) && v.localService);
     if (voice) {
       cachedVoice = voice;
       return;
     }
   }
 
-  const native = voices.find((v) => v.lang.startsWith("en") && !v.localService);
+  const native = voices.find((v) => v.lang.startsWith("en") && v.localService);
   if (native) {
     cachedVoice = native;
     return;

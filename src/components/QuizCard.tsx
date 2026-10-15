@@ -1,3 +1,4 @@
+import { isAnswerCorrect } from "@/lib/answerMatch";
 import SyllableWord from "@/components/SyllableWord";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -98,7 +99,7 @@ const QuizCard = ({
 
     const normalizedInput = userInput.trim().toLowerCase();
     const normalizedWord = word.word.toLowerCase();
-    const isCorrect = normalizedInput === normalizedWord;
+    const isCorrect = isAnswerCorrect(userInput, word.word);
 
     // Play sound and haptic feedback
     if (isCorrect) {

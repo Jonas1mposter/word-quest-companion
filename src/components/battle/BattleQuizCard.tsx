@@ -1,3 +1,4 @@
+import { isAnswerCorrect } from "@/lib/answerMatch";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -103,7 +104,7 @@ const BattleQuizCard = ({
 
     const normalizedInput = userInput.trim().toLowerCase();
     const normalizedWord = word.word.toLowerCase();
-    const isCorrect = normalizedInput === normalizedWord;
+    const isCorrect = isAnswerCorrect(userInput, word.word);
 
     // 1-5 连击都用击杀音效，5+ 复用第 5 段
     if (isCorrect) {
@@ -253,7 +254,7 @@ const BattleQuizCard = ({
 
   // Quiz Type: Spelling (type the word based on meaning)
   if (quizType === "spelling") {
-    const isCorrect = userInput.trim().toLowerCase() === word.word.toLowerCase();
+    const isCorrect = isAnswerCorrect(userInput, word.word);
     
     return (
       <Card 
@@ -327,7 +328,7 @@ const BattleQuizCard = ({
 
   // Quiz Type: Listening (hear the word, type it)
   if (quizType === "listening") {
-    const isCorrect = userInput.trim().toLowerCase() === word.word.toLowerCase();
+    const isCorrect = isAnswerCorrect(userInput, word.word);
     
     return (
       <Card 

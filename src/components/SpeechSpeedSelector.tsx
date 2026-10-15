@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Volume2, Turtle, Gauge, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SpeechSpeed, getSavedSpeed, saveSpeed, speakWord } from "@/hooks/useSpeech";
+import { SpeechSpeed, SpeechAccent, getSavedSpeed, saveSpeed, speakWord, getSavedAccent, saveAccent } from "@/hooks/useSpeech";
 
 interface SpeechSpeedSelectorProps {
   className?: string;
@@ -18,6 +18,8 @@ const speedConfig: Record<SpeechSpeed, { label: string; icon: React.ReactNode; t
 
 const SpeechSpeedSelector = ({ className, showLabel = true, onSpeedChange }: SpeechSpeedSelectorProps) => {
   const [currentSpeed, setCurrentSpeed] = useState<SpeechSpeed>(getSavedSpeed);
+  const [accent, setAccent] = useState<SpeechAccent>(getSavedAccent);
+  const changeAccent = (a: SpeechAccent) => { setAccent(a); saveAccent(a); speakWord("tomato"); };
 
   useEffect(() => {
     // Sync with localStorage on mount
@@ -61,6 +63,13 @@ const SpeechSpeedSelector = ({ className, showLabel = true, onSpeedChange }: Spe
             </Button>
           );
         })}
+      </div>
+      <div className="flex gap-2">
+        {([["us", "美音"], ["uk", "英音"]] as const).map(([a, label]) => (
+          <Button key={a} size="sm" variant={accent === a ? "default" : "outline"} className="flex-1" onClick={() => changeAccent(a)}>
+            {label}
+          </Button>
+        ))}
       </div>
     </div>
   );

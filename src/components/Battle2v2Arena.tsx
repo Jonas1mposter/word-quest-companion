@@ -182,14 +182,14 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     return () => clearInterval(i);
   }, [phase]);
 
-  const endMatch = useCallback(async () => {
+  const endMatch = useCallback(async (forfeit?: { reason: string; meta: Record<string, number> }) => {
     if (!profile || matchEndedRef.current) return;
     matchEndedRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     await new Promise(r => setTimeout(r, 500));
     if (!matchData?.id) { setPhase("result"); return; }
     try {
-      const { data, error } = await supabase.functions.invoke('process-match', { body: { matchId: matchData.id } });
+      const { data, error } = await supabase.functions.invoke('process-match', { body: forfeit ? { matchId: matchData.id, forfeit } : { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
       else if (data) {
         winnerTeamRef.current = data.winnerTeam ?? null;
@@ -378,7 +378,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             options={options} wordOptions={wordOptions}
             onAnswer={handleAnswer} answerAnimation={answerAnimation} comboCount={comboCount} />
         )}
-        <DacBadge />
+        <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );
   }

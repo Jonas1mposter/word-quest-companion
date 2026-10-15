@@ -48,7 +48,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, profile } = await requireProfile(req);
-    const { matchId } = await req.json();
+    const { matchId, forfeit } = await req.json();
+    const isForfeit = !!forfeit && typeof forfeit === "object";
     if (typeof matchId !== "string") return json({ error: "Bad request" }, 400);
 
     const { data: match } = await admin
@@ -65,6 +66,16 @@ Deno.serve(async (req) => {
       .from("match_answers").select("player_id, is_correct").eq("match_id", matchId);
 
     const isRanked = match.match_type === "ranked";
+
+    // DAC：疑似自动化操控，判负并记录
+    if (isForfeit && match.status !== "completed") {
+      await admin.rpc("dac_flag", {
+        p_profile_id: profile.id, p_source: "bot_input",
+        p_reason: "疑似 AI/脚本操控，已判负", p_severity: "high",
+        p_meta: { match_id: matchId, mode: match.mode, match_type: match.match_type,
+          reason: String(forfeit.reason ?? "").slice(0, 60), detail: forfeit.meta ?? null },
+      });
+    }
     const isFree = match.match_type === "free";
 
     // ====================== 2v2 BRANCH ======================
@@ -81,6 +92,9 @@ Deno.serve(async (req) => {
       let winnerTeam: number | null = null;
       if (t1 > t2) winnerTeam = 1;
       else if (t2 > t1) winnerTeam = 2;
+      if (isForfeit && match.status !== "completed") {
+        winnerTeam = team1.includes(profile.id) ? 2 : 1;
+      }
 
       if (match.status !== "completed") {
         await admin.from("ranked_matches").update({
@@ -160,7 +174,7 @@ Deno.serve(async (req) => {
 
       const onTeam1 = team1.includes(profile.id);
       // re-derive winner_team for response when already completed
-      const finalWinnerTeam = match.status === "completed" ? match.winner_team : (t1 > t2 ? 1 : t2 > t1 ? 2 : null);
+      const finalWinnerTeam = match.status === "completed" ? match.winner_team : winnerTeam;
       const callerScore: 1 | 0 | 0.5 = finalWinnerTeam === null ? 0.5
         : (finalWinnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
       const coinsEarned = coinReward(callerScore, false);
@@ -188,6 +202,9 @@ Deno.serve(async (req) => {
     let winnerId: string | null = null;
     if (p1 > p2) winnerId = match.player1_id;
     else if (p2 > p1) winnerId = match.player2_id;
+    if (isForfeit && match.status !== "completed") {
+      winnerId = profile.id === match.player1_id ? match.player2_id : match.player1_id;
+    }
 
     if (match.status !== "completed") {
       await admin.from("ranked_matches").update({

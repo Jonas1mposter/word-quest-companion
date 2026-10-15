@@ -1,3 +1,4 @@
+import { getLeaderboardExcludedIds, excludedInFilter } from "@/lib/leaderboardExclusions";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,11 +57,14 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
 
   useEffect(() => {
     const fetchLeaderboards = async () => {
+      const excluded = await getLeaderboardExcludedIds();
+      const notIn = excludedInFilter(excluded);
       // 段位排行榜 (按段位 > 星数 > 积分排序)
       const { data: rankData } = await supabase
         .from("profiles")
         .select("id, username, rank_tier, rank_stars, rank_points")
-        .eq("grade", grade);
+        .eq("grade", grade)
+        .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)");
 
       if (rankData) {
         const sorted = [...rankData].sort((a: any, b: any) => {
@@ -85,6 +89,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
         .from("profiles")
         .select("id, username, wins, rank_tier, rank_stars")
         .eq("grade", grade)
+        .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)")
         .order("wins", { ascending: false })
         .limit(10);
 
@@ -104,6 +109,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
         .from("profiles")
         .select("id, username, total_xp, level, rank_tier, rank_stars")
         .eq("grade", grade)
+        .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)")
         .order("total_xp", { ascending: false })
         .limit(10);
 

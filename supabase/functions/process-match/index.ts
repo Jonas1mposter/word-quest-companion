@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   try {
     const { admin, profile } = await requireProfile(req);
     const { matchId, forfeit } = await req.json();
-    const isForfeit = !!forfeit && typeof forfeit === "object";
+    let isForfeit = !!forfeit && typeof forfeit === "object";
     if (typeof matchId !== "string") return json({ error: "Bad request" }, 400);
 
     const { data: match } = await admin
@@ -63,12 +63,29 @@ Deno.serve(async (req) => {
     if (!memberIds.includes(profile.id)) return json({ error: "Not in match" }, 403);
 
     const { data: answers } = await admin
-      .from("match_answers").select("player_id, is_correct").eq("match_id", matchId);
+      .from("match_answers").select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);
 
     const isRanked = match.match_type === "ranked";
 
+    // DAC：服务端答题节奏检测（不依赖客户端），节奏固定的玩家判负
+    const robotic = new Set<string>();
+    if (match.status !== "completed") {
+      for (const pid of memberIds) {
+        const v = analyzeTiming((answers ?? []).filter((a: any) => a.player_id === pid) as any);
+        if (v.robotic) {
+          robotic.add(pid);
+          await admin.rpc("dac_flag", {
+            p_profile_id: pid, p_source: "bot_input",
+            p_reason: "答题节奏过于固定，疑似 AI/脚本，已判负", p_severity: "high",
+            p_meta: { match_id: matchId, mode: match.mode, match_type: match.match_type, reason: "fixed_answer_timing", detail: v },
+          });
+        }
+      }
+    }
+    if (robotic.has(profile.id)) isForfeit = true;
+
     // DAC：疑似自动化操控，判负并记录
-    if (isForfeit && match.status !== "completed") {
+    if (isForfeit && match.status !== "completed" && !robotic.has(profile.id)) {
       await admin.rpc("dac_flag", {
         p_profile_id: profile.id, p_source: "bot_input",
         p_reason: "疑似 AI/脚本操控，已判负", p_severity: "high",

@@ -63,9 +63,8 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       moves.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
       if (moves.length > 200) moves = moves.slice(-200);
     };
-    const onDown = (e: PointerEvent | MouseEvent) => {
-      if (!e.isTrusted) { untrusted++; if (untrusted >= 2) fire("synthetic_click", { untrusted }); return; }
-      if ((e as PointerEvent).pointerType && (e as PointerEvent).pointerType !== "mouse") return;
+    const onDown = (e: PointerEvent) => {
+      if (!e.isTrusted || e.pointerType !== "mouse") return;
       const now = e.timeStamp;
       const recent = moves.filter((m) => now - m.t < 1500);
       const jump = last ? Math.hypot(e.clientX - last.x, e.clientY - last.y) : 0;
@@ -89,11 +88,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     };
     window.addEventListener("pointermove", onMove, true);
     window.addEventListener("pointerdown", onDown, true);
-    window.addEventListener("click", (onDown as any), true);
+    const onClick = (e: MouseEvent) => { if (!e.isTrusted) { untrusted++; if (untrusted >= 2) fire("synthetic_click", { untrusted }); } };
+    window.addEventListener("click", onClick, true);
     return () => {
       window.removeEventListener("pointermove", onMove, true);
       window.removeEventListener("pointerdown", onDown, true);
-      window.removeEventListener("click", (onDown as any), true);
+      window.removeEventListener("click", onClick, true);
     };
   }, [monitoring, !!onForfeit]);
 

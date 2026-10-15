@@ -2717,6 +2717,7 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: undefined
       }
+      leaderboard_excluded_ids: { Args: never; Returns: string[] }
       purchase_priority: { Args: never; Returns: Json }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }

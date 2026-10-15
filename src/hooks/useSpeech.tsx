@@ -99,6 +99,7 @@ const playUrl = (url: string, rate: number, token: number) =>
       const a = getAudio() ?? new Audio();
       try { a.pause(); } catch { /* ignore */ }
       a.muted = false;
+      a.defaultPlaybackRate = rate;
       a.src = url;
       a.playbackRate = rate;
       (a as any).preservesPitch = true;

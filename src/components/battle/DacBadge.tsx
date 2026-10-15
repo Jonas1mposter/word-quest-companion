@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { isAwayViolation } from "@/lib/dacAway";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。
  * status: 准备阶段「启动中」，答题阶段「监控中」。
  * 「监控中」时启用切屏检测：离开页面会被记录到 DAC 并弹出警告。
  */
-const AWAY_LIMIT_MS = 15000; // 离开页面累计连续 15 秒判负
 type ForfeitFn = (reason: string, meta: Record<string, number>) => void;
 
 const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | "监控中"; onForfeit?: ForfeitFn }) => {
@@ -43,12 +43,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       if (!awayRef.current) return;
       awayRef.current = false;
       const awayMs = Date.now() - awaySinceRef.current;
-      if (awayMs >= AWAY_LIMIT_MS) kick("background_away", { awayMs, count: countRef.current });
+      if (isAwayViolation(awayMs)) kick("background_away", { awayMs, count: countRef.current });
       else setWarn(true);
     };
     // 一直挂在后台不回来：后台计时到点也直接判负
     const timer = window.setInterval(() => {
-      if (awayRef.current && Date.now() - awaySinceRef.current >= AWAY_LIMIT_MS) {
+      if (awayRef.current && isAwayViolation(Date.now() - awaySinceRef.current)) {
         kick("background_away", { awayMs: Date.now() - awaySinceRef.current, count: countRef.current });
       }
     }, 1000);

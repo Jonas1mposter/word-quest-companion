@@ -80,7 +80,8 @@ const unlockAudio = () => {
   unlocked = true;
   const a = getAudio();
   if (a) {
-    try { a.muted = true; a.src = SILENT; a.play().then(() => { a.pause(); a.muted = false; }).catch(() => { a.muted = false; unlocked = false; }); } catch { unlocked = false; }
+    // 只在仍是静音片段时才暂停，避免把紧接着开始播放的单词发音暂停掉（Chrome 上会出现）
+    try { a.muted = true; a.src = SILENT; a.play().then(() => { if (a.src === SILENT) a.pause(); a.muted = false; }).catch(() => { a.muted = false; }); } catch { /* ignore */ }
   }
   try {
     const s = getSpeechSynthesisSafe();
@@ -107,16 +108,20 @@ const playUrl = (url: string, rate: number, token: number) =>
       let done = false;
       const finish = (ok: boolean) => {
         if (done) return; done = true;
-        a.onerror = null; a.onplaying = null; resolve(ok);
+        a.onerror = null; a.onplaying = null;
+        if (!ok) { try { a.pause(); } catch { /* ignore */ } }
+        resolve(ok);
       };
       a.onerror = () => finish(false);
       a.onplaying = () => finish(true);
-      setTimeout(() => finish(!a.paused && a.currentTime > 0), 5000);
+      setTimeout(() => finish(!a.paused && a.currentTime > 0), 8000);
       const p = a.play();
-      if (p && typeof p.catch === "function") p.catch(() => finish(false));
+      if (p && typeof p.catch === "function") p.catch((e: any) => { if (e?.name !== "AbortError") finish(false); });
     } catch { resolve(false); }
   });
 
+// Chrome：朗读对象若被回收会没声音，保留引用
+let liveUtterance: SpeechSynthesisUtterance | null = null;
 const speakWithDevice = (text: string, rate: number, accent: SpeechAccent, voice: SpeechSynthesisVoice | null) => {
   const synthesis = getSpeechSynthesisSafe();
   if (!synthesis || !canSpeak()) return;
@@ -125,8 +130,12 @@ const speakWithDevice = (text: string, rate: number, accent: SpeechAccent, voice
   u.lang = accent === "uk" ? "en-GB" : "en-US";
   u.rate = rate;
   u.pitch = 1;
+  u.volume = 1;
   if (voice) u.voice = voice;
-  synthesis.speak(u);
+  liveUtterance = u;
+  u.onend = () => { if (liveUtterance === u) liveUtterance = null; };
+  // Chrome 在 cancel() 后立刻 speak() 经常无声，稍等一下再读
+  setTimeout(() => { try { synthesis.resume(); synthesis.speak(u); } catch { /* ignore */ } }, 60);
 };
 
 export const youdaoQuery = (text: string) => {
@@ -184,11 +193,12 @@ export const useSpeech = () => {
       const voices = synthesis.getVoices();
       if (voices.length === 0) return;
 
+      // Google 开头的声音要连谷歌服务器，在国内 Chrome 上会静默无声，所以优先本机声音
       const preferredVoiceNames = [
-        "Google US English",
-        "Google UK English Female",
-        "Google UK English Male",
-        "Microsoft Zira - English (United States)",
+        "Samantha",
+        "Microsoft Aria",
+        "Microsoft Zira",
+        "Microsoft Jenny",
         "Samantha",
         "Alex",
         "Daniel",
@@ -196,14 +206,14 @@ export const useSpeech = () => {
       ];
 
       for (const name of preferredVoiceNames) {
-        const voice = voices.find((v) => v.name.includes(name));
+        const voice = voices.find((v) => v.name.includes(name) && v.localService);
         if (voice) {
           setPreferredVoice(voice);
           return;
         }
       }
 
-      const nativeEnglishVoice = voices.find((v) => v.lang.startsWith("en") && !v.localService);
+      const nativeEnglishVoice = voices.find((v) => v.lang.startsWith("en") && v.localService);
       if (nativeEnglishVoice) {
         setPreferredVoice(nativeEnglishVoice);
         return;
@@ -238,16 +248,16 @@ const initVoice = () => {
   const voices = synthesis.getVoices();
   if (voices.length === 0) return;
 
-  const names = ["Google US English", "Google UK English Female", "Google UK English Male", "Microsoft Zira - English (United States)", "Samantha", "Alex", "Daniel"];
+  const names = ["Samantha", "Microsoft Aria", "Microsoft Zira", "Microsoft Jenny", "Alex", "Daniel"];
   for (const name of names) {
-    const voice = voices.find((v) => v.name.includes(name));
+    const voice = voices.find((v) => v.name.includes(name) && v.localService);
     if (voice) {
       cachedVoice = voice;
       return;
     }
   }
 
-  const native = voices.find((v) => v.lang.startsWith("en") && !v.localService);
+  const native = voices.find((v) => v.lang.startsWith("en") && v.localService);
   if (native) {
     cachedVoice = native;
     return;

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
  * status: 准备阶段「启动中」，答题阶段「监控中」。
  * 「监控中」时启用切屏检测：离开页面会被记录到 DAC 并弹出警告。
  */
+const AWAY_LIMIT_MS = 15000; // 离开页面累计连续 15 秒判负
 type ForfeitFn = (reason: string, meta: Record<string, number>) => void;
 
 const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | "监控中"; onForfeit?: ForfeitFn }) => {
@@ -16,12 +17,24 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   const [warn, setWarn] = useState(false);
   const countRef = useRef(0);
   const awayRef = useRef(false);
+  const awaySinceRef = useRef(0);
+  const [kicked, setKicked] = useState(false);
+  const kickedRef = useRef(false);
+  const forfeitRef = useRef(onForfeit);
+  forfeitRef.current = onForfeit;
+  const kick = (reason: string, meta: Record<string, number>) => {
+    if (kickedRef.current || !forfeitRef.current) return;
+    kickedRef.current = true;
+    setKicked(true);
+    forfeitRef.current(reason, meta);
+  };
 
   useEffect(() => {
     if (!monitoring) return;
     const leave = () => {
       if (awayRef.current) return;
       awayRef.current = true;
+      awaySinceRef.current = Date.now();
       countRef.current += 1;
       setCount(countRef.current);
       supabase.rpc("report_tab_switch" as any, { p_count: countRef.current, p_mode: location.hash.slice(0, 40) }).then(() => {});
@@ -29,13 +42,22 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     const back = () => {
       if (!awayRef.current) return;
       awayRef.current = false;
-      setWarn(true);
+      const awayMs = Date.now() - awaySinceRef.current;
+      if (awayMs >= AWAY_LIMIT_MS) kick("background_away", { awayMs, count: countRef.current });
+      else setWarn(true);
     };
+    // 一直挂在后台不回来：后台计时到点也直接判负
+    const timer = window.setInterval(() => {
+      if (awayRef.current && Date.now() - awaySinceRef.current >= AWAY_LIMIT_MS) {
+        kick("background_away", { awayMs: Date.now() - awaySinceRef.current, count: countRef.current });
+      }
+    }, 1000);
     const onVis = () => (document.hidden ? leave() : back());
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("blur", leave);
     window.addEventListener("focus", back);
     return () => {
+      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("blur", leave);
       window.removeEventListener("focus", back);
@@ -43,17 +65,9 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   }, [monitoring]);
 
   // 自动化操控检测（仅鼠标；触屏和键盘不检测）
-  const [kicked, setKicked] = useState(false);
-  const forfeitRef = useRef(onForfeit);
-  forfeitRef.current = onForfeit;
   useEffect(() => {
     if (!monitoring || !onForfeit) return;
-    let fired = false;
-    const fire = (reason: string, meta: Record<string, number>) => {
-      if (fired) return; fired = true;
-      setKicked(true);
-      forfeitRef.current?.(reason, meta);
-    };
+    const fire = kick;
     if ((navigator as any).webdriver) { fire("webdriver", {}); return; }
     let moves: { x: number; y: number; t: number }[] = [];
     let untrusted = 0, clicks = 0, robotic = 0;
@@ -97,12 +111,13 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     };
   }, [monitoring, !!onForfeit]);
 
+  const kickMsg = "DAC 检测到违规（疑似 AI/脚本操控或长时间离开对局），本局判负并已记录";
   return (
     <>
       {kicked && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] border border-destructive/60 bg-card px-4 py-3 flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-destructive" />
-          <span className="text-sm">DAC 检测到疑似 AI/脚本操控，本局判负并已记录</span>
+          <span className="text-sm">{kickMsg}</span>
         </div>
       )}
       <div className="fixed bottom-3 right-3 z-50 pointer-events-none select-none">

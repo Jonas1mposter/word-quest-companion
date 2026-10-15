@@ -1,3 +1,4 @@
+import { isAnswerCorrect } from "../_shared/answerMatch.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
@@ -38,9 +39,9 @@ Deno.serve(async (req) => {
       case "reverse":
       case "spelling":
       case "listening":
-        isCorrect = norm(answer) === norm(word.word); break;
+        isCorrect = isAnswerCorrect(String(answer ?? ""), String(word.word ?? "")); break;
       default:
-        isCorrect = norm(answer) === norm(word.word) || norm(answer) === norm(word.meaning);
+        isCorrect = isAnswerCorrect(String(answer ?? ""), String(word.word ?? "")) || norm(answer) === norm(word.meaning);
     }
 
     const { data: existing } = await admin

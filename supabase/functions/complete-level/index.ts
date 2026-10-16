@@ -29,20 +29,41 @@ Deno.serve(async (req) => {
     }
     if (profile.energy < 1) return json({ error: "Not enough energy" }, 400);
 
-    // ===== DAC (Dipont Anti-Cheat)：过关速度检测 =====
-    // 每题平均用时低于 1.2s 视为可疑（<0.6s 为高危），记录标记但不影响结算
-    if (typeof durationMs === "number" && durationMs >= 0) {
-      const perWord = durationMs / totalWords;
-      if (perWord < 1200) {
-        await admin.rpc("dac_flag", {
-          p_profile_id: profile.id,
-          p_source: "complete-level",
-          p_reason: "impossible_level_speed",
-          p_severity: perWord < 600 ? "high" : "medium",
-          p_meta: { levelId, levelName, totalWords, correctCount, durationMs, perWordMs: Math.round(perWord) },
-        });
-      }
+    // ===== 服务端计时会话：必须先 start-level，且每个会话只能结算一次 =====
+    const { sessionId } = body ?? {};
+    if (typeof sessionId !== "string") return json({ error: "Missing session" }, 400);
+    const { data: session } = await admin
+      .from("level_sessions")
+      .select("*")
+      .eq("id", sessionId)
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+    if (!session || session.completed_at) return json({ error: "Invalid session" }, 400);
+    if (session.level_id !== levelId || session.total_words !== totalWords) {
+      return json({ error: "Session mismatch" }, 400);
     }
+    const elapsed = Date.now() - new Date(session.started_at).getTime();
+    if (elapsed > 2 * 60 * 60 * 1000) return json({ error: "Session expired" }, 400);
+    const perWord = elapsed / totalWords;
+    if (perWord < 1200) {
+      await admin.rpc("dac_flag", {
+        p_profile_id: profile.id,
+        p_source: "complete-level",
+        p_reason: "impossible_level_speed",
+        p_severity: perWord < 600 ? "high" : "medium",
+        p_meta: { levelId, levelName, totalWords, correctCount, serverElapsedMs: elapsed, clientDurationMs: durationMs ?? null, perWordMs: Math.round(perWord) },
+      });
+      // 低于每题 0.6 秒（服务端计时）不可能是人工作答，直接拒绝结算
+      if (perWord < 600) return json({ error: "Too fast" }, 400);
+    }
+    // 原子占用会话，防止并发重复领取
+    const { data: claimed } = await admin
+      .from("level_sessions")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("id", sessionId)
+      .is("completed_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) return json({ error: "Invalid session" }, 400);
 
     const accuracy = correctCount / totalWords;
     const baseXp = 5;

@@ -41,7 +41,7 @@ export default function Lottery() {
       if (!profile) return { tickets: [], cards: [], pack: null, owned: new Set<string>() };
       const [tickets, cards, pack, ownedCards, ownedPack] = await Promise.all([
         supabase.from("backpack_items" as any).select("id").eq("profile_id", profile.id)
-          .eq("item_type", "lottery_ticket").eq("status", "unused").order("created_at"),
+          .eq("item_type", "lottery_ticket").eq("status", "unused").or("lottery_pool_id.is.null,lottery_pool_id.eq.champions-2024").order("created_at"),
         supabase.from("name_cards").select("*").eq("category", "lottery").order("rarity"),
         supabase.from("kill_sound_packs").select("*").eq("code", "champions2024").maybeSingle(),
         supabase.from("user_name_cards").select("name_card_id").eq("profile_id", profile.id),

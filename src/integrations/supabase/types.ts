@@ -1030,6 +1030,10 @@ export type Database = {
         Row: {
           created_at: string
           discounted_purchases: number
+          pity_legendary: number
+          pity_main: number
+          pity_mythology: number
+          pity_sub: number
           pool_id: string
           profile_id: string
           promotion_draws: number
@@ -1038,6 +1042,10 @@ export type Database = {
         Insert: {
           created_at?: string
           discounted_purchases?: number
+          pity_legendary?: number
+          pity_main?: number
+          pity_mythology?: number
+          pity_sub?: number
           pool_id: string
           profile_id: string
           promotion_draws?: number
@@ -1046,6 +1054,10 @@ export type Database = {
         Update: {
           created_at?: string
           discounted_purchases?: number
+          pity_legendary?: number
+          pity_main?: number
+          pity_mythology?: number
+          pity_sub?: number
           pool_id?: string
           profile_id?: string
           promotion_draws?: number
@@ -2914,6 +2926,22 @@ export type Database = {
         }[]
       }
       get_lottery_state: { Args: { p_pool_id?: string }; Returns: Json }
+      glory_crown_draw: { Args: { p_item_id: string }; Returns: Json }
+      glory_crown_policy: { Args: never; Returns: Json }
+      glory_crown_tier: {
+        Args: {
+          p_leg_left: boolean
+          p_main_left: boolean
+          p_myth_left: boolean
+          p_roll: number
+          p_since_leg: number
+          p_since_main: number
+          p_since_myth: number
+          p_since_sub: number
+          p_sub_left: boolean
+        }
+        Returns: string
+      }
       grant_special_badge: {
         Args: { p_id: string; p_name: string }
         Returns: boolean

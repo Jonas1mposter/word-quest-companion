@@ -2816,7 +2816,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_battle_invite: { Args: { p_invite_id: string }; Returns: string }
+      accept_battle_invite:
+        | { Args: { p_invite_id: string }; Returns: string }
+        | {
+            Args: { p_invite_id: string; p_profile_id: string }
+            Returns: string
+          }
       add_season_pass_xp: {
         Args: { p_profile_id: string; p_xp: number }
         Returns: undefined

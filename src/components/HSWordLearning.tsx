@@ -60,7 +60,16 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
 
   // DAC：记录测验开始时间，用于过关速度检测
   const quizStartRef = useRef(Date.now());
-  useEffect(() => { if (phase === "quiz") quizStartRef.current = Date.now(); }, [phase]);
+  const levelSessionRef = useRef<Promise<string | null> | null>(null);
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    quizStartRef.current = Date.now();
+    levelSessionRef.current = supabase.functions
+      .invoke("start-level", { body: { levelId: `HS-${levelId}`, totalWords: words.length } })
+      .then(({ data }) => (data?.sessionId as string) ?? null)
+      .catch(() => null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   useEffect(() => {
     if (phase === "quiz" && currentWord) {
@@ -106,6 +115,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
             maxCombo,
             isLetterLevel: false,
             durationMs: Date.now() - quizStartRef.current,
+            sessionId: await levelSessionRef.current,
           },
         });
         if (error || (data && data.error)) {

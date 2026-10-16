@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { isAwayViolation } from "@/lib/dacAway";
+import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。
@@ -38,6 +38,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       countRef.current += 1;
       setCount(countRef.current);
       supabase.rpc("report_tab_switch" as any, { p_count: countRef.current, p_mode: location.hash.slice(0, 40) }).then(() => {});
+      if (isSwitchViolation(countRef.current)) kick("tab_switch_limit", { count: countRef.current });
     };
     const back = () => {
       if (!awayRef.current) return;

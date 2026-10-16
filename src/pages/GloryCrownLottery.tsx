@@ -25,7 +25,7 @@ export default function GloryCrownLottery() {
   const [rolling, setRolling] = useState(false);
   const [buying, setBuying] = useState(false);
   const lock = useRef(false);
-  const [result, setResult] = useState<{ kind: string; label: string } | null>(null);
+  const [result, setResult] = useState<{ kind: string; label: string }[] | null>(null);
 
   const { data: state } = useQuery<GloryCrownState>({
     queryKey: ["lottery-state", POOL, profile?.id],
@@ -85,21 +85,31 @@ export default function GloryCrownLottery() {
     finally { lock.current = false; setBuying(false); }
   };
 
-  const roll = async () => {
-    if (!tickets.length || lock.current) return;
+  const roll = async (count = 1) => {
+    const n = Math.min(count, tickets.length);
+    if (!n || lock.current) return;
     lock.current = true; setRolling(true);
+    const got: { kind: string; label: string }[] = [];
     try {
-      const [res] = await Promise.all([
-        supabase.rpc("glory_crown_draw" as any, { p_item_id: tickets[0].id }),
-        new Promise((r) => setTimeout(r, 1800)),
-      ]);
-      const r = res.data as any;
-      if (res.error || r?.error) { toast.error("抽奖失败，请重试"); return; }
-      setResult({ kind: r.kind, label: r.label });
+      const delay = new Promise((r) => setTimeout(r, 1800));
+      // 逐张开奖：每张券由服务器单独判定，保底计数照常累加
+      for (const t of tickets.slice(0, n)) {
+        const res = await supabase.rpc("glory_crown_draw" as any, { p_item_id: t.id });
+        const r = res.data as any;
+        if (res.error || r?.error) break;
+        got.push({ kind: r.kind, label: r.label });
+      }
+      await delay;
+      if (!got.length) toast.error("抽奖失败，请重试");
+      else {
+        if (got.length < n) toast.error(`已完成 ${got.length} 抽，其余未能开奖，券未扣除`);
+        setResult(got);
+      }
       await invalidate();
-    } catch { toast.error("开奖结果未能确认，请刷新查看奖励"); }
+    } catch { toast.error(got.length ? `已完成 ${got.length} 抽，请刷新查看奖励` : "开奖结果未能确认，请刷新查看奖励"); if (got.length) setResult(got); }
     finally { lock.current = false; setRolling(false); }
   };
+
 
   const packs = data?.packs ?? [];
   const order = (c: string) => [...MAIN, ...SUB].indexOf(c);
@@ -180,10 +190,15 @@ export default function GloryCrownLottery() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">余额 {profile?.coins ?? 0} 狄邦豆 · 本奖池独立十次优惠；这里兑的券只能在荣光铸冠使用</p>
-          <Button size="lg" variant="hero" className="w-full sm:w-80 h-14 text-lg" disabled={rolling || buying || isLoading || !tickets.length} onClick={roll}>
-            {rolling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Ticket className="w-5 h-5 mr-2" />}
-            {rolling ? "铸造中..." : tickets.length ? "使用 1 张抽奖券" : "没有抽奖券"}
-          </Button>
+          <div className="grid w-full sm:max-w-xl grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button size="lg" variant="hero" className="h-14 text-lg" disabled={rolling || buying || isLoading || !tickets.length} onClick={() => roll(1)}>
+              {rolling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Ticket className="w-5 h-5 mr-2" />}
+              {rolling ? "铸造中..." : tickets.length ? "单抽 · 1 张券" : "没有抽奖券"}
+            </Button>
+            <Button size="lg" variant="gold" className="h-14 text-lg" disabled={rolling || buying || isLoading || tickets.length < 10} onClick={() => roll(10)}>
+              <Sparkles className="w-5 h-5 mr-2" />十连抽 · 10 张券
+            </Button>
+          </div>
         </div>
 
         <Card><CardContent className="p-4 space-y-1 text-sm">
@@ -197,15 +212,19 @@ export default function GloryCrownLottery() {
       </div>
 
       <Dialog open={!!result} onOpenChange={(o) => !o && setResult(null)}>
-        <DialogContent className="max-w-sm text-center">
+        <DialogContent className={cn("text-center", (result?.length ?? 0) > 1 ? "max-w-2xl" : "max-w-sm")}>
           <DialogHeader><DialogTitle className="flex items-center justify-center gap-2"><Sparkles className="w-5 h-5 text-primary" />恭喜获得</DialogTitle></DialogHeader>
-          <div className="py-6 flex flex-col items-center gap-3 nc-flip">
-            {result?.kind === "coins" ? <Coins className="w-16 h-16 text-gold" /> : result?.kind === "sound_pack" ? <Trophy className="w-16 h-16 text-primary" /> : <Sparkles className="w-16 h-16 text-primary" />}
-            <div className="text-2xl font-gaming">{result?.label}</div>
-            <p className="text-xs text-muted-foreground">已直接加到你的账号</p>
+          <div className={cn("py-4 nc-flip", (result?.length ?? 0) > 1 ? "grid grid-cols-2 sm:grid-cols-5 gap-2" : "flex flex-col items-center gap-3")}>
+            {result?.map((it, i) => (
+              <div key={i} className={cn("flex flex-col items-center gap-2", (result?.length ?? 0) > 1 && "rounded-lg border border-border p-2")}>
+                {it.kind === "coins" ? <Coins className={cn("text-gold", result!.length > 1 ? "w-8 h-8" : "w-16 h-16")} /> : it.kind === "sound_pack" ? <Trophy className={cn("text-primary", result!.length > 1 ? "w-8 h-8" : "w-16 h-16")} /> : <Sparkles className={cn("text-primary", result!.length > 1 ? "w-8 h-8" : "w-16 h-16")} />}
+                <div className={cn("font-gaming", result!.length > 1 ? "text-xs" : "text-2xl")}>{it.label}</div>
+              </div>
+            ))}
           </div>
+          <p className="text-xs text-muted-foreground">已直接加到你的账号</p>
           <DialogFooter className="sm:justify-center gap-2">
-            {tickets.length > 0 && <Button onClick={() => { setResult(null); roll(); }}>再抽一次</Button>}
+            {tickets.length > 0 && <Button onClick={() => { const n = result?.length ?? 1; setResult(null); roll(n); }} disabled={(result?.length ?? 1) > tickets.length}>{(result?.length ?? 1) > 1 ? "再来十连" : "再抽一次"}</Button>}
             <Button variant="outline" onClick={() => setResult(null)}>知道了</Button>
           </DialogFooter>
         </DialogContent>

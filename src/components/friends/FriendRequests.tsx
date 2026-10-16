@@ -53,7 +53,7 @@ export const FriendRequests = ({ currentProfileId }: FriendRequestsProps) => {
     fetchRequests();
 
     const channel = supabase
-      .channel("friend-requests")
+      .channel(`friend-requests-${currentProfileId}`)
       .on(
         "postgres_changes",
         {
@@ -67,8 +67,11 @@ export const FriendRequests = ({ currentProfileId }: FriendRequestsProps) => {
         }
       )
       .subscribe();
+    // Realtime can drop on weak school/hotspot networks; poll as a fallback.
+    const poll = setInterval(fetchRequests, 15000);
 
     return () => {
+      clearInterval(poll);
       supabase.removeChannel(channel);
     };
   }, [currentProfileId]);

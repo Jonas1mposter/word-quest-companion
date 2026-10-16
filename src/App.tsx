@@ -18,6 +18,7 @@ import ProductPPT from "./pages/ProductPPT";
 import Backpack from "./pages/Backpack";
 import Lottery from "./pages/Lottery";
 import LotteryHall from "./pages/LotteryHall";
+import GloryCrownLottery from "./pages/GloryCrownLottery";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";

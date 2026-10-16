@@ -188,7 +188,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     matchEndedRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     await new Promise(r => setTimeout(r, 500));
-    if (!matchData?.id) { setPhase("result"); return; }
+    if (!matchData?.id) { onBack(); return; }
     try {
       const { data, error } = await supabase.functions.invoke('process-match', { body: forfeit ? { matchId: matchData.id, forfeit } : { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
@@ -199,6 +199,18 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         }
       }
     } catch (e) { console.error(e); }
+    // 以服务器最终记录为准，避免本地分数/胜负丢失显示成 0:0 平局
+    for (let i = 0; i < 3; i++) {
+      const { data: m } = await supabase.from('ranked_matches')
+        .select('team1_score, team2_score, status, winner_team').eq('id', matchData.id).maybeSingle();
+      if (m) {
+        setTeam1Score(m.team1_score ?? 0);
+        setTeam2Score(m.team2_score ?? 0);
+        if (m.winner_team !== null && m.winner_team !== undefined) winnerTeamRef.current = m.winner_team;
+        if (m.status === 'completed') break;
+      }
+      await new Promise(r => setTimeout(r, 800));
+    }
     const wt = winnerTeamRef.current;
     if (wt && (wt === (onTeam1Ref.current ? 1 : 2))) sounds.playVictory();
     else if (wt !== null) sounds.playDefeat();

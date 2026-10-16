@@ -293,40 +293,17 @@ export const BattleInviteReceiver = ({
     setProcessing(true);
     try {
       if (accept) {
-        const { data: allWords } = await supabase
-          .from("words")
-          .select("*")
-          .eq("grade", contentGrade(currentGrade));
-        
-        const shuffled = (allWords || []).sort(() => Math.random() - 0.5);
-        const words = shuffled.slice(0, 10);
-
-        const { data: match, error: matchError } = await supabase
-          .from("ranked_matches")
-          .insert({
-            player1_id: currentProfileId,
-            player2_id: pendingInvite.sender_id,
-            grade: currentGrade,
-            status: "in_progress",
-            words: words || [],
-            started_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (matchError) throw matchError;
-
-        await supabase
-          .from("friend_battle_invites")
-          .update({ status: "accepted", match_id: match.id })
-          .eq("id", pendingInvite.id);
+        const { data, error } = await supabase.functions.invoke("accept-battle-invite", {
+          body: { inviteId: pendingInvite.id },
+        });
+        if (error || data?.error || typeof data?.matchId !== "string") throw error ?? new Error("接受邀请失败");
 
         toast({
           title: "接受挑战！",
           description: "比赛即将开始...",
         });
 
-        onBattleStart(match.id);
+        onBattleStart(data.matchId);
       } else {
         await supabase
           .from("friend_battle_invites")

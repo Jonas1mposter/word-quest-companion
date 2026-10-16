@@ -9,23 +9,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import BattleQuizCard, { BattleQuizType } from "./battle/BattleQuizCard";
+import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
+import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
+import { submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
 import DacBadge from "./battle/DacBadge";
 
-interface Word { id: string; word: string; meaning: string; phonetic?: string | null; example?: string | null; }
 interface MatchData {
   id: string;
   player1_id: string; player2_id: string;
   player3_id: string | null; player4_id: string | null;
   team1_score: number; team2_score: number;
-  words: Word[]; status: string; grade: number;
+  question_count: number; status: string; grade: number;
   winner_team: number | null;
 }
 
 type Phase = "searching" | "found" | "countdown" | "battle" | "result";
-const QUIZ_TYPES: BattleQuizType[] = ["meaning", "reverse", "spelling", "listening"];
+
 
 interface Props {
   onBack: () => void;
@@ -40,6 +41,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const [phase, setPhase] = useState<Phase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
   const [team1Profiles, setTeam1Profiles] = useState<any[]>([]);
   const [team2Profiles, setTeam2Profiles] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -49,9 +51,6 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(300);
-  const [options, setOptions] = useState<string[]>([]);
-  const [wordOptions, setWordOptions] = useState<string[]>([]);
-  const [quizType, setQuizType] = useState<BattleQuizType>("meaning");
   const [searchTime, setSearchTime] = useState(0);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<{ coins: number; xp: number } | null>(null);
@@ -67,23 +66,13 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   // DAC：记录当前题目展示时间，用于答题速度检测
   const questionShownAtRef = useRef(Date.now());
 
-  const generateOptions = useCallback((words: Word[], idx: number) => {
-    const cur = words[idx]; if (!cur) return;
-    const otherMeanings = words.filter((_, i) => i !== idx).map(w => w.meaning).sort(() => Math.random() - 0.5).slice(0, 3);
-    setOptions([...otherMeanings, cur.meaning].sort(() => Math.random() - 0.5));
-    const otherWords = words.filter((_, i) => i !== idx).map(w => w.word).sort(() => Math.random() - 0.5).slice(0, 3);
-    setWordOptions([...otherWords, cur.word].sort(() => Math.random() - 0.5));
-    setQuizType(QUIZ_TYPES[idx % QUIZ_TYPES.length]);
-  }, []);
-
   const loadMatch = useCallback(async (matchId: string) => {
     const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
     if (!match || !profile) return;
-    const words = (match.words as any[]) || [];
     const team1Ids = [match.player1_id, match.player3_id].filter(Boolean) as string[];
     const team2Ids = [match.player2_id, match.player4_id].filter(Boolean) as string[];
     onTeam1Ref.current = team1Ids.includes(profile.id);
-    setMatchData({ ...match, words } as any);
+    setMatchData(match as unknown as MatchData);
     setTeam1Score(match.team1_score ?? 0);
     setTeam2Score(match.team2_score ?? 0);
 
@@ -91,7 +80,6 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     setTeam1Profiles(team1Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
     setTeam2Profiles(team2Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
 
-    if (words.length > 0) generateOptions(words, 0);
 
     const channel = supabase.channel(`match2v2-${matchId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
@@ -121,7 +109,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     }, 2000);
 
     setPhase("countdown");
-  }, [profile, generateOptions]);
+  }, [profile]);
 
   const tryFindMatch = useCallback(async () => {
     if (!profile) return null;
@@ -230,41 +218,32 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     return () => clearTimeout(t);
   }, [phase, countdown, endMatch]);
 
+  useEffect(() => { if (question) setCurrentQuestion(question.questionIndex); }, [question]);
+
   // DAC：每题切换时重置计时
   useEffect(() => {
     if (phase === "battle") questionShownAtRef.current = Date.now();
   }, [currentQuestion, phase]);
 
-  const handleAnswer = useCallback(async (clientCorrect: boolean, answer: string) => {
-    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+  const handleAnswer = useCallback(async (answer: string): Promise<boolean> => {
+    if (!matchData || !question || !profile || matchEndedRef.current || answeringRef.current) throw new Error("对局已结束");
     answeringRef.current = true;
     try {
-      const idx = currentQuestion;
-      let serverCorrect = clientCorrect;
-      let matchEnded = false;
-      let dacForfeit: any = null;
-      try {
-        const { data, error } = await supabase.functions.invoke('submit-answer', {
-          body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
-        });
-        if (error) {
-          const ctx: any = (error as any).context;
-          if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) matchEnded = true;
-        } else if (data?.matchEnded) matchEnded = true;
-        else if (data && !data.error) serverCorrect = !!data.isCorrect;
-          if (data?.dacForfeit) dacForfeit = data.dacForfeit;
-      } catch (_) { /* network hiccup */ }
-      if (dacForfeit) { endMatch(dacForfeit); return; }
-      if (matchEnded) { endMatch(); return; }
-
+      const data = await submitBattleAnswer(matchData.id, question.questionIndex, answer, Date.now() - questionShownAtRef.current);
+      if (data.dacForfeit) { void endMatch(data.dacForfeit); return data.isCorrect; }
+      if (data.matchEnded) { void endMatch(); return data.isCorrect; }
+      const serverCorrect = data.isCorrect;
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
-      setTimeout(() => setAnswerAnimation(null), 500);
-      const next = idx + 1;
-      if (next >= matchData.words.length) endMatch();
-      else { setCurrentQuestion(next); generateOptions(matchData.words, next); }
+      setTimeout(() => {
+        setAnswerAnimation(null);
+        if (matchEndedRef.current) return;
+        if (question.questionIndex + 1 >= question.total) void endMatch();
+        else void loadQuestion();
+      }, 600);
+      return serverCorrect;
     } finally { answeringRef.current = false; }
-  }, [matchData, profile, currentQuestion, quizType, generateOptions, endMatch]);
+  }, [matchData, question, profile, loadQuestion, endMatch]);
 
   if (!profile) {
     return (
@@ -349,8 +328,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   }
 
   if (phase === "battle" && matchData) {
-    const currentWord = matchData.words[currentQuestion];
-    const progressPercent = (currentQuestion / matchData.words.length) * 100;
+
+    const progressPercent = (currentQuestion / matchData.question_count) * 100;
     const myTeamScore = onTeam1Ref.current ? team1Score : team2Score;
     const oppTeamScore = onTeam1Ref.current ? team2Score : team1Score;
     const myTeam = onTeam1Ref.current ? team1Profiles : team2Profiles;
@@ -380,7 +359,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           </div>
           <Progress value={progressPercent} className="h-2" />
           <div className="flex items-center justify-between mt-1">
-            <span className="text-xs text-muted-foreground">第 {currentQuestion + 1}/{matchData.words.length} 题</span>
+            <span className="text-xs text-muted-foreground">第 {currentQuestion + 1}/{matchData.question_count} 题</span>
             {comboCount >= 2 && (
               <Badge variant="default" className="animate-pulse">
                 <Zap className="w-3 h-3 mr-1" />{comboCount} 连击!
@@ -389,11 +368,14 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           </div>
         </div>
         <KillStreakBanner combo={comboCount} />
-        {currentWord && (
-          <BattleQuizCard word={currentWord} quizType={quizType}
-            options={options} wordOptions={wordOptions}
-            onAnswer={handleAnswer} answerAnimation={answerAnimation} comboCount={comboCount} />
+        {question && (
+          <ServerBattleQuizCard key={question.questionIndex} question={question}
+            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
         )}
+        {questionError && <div role="alert" className="text-center mt-4 text-destructive">
+          <p>{questionError}</p><Button variant="outline" onClick={() => void loadQuestion()}>重试</Button>
+        </div>}
+        {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
         <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );

@@ -20,13 +20,16 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
   const [loading, setLoading] = useState(true);
   const [p1Score, setP1Score] = useState(0);
   const [p2Score, setP2Score] = useState(0);
-  const [currentWord, setCurrentWord] = useState<any>(null);
+
   const [p1Answers, setP1Answers] = useState(0);
   const [p2Answers, setP2Answers] = useState(0);
   const [matchOver, setMatchOver] = useState(false);
 
   useEffect(() => {
-    loadMatch();
+    let channelCleanup: (() => void) | undefined;
+    let cancelled = false;
+    void loadMatch().then(cleanup => { if (cancelled) cleanup?.(); else channelCleanup = cleanup; });
+    return () => { cancelled = true; channelCleanup?.(); };
   }, [matchId]);
 
   const loadMatch = async () => {
@@ -50,8 +53,7 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
       setMatchOver(true);
     }
 
-    const words = (data.words as any[]) || [];
-    if (words.length > 0) setCurrentWord(words[0]);
+
 
     // Load players
     const [{ data: p1 }, { data: p2 }] = await Promise.all([
@@ -61,55 +63,14 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
     setPlayer1(p1);
     setPlayer2(p2);
 
-    // Get current answer counts
-    const { data: answers } = await supabase
-      .from('match_answers')
-      .select('player_id')
-      .eq('match_id', matchId);
-    
-    if (answers) {
-      setP1Answers(answers.filter(a => a.player_id === data.player1_id).length);
-      setP2Answers(answers.filter(a => a.player_id === data.player2_id).length);
-    }
-
-    // Subscribe to real-time updates
+    // Only public scores are shared while a match is active.
     const channel = supabase.channel(`spectate-${matchId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'match_answers',
-        filter: `match_id=eq.${matchId}`,
-      }, (payload) => {
-        const answer = payload.new as any;
-        if (answer.player_id === data.player1_id) {
-          if (answer.is_correct) setP1Score(prev => prev + 1);
-          setP1Answers(prev => prev + 1);
-        } else {
-          if (answer.is_correct) setP2Score(prev => prev + 1);
-          setP2Answers(prev => prev + 1);
-        }
-        // Update current word being shown
-        const maxAnswer = Math.max(
-          answer.player_id === data.player1_id ? answer.question_index : 0,
-          answer.player_id === data.player2_id ? answer.question_index : 0
-        );
-        if (words[maxAnswer]) setCurrentWord(words[maxAnswer]);
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'ranked_matches',
-        filter: `id=eq.${matchId}`,
-      }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const updated = payload.new as any;
         setP1Score(updated.player1_score);
         setP2Score(updated.player2_score);
-        if (updated.status === 'completed') {
-          setMatchOver(true);
-          setMatch(updated);
-        }
-      })
-      .subscribe();
+        if (updated.status === 'completed') { setMatchOver(true); setMatch(updated); }
+      }).subscribe();
 
     setLoading(false);
     return () => { supabase.removeChannel(channel); };
@@ -135,7 +96,7 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
     );
   }
 
-  const totalQuestions = ((match.words as any[]) || []).length;
+  const totalQuestions = match.question_count ?? 0;
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -169,7 +130,7 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
               className="mx-auto"
             />
             <p className="text-4xl font-gaming text-primary mt-4">{p1Score}</p>
-            <p className="text-xs text-muted-foreground">已答 {p1Answers}/{totalQuestions}</p>
+
           </div>
           
           <div className="text-3xl font-gaming text-muted-foreground">VS</div>
@@ -190,19 +151,9 @@ const SpectateView = ({ matchId, onBack }: SpectateViewProps) => {
               className="mx-auto"
             />
             <p className="text-4xl font-gaming text-neon-blue mt-4">{p2Score}</p>
-            <p className="text-xs text-muted-foreground">已答 {p2Answers}/{totalQuestions}</p>
+
           </div>
         </div>
-
-        {/* Current word display */}
-        {currentWord && !matchOver && (
-          <Card className="max-w-md mx-auto p-6 text-center">
-            <p className="text-sm text-muted-foreground mb-2">当前题目</p>
-            <h3 className="text-3xl font-gaming mb-2">{currentWord.word}</h3>
-            {currentWord.phonetic && <p className="text-muted-foreground">{currentWord.phonetic}</p>}
-            <p className="text-lg mt-2">{currentWord.meaning}</p>
-          </Card>
-        )}
 
         {/* Match over result */}
         {matchOver && (

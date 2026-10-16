@@ -31,7 +31,7 @@ const Index = () => {
     }
 
     setShowGradeDialog(false);
-  }, [loading, profile, gradeAutoDetected, hasResolvedGradeSelection]);
+  }, [loading, profile, hasResolvedGradeSelection]);
 
   // First-time onboarding: new accounts (few XP, no matches) that haven't seen the tour
   useEffect(() => {

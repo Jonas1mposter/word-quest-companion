@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,24 +11,30 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BadgeIcon } from "@/components/ui/badge-icon";
 import { getNameCardGradientStyle } from "@/components/profile-card/utils";
+import { discountRemaining, pityRemaining, lotteryTiers, type LotteryState } from "@/lib/lottery-policy";
 
 const RARITY_LABEL: Record<string, string> = { epic: "史诗", legendary: "传说", mythology: "神话" };
-const TIERS = [
-  { label: "100 狄邦豆", pct: "50%" },
-  { label: "200 狄邦豆", pct: "30%" },
-  { label: "史诗/传说限定名片", pct: "15%" },
-  { label: "神话限定名片", pct: "4%" },
-  { label: "2024 全球冠军赛音效", pct: "1%" },
-];
 
 export default function Lottery() {
   const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth();
   const qc = useQueryClient();
   const [rolling, setRolling] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const actionLock = useRef(false);
   const [result, setResult] = useState<{ kind: string; label: string } | null>(null);
+  const { data: state } = useQuery<LotteryState>({
+    queryKey: ["lottery-state", profile?.id],
+    enabled: !!profile,
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_lottery_state", { p_pool_id: "champions-2024" });
+      if (error) throw error;
+      return data as unknown as LotteryState;
+    },
+  });
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["lottery", profile?.id],
     enabled: !!profile,
     queryFn: async () => {
@@ -51,22 +57,59 @@ export default function Lottery() {
   });
 
   const tickets = data?.tickets ?? [];
+  const remaining = state ? discountRemaining(state) : 0;
+  const pity = state ? pityRemaining(state) : null;
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["lottery"] }),
+      qc.invalidateQueries({ queryKey: ["lottery-state"] }),
+      qc.invalidateQueries({ queryKey: ["backpack"] }),
+      qc.invalidateQueries({ queryKey: ["lottery-ticket-count"] }),
+      refreshProfile(),
+    ]);
+  };
+
+  const buyTicket = async (discounted: boolean) => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setBuying(true);
+    try {
+      const { data: response, error } = await supabase.rpc("purchase_lottery_ticket", { p_pool_id: "champions-2024", p_discounted: discounted });
+      const r = response as { error?: string; price?: number } | null;
+      if (error) throw error;
+      if (r?.error) {
+        toast.error(r.error === "discount_limit" ? "本奖池十次优惠已用完" : r.error === "insufficient_coins" ? "狄邦豆不足" : "兑换失败，请重试");
+      } else {
+        toast.success(`已用 ${r?.price} 狄邦豆兑换 1 张抽奖券`);
+      }
+      await invalidate();
+    } catch {
+      toast.error("兑换未能确认，请刷新查看余额和抽奖券后重试");
+    } finally {
+      actionLock.current = false;
+      setBuying(false);
+    }
+  };
 
   const roll = async () => {
-    if (!tickets.length) return;
+    if (!tickets.length || actionLock.current) return;
+    actionLock.current = true;
     setRolling(true);
+    try {
     const [res] = await Promise.all([
       supabase.rpc("use_backpack_item" as any, { p_item_id: tickets[0].id }),
       new Promise((r) => setTimeout(r, 1800)),
     ]);
-    setRolling(false);
     const r = res.data as any;
     if (res.error || r?.error) { toast.error("抽奖失败，请重试"); return; }
     setResult({ kind: r.kind, label: r.label });
-    qc.invalidateQueries({ queryKey: ["lottery"] });
-    qc.invalidateQueries({ queryKey: ["backpack"] });
-    qc.invalidateQueries({ queryKey: ["lottery-ticket-count"] });
-    refreshProfile();
+    await invalidate();
+    } catch {
+      toast.error("开奖结果未能确认，请刷新查看奖励后重试");
+    } finally {
+      actionLock.current = false;
+      setRolling(false);
+    }
   };
 
   const sorted = [...(data?.cards ?? [])].sort((a: any, b: any) => ["epic", "legendary", "mythology"].indexOf(a.rarity) - ["epic", "legendary", "mythology"].indexOf(b.rarity));
@@ -96,7 +139,7 @@ export default function Lottery() {
             <CardContent className="p-5 flex items-center gap-4">
               <img src={data.pack.icon_url} alt={data.pack.name} className="w-20 h-20 object-contain" />
               <div className="flex-1">
-                <div className="text-xs text-primary font-bold tracking-widest">大奖 · 1%</div>
+                <div className="text-xs text-primary font-bold">大奖 · {state ? `${state.sound_pct}%` : "加载中"}{state?.promotion_active ? " · 限时提升" : ""}</div>
                 <div className="text-xl font-gaming">{data.pack.name}</div>
                 <div className="text-xs text-muted-foreground">6 段专属连杀语音</div>
               </div>
@@ -121,18 +164,36 @@ export default function Lottery() {
         </div>
 
         <div className="flex flex-col items-center gap-3">
-          <Button size="lg" variant="hero" className="w-full sm:w-80 h-14 text-lg" disabled={rolling || !tickets.length} onClick={roll}>
+          {state?.promotion_active && (
+            <div className="text-center space-y-1">
+              <p className="text-sm text-primary">限时音效概率 4% · 25 抽保底</p>
+              <p className="text-xs text-muted-foreground">截至北京时间 2026年10月31日 23:59；仅统计活动期间抽奖</p>
+              <p className="text-sm font-medium">{pity === null ? "已拥有冠军音效" : `最多再抽 ${pity} 次必得冠军音效`}</p>
+            </div>
+          )}
+          <div className="grid w-full sm:max-w-xl grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button variant="gold" disabled={!state || buying || rolling || remaining === 0 || (profile?.coins ?? 0) < (state?.discount_price ?? 150)} onClick={() => buyTicket(true)}>
+              {buying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Coins className="w-4 h-4 mr-2" />}
+              {state?.discount_price ?? 150} 豆兑券 · 剩 {remaining}/10 次
+            </Button>
+            <Button variant="outline" disabled={!state || buying || rolling || (profile?.coins ?? 0) < (state?.standard_price ?? 200)} onClick={() => buyTicket(false)}>
+              <Coins className="w-4 h-4 mr-2" />{state?.standard_price ?? 200} 豆兑券 · 不限购
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">余额 {profile?.coins ?? 0} 狄邦豆 · 每个账号每个奖池享十次优惠；兑券不自动抽奖</p>
+          <Button size="lg" variant="hero" className="w-full sm:w-80 h-14 text-lg" disabled={rolling || buying || isLoading || !tickets.length} onClick={roll}>
             {rolling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Ticket className="w-5 h-5 mr-2" />}
             {rolling ? "开奖中..." : tickets.length ? "使用 1 张抽奖券" : "没有抽奖券"}
           </Button>
-          {!tickets.length && <p className="text-xs text-muted-foreground">抽奖券可通过优先账户每周奖励获得</p>}
+          {!tickets.length && <p className="text-xs text-muted-foreground">也可通过优先账户每周奖励获得抽奖券</p>}
         </div>
 
         <Card><CardContent className="p-4 space-y-1 text-sm">
           <p className="font-medium mb-2">概率公示</p>
-          {TIERS.map((t) => (
-            <div key={t.label} className="flex justify-between"><span className="text-muted-foreground">{t.label}</span><span className="font-mono">{t.pct}</span></div>
-          ))}
+          {state ? lotteryTiers(state.sound_pct).map((t) => (
+            <div key={t.label} className="flex justify-between gap-3"><span className="text-muted-foreground">{t.label}</span><span className="font-mono">{t.pct}%</span></div>
+          )) : <p className="text-muted-foreground">概率加载中…</p>}
+          {state?.promotion_active && <p className="text-xs text-muted-foreground pt-2">以上为非保底抽奖概率；未拥有音效时第25抽保底优先。活动结束恢复音效1%、100豆50%，其他不变；已获得音效永久保留。</p>}
           <p className="text-xs text-muted-foreground pt-2">已拥有的名片或音效不会重复，改发 200 狄邦豆。</p>
         </CardContent></Card>
       </div>

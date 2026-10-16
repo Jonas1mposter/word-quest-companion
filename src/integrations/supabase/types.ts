@@ -21,6 +21,7 @@ export type Database = {
           id: string
           item_type: string
           label: string
+          lottery_pool_id: string | null
           profile_id: string
           ref_id: string | null
           source: string
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           item_type: string
           label: string
+          lottery_pool_id?: string | null
           profile_id: string
           ref_id?: string | null
           source?: string
@@ -45,6 +47,7 @@ export type Database = {
           id?: string
           item_type?: string
           label?: string
+          lottery_pool_id?: string | null
           profile_id?: string
           ref_id?: string | null
           source?: string
@@ -987,6 +990,41 @@ export type Database = {
           unit?: number
         }
         Relationships: []
+      }
+      lottery_progress: {
+        Row: {
+          created_at: string
+          discounted_purchases: number
+          pool_id: string
+          profile_id: string
+          promotion_draws: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discounted_purchases?: number
+          pool_id: string
+          profile_id: string
+          promotion_draws?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discounted_purchases?: number
+          pool_id?: string
+          profile_id?: string
+          promotion_draws?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lottery_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       match_answers: {
         Row: {
@@ -2665,6 +2703,16 @@ export type Database = {
       }
       bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
       bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
+      champions_lottery_policy: { Args: { p_at?: string }; Returns: Json }
+      champions_lottery_tier: {
+        Args: {
+          p_at?: string
+          p_draws: number
+          p_owned: boolean
+          p_roll: number
+        }
+        Returns: string
+      }
       choose_backpack_reward: {
         Args: { p_choice: string; p_item_id: string }
         Returns: Json
@@ -2702,6 +2750,7 @@ export type Database = {
         Returns: string
       }
       gacha_draw: { Args: { p_count: number }; Returns: Json }
+      get_lottery_state: { Args: { p_pool_id?: string }; Returns: Json }
       grant_special_badge: {
         Args: { p_id: string; p_name: string }
         Returns: boolean
@@ -2722,6 +2771,14 @@ export type Database = {
         Returns: undefined
       }
       leaderboard_excluded_ids: { Args: never; Returns: string[] }
+      lottery_ticket_quote: {
+        Args: { p_coins: number; p_discounted: boolean; p_used: number }
+        Returns: Json
+      }
+      purchase_lottery_ticket: {
+        Args: { p_discounted: boolean; p_pool_id: string }
+        Returns: Json
+      }
       purchase_priority: { Args: never; Returns: Json }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
@@ -2739,6 +2796,7 @@ export type Database = {
         Returns: Json
       }
       use_backpack_item: { Args: { p_item_id: string }; Returns: Json }
+      use_backpack_item_legacy: { Args: { p_item_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

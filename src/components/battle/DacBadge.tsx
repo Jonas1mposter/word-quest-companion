@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { isAwayViolation } from "@/lib/dacAway";
+import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。
@@ -38,6 +38,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       countRef.current += 1;
       setCount(countRef.current);
       supabase.rpc("report_tab_switch" as any, { p_count: countRef.current, p_mode: location.hash.slice(0, 40) }).then(() => {});
+      if (isSwitchViolation(countRef.current)) kick("tab_switch_limit", { count: countRef.current });
     };
     const back = () => {
       if (!awayRef.current) return;
@@ -134,7 +135,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
             <ShieldAlert className="w-12 h-12 text-destructive mx-auto" />
             <h2 className="font-tactical text-xl uppercase tracking-widest text-destructive">DAC 检测到切屏</h2>
             <p className="text-sm text-muted-foreground">
-              对局中禁止离开页面查答案。本局已切屏 <span className="text-destructive font-bold">{count}</span> 次，已记录到 DAC，多次违规可能导致封号。
+              对局中禁止离开页面查答案。本局已切屏 <span className="text-destructive font-bold">{count}</span> 次，已记录到 DAC。累计 {SWITCH_LIMIT} 次将直接踢出对局并判负。
             </p>
             <Button variant="destructive" className="w-full" onClick={() => setWarn(false)}>我知道了，继续对局</Button>
           </div>

@@ -18,3 +18,15 @@ describe("DAC 切屏判负宽限期", () => {
     expect(isAwayViolation(3000)).toBe(false);
   });
 });
+
+import { isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
+describe("DAC 累计切屏判负", () => {
+  it("切屏 1–2 次只警告", () => {
+    expect(isSwitchViolation(1)).toBe(false);
+    expect(isSwitchViolation(2)).toBe(false);
+  });
+  it("累计第 3 次直接判负", () => {
+    expect(SWITCH_LIMIT).toBe(3);
+    expect(isSwitchViolation(3)).toBe(true);
+  });
+});

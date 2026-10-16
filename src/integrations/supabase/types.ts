@@ -2777,25 +2777,15 @@ export type Database = {
       bump_perfect_clear: { Args: { p_id: string }; Returns: undefined }
       bump_ranked_win: { Args: { p_id: string }; Returns: undefined }
       champions_lottery_policy: { Args: { p_at?: string }; Returns: Json }
-      champions_lottery_tier:
-        | {
-            Args: {
-              p_at?: string
-              p_draws: number
-              p_owned: boolean
-              p_roll: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_at?: string
-              p_draws: number
-              p_owned: boolean
-              p_roll: number
-            }
-            Returns: string
-          }
+      champions_lottery_tier: {
+        Args: {
+          p_at?: string
+          p_draws: number
+          p_owned: boolean
+          p_roll: number
+        }
+        Returns: string
+      }
       choose_backpack_reward: {
         Args: { p_choice: string; p_item_id: string }
         Returns: Json

@@ -1669,6 +1669,41 @@ export type Database = {
           },
         ]
       }
+      review_reward_daily: {
+        Row: {
+          coins_claimed: number
+          created_at: string
+          profile_id: string
+          reward_date: string
+          words_correct: number
+          words_total: number
+        }
+        Insert: {
+          coins_claimed?: number
+          created_at?: string
+          profile_id: string
+          reward_date: string
+          words_correct?: number
+          words_total?: number
+        }
+        Update: {
+          coins_claimed?: number
+          created_at?: string
+          profile_id?: string
+          reward_date?: string
+          words_correct?: number
+          words_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reward_daily_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       science_learning_progress: {
         Row: {
           correct_count: number
@@ -2718,6 +2753,10 @@ export type Database = {
         Returns: Json
       }
       claim_priority_weekly: { Args: never; Returns: Json }
+      claim_review_reward: {
+        Args: { p_correct: number; p_total: number }
+        Returns: Json
+      }
       dac_flag: {
         Args: {
           p_meta?: Json

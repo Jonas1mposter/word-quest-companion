@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -86,7 +87,7 @@ export const useMatchQueue = ({
         try {
           const res = await supabase.rpc('find_match', {
             _profile_id: profileId,
-            _grade: grade,
+            _grade: contentGrade(grade),
             _match_type: matchType,
             _elo_rating: eloRating,
             _subject: subject,
@@ -172,7 +173,7 @@ export const useMatchQueue = ({
           // Then try to find a new match
           const { data: pollData } = await supabase.rpc('find_match', {
             _profile_id: profileId,
-            _grade: grade,
+            _grade: contentGrade(grade),
             _match_type: matchType,
             _elo_rating: eloRating,
             _subject: subject,

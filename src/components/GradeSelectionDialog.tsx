@@ -72,8 +72,8 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
                 }
               `}
             >
-              <span className="text-2xl font-bold text-foreground">{grade === 9 ? "高中" : grade}</span>
-              <span className="text-xs text-muted-foreground">{grade === 9 ? "分区" : "年级"}</span>
+              <span className="text-2xl font-bold text-foreground">{grade >= 9 ? `G${grade}` : grade}</span>
+              <span className="text-xs text-muted-foreground">{grade >= 9 ? "高中" : "年级"}</span>
               {selectedGrade === grade && (
                 <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-primary" />
               )}

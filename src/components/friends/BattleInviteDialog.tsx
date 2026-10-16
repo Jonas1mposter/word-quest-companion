@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -295,7 +296,7 @@ export const BattleInviteReceiver = ({
         const { data: allWords } = await supabase
           .from("words")
           .select("*")
-          .eq("grade", currentGrade);
+          .eq("grade", contentGrade(currentGrade));
         
         const shuffled = (allWords || []).sort(() => Math.random() - 0.5);
         const words = shuffled.slice(0, 10);

@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,11 +100,21 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
   const fetchChallengeData = async () => {
     setLoading(true);
     try {
+      // 高中年级挑战赛：G9 vs G10 vs G11 vs G12 实时排名
+      if (grade >= 9) {
+        const { data: hs } = await supabase.rpc("get_hs_grade_challenge" as any);
+        if (Array.isArray(hs)) {
+          setGradeChallenges(
+            (hs as any[]).map((r, i) => ({ ...r, id: `hs-${r.grade}`, rank_position: i + 1, composite_score: Number(r.composite_score) })) as any,
+          );
+        }
+      }
+
       // Fetch active season
       const { data: seasonData } = await supabase
         .from("seasons")
         .select("*")
-        .eq("grade", grade)
+        .eq("grade", contentGrade(grade))
         .eq("is_active", true)
         .maybeSingle();
 
@@ -115,7 +126,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
           .from("class_challenges")
           .select("*")
           .eq("season_id", seasonData.id)
-          .eq("grade", grade)
+          .eq("grade", contentGrade(grade))
           .order("composite_score", { ascending: false });
 
         if (classData) {
@@ -129,7 +140,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
           .eq("season_id", seasonData.id)
           .order("composite_score", { ascending: false });
 
-        if (gradeData) {
+        if (gradeData && grade < 9) {
           setGradeChallenges(gradeData);
         }
 
@@ -398,8 +409,11 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
-              年级排行榜
+              {grade >= 9 ? "高中年级挑战赛 · G9 VS G10 VS G11 VS G12" : "年级排行榜"}
             </CardTitle>
+            {grade >= 9 && (
+              <p className="text-xs text-muted-foreground">综合积分 = 人均经验 + 人均过关数×20 + 正确率×200，按人均计算，人数多少不影响公平。</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-2">
             {gradeChallenges.length === 0 ? (

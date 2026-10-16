@@ -46,7 +46,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             <div>
               <h1 className="font-tactical text-2xl font-bold uppercase text-glow-red leading-none">狄邦单词通</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge data-tour="zone" onClick={() => setZoneOpen(true)} variant={grade === 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 rounded-none val-cut-sm" title="点击切换分区">
+                <Badge data-tour="zone" onClick={() => setZoneOpen(true)} variant={grade >= 9 ? "gold" : grade <= 6 ? "secondary" : grade === 7 ? "outline" : "champion"} className="text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 rounded-none val-cut-sm" title="点击切换分区">
                   <GraduationCap className="w-3 h-3" />
                   {zoneBadgeLabel(grade)}
                 </Badge>

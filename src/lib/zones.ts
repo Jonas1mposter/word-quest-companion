@@ -1,7 +1,8 @@
 // 分区（年级）相关的展示与判断工具
 
 export const PRIMARY_GRADES = [1, 2, 3, 4, 5, 6] as const;
-export const ALL_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+export const ALL_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+export const HS_GRADES = [9, 10, 11, 12] as const;
 
 const CN_NUM: Record<number, string> = {
   1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八",
@@ -14,7 +15,10 @@ export const usesZoneWordBank = (grade: number) => grade >= 9 || grade <= 6;
 export const isPrimaryZone = (grade: number) => grade >= 1 && grade <= 6;
 
 /** 分区名称，例如「三年级」「高中」 */
-export const zoneName = (grade: number) => (grade >= 9 ? "高中" : `${CN_NUM[grade] ?? grade}年级`);
+export const zoneName = (grade: number) => (grade >= 9 ? `高中 G${grade}` : `${CN_NUM[grade] ?? grade}年级`);
+
+/** 词库/匹配/赛季所用的分区年级：高中 9–12 共用高中内容（9） */
+export const contentGrade = (grade: number) => (grade >= 9 ? 9 : grade);
 
 /** 分区徽章文案，例如「三年级专区」「高中专区」 */
 export const zoneBadgeLabel = (grade: number) => `${zoneName(grade)}专区`;

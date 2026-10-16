@@ -43,6 +43,9 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
   const [equippedNameCard, setEquippedNameCard] = useState<EquippedNameCard | null>(null);
 
   useEffect(() => {
+    let active = true;
+    setEquippedBadges([]);
+    setEquippedNameCard(null);
     if (!profile || profile.isAI) return;
 
     // Fetch equipped badges
@@ -63,8 +66,8 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
         .order("equipped_slot", { ascending: true })
         .limit(3);
 
-      if (data) {
-        const badges = data.map((item: any) => ({
+      if (active && data) {
+        const badges = data.filter(item => item.badges && item.equipped_slot !== null).map((item: any) => ({
           id: item.badges.id,
           name: item.badges.name,
           icon: item.badges.icon,
@@ -93,7 +96,7 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
         .eq("is_equipped", true)
         .single();
 
-      if (data && data.name_cards) {
+      if (active && data && data.name_cards) {
         const card = data.name_cards as any;
         setEquippedNameCard({
           id: card.id,
@@ -108,7 +111,8 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
 
     fetchBadges();
     fetchNameCard();
-  }, [profile]);
+    return () => { active = false; };
+  }, [profile?.id, profile?.isAI]);
 
   if (!profile) return null;
 
@@ -179,7 +183,7 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
 
   // Generate 3 badge slots (empty or filled)
   const badgeSlots = [0, 1, 2].map(slot => {
-    const badge = equippedBadges.find(b => b.slot === slot + 1);
+    const badge = equippedBadges.find(b => b.slot === slot);
     return badge || null;
   });
 

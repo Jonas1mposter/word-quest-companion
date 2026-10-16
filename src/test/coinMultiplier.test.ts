@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { coinMultiplier, isBeijingWeekend } from "../supabase/functions/_shared/weekend";
+import { coinMultiplier, isBeijingWeekend } from "../../supabase/functions/_shared/weekend";
 
 // 周末双倍豆：北京时间（UTC+8）周六/周日翻倍
 // 构造规则：UTC 时间 + 8 小时即为北京时间

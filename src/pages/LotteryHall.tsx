@@ -46,7 +46,7 @@ export default function LotteryHall() {
         <section aria-label="精选抽奖活动" className="space-y-4">
           {lotteryEvents.map(event => (
             <article key={event.id} className="relative isolate min-h-[460px] overflow-hidden border border-border bg-card sm:min-h-[440px]">
-              <img src={event.image} alt="冠军限定活动主题奖杯" width={1536} height={864} className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_center] sm:object-center" />
+              <img src={event.image} alt={event.name} width={1536} height={864} className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_center] sm:object-center" />
               <div className="absolute inset-0 -z-10 bg-gradient-to-r from-background/95 via-background/70 to-background/10" />
               <div className="flex min-h-[460px] max-w-xl flex-col items-start justify-between p-6 sm:min-h-[440px] sm:p-10">
                 <span className="border border-primary/50 bg-background/60 px-3 py-1 text-xs font-semibold text-primary">进行中 · 抽奖券限定</span>

@@ -97,7 +97,6 @@ export const KillStreakBanner = ({ combo }: Props) => {
         className={cn(
           "w-36 h-36 sm:w-44 sm:h-44 object-contain",
           tier.glow,
-          "rounded-full",
           shown >= 4 && "animate-bounce",
           shown >= 5 && "animate-pulse"
         )}

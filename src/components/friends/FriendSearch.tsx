@@ -33,15 +33,23 @@ export const FriendSearch = ({ currentProfileId }: FriendSearchProps) => {
     
     setIsSearching(true);
     try {
-      const { data, error } = await supabase
+      // Match every word typed (e.g. "evan zhou" finds "STUDENT Evan Zhou Yunhao"); strip wildcard/filter characters.
+      const tokens = searchQuery.trim().replace(/[%_,()*\\]/g, " ").split(/\s+/).filter(Boolean).slice(0, 4);
+      if (tokens.length === 0) return;
+      let query = supabase
         .from("profiles")
         .select("id, username, avatar_url, grade, level, rank_tier")
-        .ilike("username", `%${searchQuery}%`)
-        .neq("id", currentProfileId)
-        .limit(10);
+        .neq("id", currentProfileId);
+      for (const t of tokens) query = query.ilike("username", `%${t}%`);
+      let { data, error } = await query.limit(20);
+      if (error) {
+        await new Promise((r) => setTimeout(r, 800));
+        ({ data, error } = await query.limit(20));
+      }
 
       if (error) throw error;
       setSearchResults(data || []);
+      if (!data?.length) toast({ title: "没有找到玩家", description: "试试输入英文名或姓名拼音中的一个词" });
     } catch (error) {
       console.error("Search error:", error);
       toast({

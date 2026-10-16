@@ -239,7 +239,16 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
 
   // DAC：记录测验开始时间，用于过关速度检测
   const quizStartRef = useRef(Date.now());
-  useEffect(() => { if (phase === "quiz") quizStartRef.current = Date.now(); }, [phase]);
+  const levelSessionRef = useRef<Promise<string | null> | null>(null);
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    quizStartRef.current = Date.now();
+    levelSessionRef.current = supabase.functions
+      .invoke("start-level", { body: { levelId: levelId, totalWords: words.length } })
+      .then(({ data }) => (data?.sessionId as string) ?? null)
+      .catch(() => null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // 处理退出
   const handleBack = () => {
@@ -399,6 +408,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
             maxCombo,
             isLetterLevel: !!letterMatch,
             durationMs: Date.now() - quizStartRef.current,
+            sessionId: await levelSessionRef.current,
           },
         });
 

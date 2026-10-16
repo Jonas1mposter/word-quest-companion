@@ -1385,6 +1385,7 @@ export type Database = {
           free_match_losses: number
           free_match_wins: number
           grade: number
+          grade_selected_at: string | null
           id: string
           is_priority: boolean
           last_energy_restore: string | null
@@ -1431,6 +1432,7 @@ export type Database = {
           free_match_losses?: number
           free_match_wins?: number
           grade?: number
+          grade_selected_at?: string | null
           id?: string
           is_priority?: boolean
           last_energy_restore?: string | null
@@ -1477,6 +1479,7 @@ export type Database = {
           free_match_losses?: number
           free_match_wins?: number
           grade?: number
+          grade_selected_at?: string | null
           id?: string
           is_priority?: boolean
           last_energy_restore?: string | null

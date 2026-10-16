@@ -8,21 +8,14 @@ import OnboardingTour from "@/components/OnboardingTour";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { user, profile, loading, gradeAutoDetected } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [grade, setGrade] = useState<number>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
-  const hasResolvedGradeSelection = (() => {
-    if (!profile || typeof window === "undefined") return false;
-
-    try {
-      return window.localStorage.getItem(`grade-selection-resolved:${profile.id}`) === "1";
-    } catch {
-      return false;
-    }
-  })();
+  // 每人必须亲自选一次年级；选过后（服务端记录）在任何设备都不再弹出
+  const hasResolvedGradeSelection = !!(profile as any)?.grade_selected_at;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,13 +25,13 @@ const Index = () => {
 
   // Show grade selection dialog if auto-detection failed
   useEffect(() => {
-    if (!loading && profile && !gradeAutoDetected && !hasResolvedGradeSelection) {
+    if (!loading && profile && !hasResolvedGradeSelection) {
       setShowGradeDialog(true);
       return;
     }
 
     setShowGradeDialog(false);
-  }, [loading, profile, gradeAutoDetected, hasResolvedGradeSelection]);
+  }, [loading, profile, hasResolvedGradeSelection]);
 
   // First-time onboarding: new accounts (few XP, no matches) that haven't seen the tour
   useEffect(() => {

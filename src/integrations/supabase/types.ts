@@ -2771,6 +2771,10 @@ export type Database = {
         Returns: undefined
       }
       leaderboard_excluded_ids: { Args: never; Returns: string[] }
+      lottery_ticket_quote: {
+        Args: { p_coins: number; p_discounted: boolean; p_used: number }
+        Returns: Json
+      }
       purchase_lottery_ticket: {
         Args: { p_discounted: boolean; p_pool_id: string }
         Returns: Json

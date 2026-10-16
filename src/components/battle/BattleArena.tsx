@@ -244,6 +244,19 @@ const BattleArena = ({
     } catch (e) {
       console.error('process-match exception', e);
     }
+    // 以服务器最终记录为准，避免显示成 0:0 平局
+    for (let i = 0; i < 3; i++) {
+      const { data: m } = await supabase.from('ranked_matches')
+        .select('player1_score, player2_score, status, winner_id').eq('id', matchData.id).maybeSingle();
+      if (m) {
+        const mine = isPlayer1Ref.current ? m.player1_score : m.player2_score;
+        myScoreRef.current = mine; setMyScoreDisplay(mine);
+        setOpponentScore(isPlayer1Ref.current ? m.player2_score : m.player1_score);
+        if (m.winner_id) winnerIdRef.current = m.winner_id;
+        if (m.status === 'completed') break;
+      }
+      await new Promise(r => setTimeout(r, 800));
+    }
     const winnerId = winnerIdRef.current;
     if (winnerId === profile.id) sounds.playVictory();
     else if (winnerId !== null) sounds.playDefeat();

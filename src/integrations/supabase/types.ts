@@ -1159,6 +1159,71 @@ export type Database = {
           },
         ]
       }
+      match_question_issues: {
+        Row: {
+          issued_at: string
+          match_id: string
+          options: Json
+          profile_id: string
+          question_index: number
+        }
+        Insert: {
+          issued_at?: string
+          match_id: string
+          options: Json
+          profile_id: string
+          question_index: number
+        }
+        Update: {
+          issued_at?: string
+          match_id?: string
+          options?: Json
+          profile_id?: string
+          question_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_question_issues_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_question_issues_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_question_secrets: {
+        Row: {
+          created_at: string
+          match_id: string
+          words: Json
+        }
+        Insert: {
+          created_at?: string
+          match_id: string
+          words: Json
+        }
+        Update: {
+          created_at?: string
+          match_id?: string
+          words?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_question_secrets_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_queue: {
         Row: {
           created_at: string
@@ -1532,6 +1597,7 @@ export type Database = {
           player2_score: number
           player3_id: string | null
           player4_id: string | null
+          question_count: number
           started_at: string | null
           status: string
           subject: string | null
@@ -1554,6 +1620,7 @@ export type Database = {
           player2_score?: number
           player3_id?: string | null
           player4_id?: string | null
+          question_count?: number
           started_at?: string | null
           status?: string
           subject?: string | null
@@ -1576,6 +1643,7 @@ export type Database = {
           player2_score?: number
           player3_id?: string | null
           player4_id?: string | null
+          question_count?: number
           started_at?: string | null
           status?: string
           subject?: string | null
@@ -2862,6 +2930,19 @@ export type Database = {
       leaderboard_excluded_ids: { Args: never; Returns: string[] }
       lottery_ticket_quote: {
         Args: { p_coins: number; p_discounted: boolean; p_used: number }
+        Returns: Json
+      }
+      match_next_question: {
+        Args: { p_match_id: string; p_profile_id: string }
+        Returns: Json
+      }
+      match_submit_question: {
+        Args: {
+          p_answer: string
+          p_match_id: string
+          p_profile_id: string
+          p_question_index: number
+        }
         Returns: Json
       }
       purchase_lottery_ticket: {

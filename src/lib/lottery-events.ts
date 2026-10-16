@@ -9,7 +9,7 @@ export const lotteryEvents = [
     description: "5 张限定名片 · 冠军连杀音效 · 狄邦豆",
     image: championsArtwork,
     path: "/lottery/champions-2024",
-    cost: "1 张抽奖券 / 次",
+    cost: "150 豆优惠兑券 / 200 豆不限兑券",
     featuredPrize: "2024 全球冠军赛音效",
   },
 ];

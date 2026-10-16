@@ -89,42 +89,19 @@ export const KillStreakBanner = ({ combo }: Props) => {
   return (
     <div
       key={key}
-      className="pointer-events-none fixed inset-x-0 top-28 z-50 flex justify-center px-4 animate-in fade-in zoom-in-50 slide-in-from-top-4 duration-300"
+      className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center animate-in fade-in zoom-in-50 slide-in-from-top-4 duration-300"
     >
-      <div
+      <img
+        src={iconUrl}
+        alt={tier.label}
         className={cn(
-          "flex items-center gap-3 rounded-2xl px-6 py-3 bg-gradient-to-r text-white border border-white/30 backdrop-blur-md",
-          tier.color,
+          "w-36 h-36 sm:w-44 sm:h-44 object-contain",
           tier.glow,
-          shown >= 5 && "animate-pulse",
-          shown >= 6 && "ring-2 ring-cyan-300/70"
+          "rounded-full",
+          shown >= 4 && "animate-bounce",
+          shown >= 5 && "animate-pulse"
         )}
-      >
-        <img
-          src={iconUrl}
-          alt=""
-          className={cn(
-            "w-12 h-12 drop-shadow-lg object-contain",
-            shown >= 4 && "animate-bounce"
-          )}
-        />
-        <div className="flex flex-col leading-tight">
-          <span className="font-gaming text-xl sm:text-2xl tracking-wider drop-shadow-md">
-            {tier.label}
-          </span>
-          <span className="text-[11px] sm:text-xs opacity-90">
-            {tier.sub} · {shown} 连击
-          </span>
-        </div>
-        <img
-          src={iconUrl}
-          alt=""
-          className={cn(
-            "w-12 h-12 drop-shadow-lg object-contain",
-            shown >= 4 && "animate-bounce"
-          )}
-        />
-      </div>
+      />
     </div>
   );
 };

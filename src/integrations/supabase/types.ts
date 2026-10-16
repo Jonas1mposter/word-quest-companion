@@ -964,6 +964,41 @@ export type Database = {
           },
         ]
       }
+      level_sessions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          level_id: string
+          profile_id: string
+          started_at: string
+          total_words: number
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          level_id: string
+          profile_id: string
+          started_at?: string
+          total_words: number
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          level_id?: string
+          profile_id?: string
+          started_at?: string
+          total_words?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       levels: {
         Row: {
           created_at: string

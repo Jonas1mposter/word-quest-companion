@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import SeasonPassManual from "@/pages/SeasonPassManual";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,7 +79,7 @@ const SeasonPass = ({ grade, profileId }: SeasonPassProps) => {
       const { data: seasonData } = await supabase
         .from("seasons")
         .select("id, name")
-        .eq("grade", grade)
+        .eq("grade", contentGrade(grade))
         .eq("is_active", true)
         .single();
 

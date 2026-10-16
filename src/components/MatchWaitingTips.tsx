@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -75,7 +76,7 @@ const MatchWaitingTips = ({
       const { data } = await supabase
         .from("words")
         .select("id, word, meaning, phonetic")
-        .eq("grade", grade)
+        .eq("grade", contentGrade(grade))
         .limit(50);
       
       if (data && data.length > 0) {

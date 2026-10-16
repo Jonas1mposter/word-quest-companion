@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -103,7 +104,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
       const { data: seasonData } = await supabase
         .from("seasons")
         .select("*")
-        .eq("grade", grade)
+        .eq("grade", contentGrade(grade))
         .eq("is_active", true)
         .maybeSingle();
 
@@ -115,7 +116,7 @@ const ChallengeArena = ({ grade, currentClass, profileId }: ChallengeArenaProps)
           .from("class_challenges")
           .select("*")
           .eq("season_id", seasonData.id)
-          .eq("grade", grade)
+          .eq("grade", contentGrade(grade))
           .order("composite_score", { ascending: false });
 
         if (classData) {

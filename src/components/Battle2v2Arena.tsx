@@ -1,3 +1,4 @@
+import { contentGrade } from "@/lib/zones";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -126,7 +127,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     if (!profile) return null;
     const args: any = {
       _profile_id: profile.id,
-      _grade: profile.grade,
+      _grade: contentGrade(profile.grade),
       _elo_rating: (profile as any).elo_rating ?? 1000,
       _subject: subject,
     };

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
+import CheckInCard from "./CheckInCard";
 import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "../NameCardFx";
 import BadgeIcon from "../ui/badge-icon";
 import { getNameCardGradientStyle } from "../profile-card/utils";
@@ -246,6 +247,9 @@ const HomeLobby = ({
         {profile && (
           <RankDisplay tier={profile.rank_tier as any} stars={profile.rank_stars} wins={profile.wins} losses={profile.losses} />
         )}
+        <div data-tour="checkin">
+          <CheckInCard />
+        </div>
         <div data-tour="quests">
           <DailyQuest key={refreshKey} onQuestUpdate={onEnergyPurchased} />
         </div>

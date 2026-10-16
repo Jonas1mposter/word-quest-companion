@@ -62,6 +62,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
   const [randomQuizMode, setRandomQuizMode] = useState(true);
   const [xpEarned, setXpEarned] = useState(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [weekendBonus, setWeekendBonus] = useState(false);
 
   const currentWord = words[currentIndex];
   const progress = words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0;
@@ -170,23 +171,31 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
     const accuracy = (correctCount + 1) / words.length;
     const baseXp = 3;
     const bonusXp = Math.floor(accuracy * 3);
-    const baseCoins = 1;
-    const bonusCoins = accuracy === 1 ? 2 : Math.floor(accuracy * 1);
+    const totalXpGained = baseXp + bonusXp;
 
-    setXpEarned(baseXp + bonusXp);
-    setCoinsEarned(baseCoins + bonusCoins);
+    setXpEarned(totalXpGained);
     setShowResult(true);
 
     if (profile) {
       try {
-        const totalXpGained = baseXp + bonusXp;
+        // 错题复习豆子由服务端发放：每答对1词2豆，周末双倍，每日上限120豆
+        const { data } = await supabase.rpc("claim_review_reward" as any, {
+          p_correct: correctCount,
+          p_total: words.length,
+        });
+        if (data?.ok) {
+          setCoinsEarned(data.coins ?? 0);
+          setWeekendBonus(!!data.weekend);
+          if ((data.coins ?? 0) > 0) {
+            toast.success(`🪙 复习奖励 +${data.coins} 狄邦豆${data.weekend ? "（周末双倍）" : ""}`);
+          }
+        }
         const levelUpResult = await updateProfileWithXp(
           profile.id,
           profile.level,
           profile.xp,
           profile.xp_to_next_level,
-          totalXpGained,
-          { coins: profile.coins + baseCoins + bonusCoins }
+          totalXpGained
         );
 
         if (levelUpResult.leveledUp) {
@@ -269,6 +278,11 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
             <Badge variant="gold" className="text-base px-4 py-2">
               🪙 +{coinsEarned}
             </Badge>
+            {weekendBonus && (
+              <Badge variant="gold" className="text-base px-4 py-2">
+                周末双倍
+              </Badge>
+            )}
           </div>
 
           <div className="flex gap-4">

@@ -76,6 +76,8 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
   const [showResult, setShowResult] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [weekendBonus, setWeekendBonus] = useState(false);
+  const [perfectBonus, setPerfectBonus] = useState(0);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
   const [energyDeducted, setEnergyDeducted] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -405,6 +407,8 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
         } else if (data) {
           setXpEarned(data.xpGained ?? baseXp + bonusXp);
           setCoinsEarned(data.coinsGained ?? baseCoins + bonusCoins);
+          setWeekendBonus(!!data.weekendBonus);
+          setPerfectBonus(data.perfectBonus ?? 0);
           if (data.leveledUp) {
             toast.success(`🎉 升级了！现在是 Lv.${data.newLevel}！`);
           }
@@ -531,6 +535,16 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
             <Badge variant="gold" className="text-base px-4 py-2">
               🪙 +{coinsEarned}
             </Badge>
+            {perfectBonus > 0 && (
+              <Badge variant="gold" className="text-base px-4 py-2">
+                完美过关 +{perfectBonus}
+              </Badge>
+            )}
+            {weekendBonus && (
+              <Badge variant="gold" className="text-base px-4 py-2">
+                周末双倍
+              </Badge>
+            )}
           </div>
 
           <div className="flex gap-4">

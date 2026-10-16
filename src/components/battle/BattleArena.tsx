@@ -9,7 +9,9 @@ import { useMatchQueue } from "@/hooks/useMatchQueue";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import BattleQuizCard, { BattleQuizType } from "./BattleQuizCard";
+import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
+import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
+import { submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
 import DacBadge from "./DacBadge";
@@ -19,21 +21,13 @@ import { getNameCardGradientStyle } from "@/components/profile-card/utils";
 import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
 import { BadgeIcon } from "@/components/ui/badge-icon";
 
-interface Word {
-  id: string;
-  word: string;
-  meaning: string;
-  phonetic?: string | null;
-  example?: string | null;
-}
-
 interface MatchData {
   id: string;
   player1_id: string;
   player2_id: string;
   player1_score: number;
   player2_score: number;
-  words: Word[];
+  question_count: number;
   status: string;
   grade: number;
   started_at: string;
@@ -42,7 +36,7 @@ interface MatchData {
 
 type BattlePhase = "searching" | "found" | "loading" | "countdown" | "battle" | "result";
 
-const QUIZ_TYPES: BattleQuizType[] = ["meaning", "reverse", "spelling", "listening"];
+
 
 export interface BattleArenaTheme {
   /** Tailwind text color class for primary accents (e.g. "text-primary") */
@@ -83,6 +77,7 @@ const BattleArena = ({
 
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [opponentNameCard, setOpponentNameCard] = useState<NameCardData | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -91,9 +86,6 @@ const BattleArena = ({
   const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(300);
-  const [options, setOptions] = useState<string[]>([]);
-  const [wordOptions, setWordOptions] = useState<string[]>([]);
-  const [quizType, setQuizType] = useState<BattleQuizType>("meaning");
   const [searchTime, setSearchTime] = useState(0);
 
   const myScoreRef = useRef(0);
@@ -109,24 +101,14 @@ const BattleArena = ({
   // DAC：记录当前题目展示时间，用于答题速度检测
   const questionShownAtRef = useRef(Date.now());
 
-  const generateOptions = useCallback((words: Word[], idx: number) => {
-    const cur = words[idx];
-    if (!cur) return;
-    const otherMeanings = words.filter((_, i) => i !== idx).map(w => w.meaning).sort(() => Math.random() - 0.5).slice(0, 3);
-    setOptions([...otherMeanings, cur.meaning].sort(() => Math.random() - 0.5));
-    const otherWords = words.filter((_, i) => i !== idx).map(w => w.word).sort(() => Math.random() - 0.5).slice(0, 3);
-    setWordOptions([...otherWords, cur.word].sort(() => Math.random() - 0.5));
-    setQuizType(QUIZ_TYPES[idx % QUIZ_TYPES.length]);
-  }, []);
-
   const loadMatch = useCallback(async (matchId: string, showIntel = true) => {
     const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
     if (!match || !profile) return;
-    const words = (match.words as any[]) || [];
     isPlayer1Ref.current = match.player1_id === profile.id;
-    setMatchData({ ...match, words, player1_id: match.player1_id!, player2_id: match.player2_id! });
+    if (!match.player1_id || !match.player2_id) return;
+    setMatchData({ ...match, player1_id: match.player1_id, player2_id: match.player2_id });
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
-    const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId!).single();
+    const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId ?? '').single();
     setOpponentProfile(opp);
 
     // 预讯过场：拉取对手佩戴的名片
@@ -143,15 +125,8 @@ const BattleArena = ({
       }
     }
 
-    if (words.length > 0) generateOptions(words, 0);
 
     const channel = supabase.channel(`match-${matchId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'match_answers', filter: `match_id=eq.${matchId}` }, (payload) => {
-        const a = payload.new as any;
-        if (a.player_id === profile.id) return;
-        const delta = a.is_correct ? 1 : (matchType === 'ranked' ? -1 : 0);
-        if (delta !== 0) setOpponentScore(prev => prev + delta);
-      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const u = payload.new as any;
         if (u.winner_id) winnerIdRef.current = u.winner_id;
@@ -189,7 +164,7 @@ const BattleArena = ({
     } else {
       setPhase("countdown");
     }
-  }, [profile, generateOptions]);
+  }, [profile]);
 
   const handleMatchFound = useCallback((matchId: string) => {
     sounds.playMatchFound();
@@ -276,61 +251,38 @@ const BattleArena = ({
     return () => clearTimeout(t);
   }, [phase, countdown, endMatch]);
 
+  useEffect(() => { if (question) setCurrentQuestion(question.questionIndex); }, [question]);
+
   // DAC：每题切换时重置计时
   useEffect(() => {
     if (phase === "battle") questionShownAtRef.current = Date.now();
   }, [currentQuestion, phase]);
 
-  const handleAnswer = useCallback(async (clientCorrect: boolean, answer: string) => {
-    if (!matchData || !profile || matchEndedRef.current || answeringRef.current) return;
+  const handleAnswer = useCallback(async (answer: string): Promise<boolean> => {
+    if (!matchData || !question || !profile || matchEndedRef.current || answeringRef.current) throw new Error("对局已结束");
     answeringRef.current = true;
     try {
-      const idx = currentQuestion;
-      let serverCorrect = clientCorrect;
-      let matchEnded = false;
-      let dacForfeit: any = null;
-      try {
-        const { data, error } = await supabase.functions.invoke('submit-answer', {
-          body: { matchId: matchData.id, questionIndex: idx, answer, quizType, elapsedMs: Date.now() - questionShownAtRef.current },
-        });
-        if (error) {
-          const ctx: any = (error as any).context;
-          if (ctx?.status === 409 || /Match ended/i.test(String((error as any).message || ''))) {
-            matchEnded = true;
-          }
-        } else if (data?.matchEnded || data?.error === 'Match ended') {
-          matchEnded = true;
-        } else if (data && !data.error) {
-          serverCorrect = !!data.isCorrect;
-          if (data?.dacForfeit) dacForfeit = data.dacForfeit;
-        }
-      } catch (_) {
-        // network hiccup — fall back to client correctness
-      }
-if (dacForfeit) { endMatch(dacForfeit); return; }
-            if (matchEnded) {
-        endMatch();
-        return;
-      }
+      const data = await submitBattleAnswer(matchData.id, question.questionIndex, answer, Date.now() - questionShownAtRef.current);
+      if (data.dacForfeit) { void endMatch(data.dacForfeit); return data.isCorrect; }
+      if (data.matchEnded) { void endMatch(); return data.isCorrect; }
+      const serverCorrect = data.isCorrect;
       if (serverCorrect) {
-        const ns = myScoreRef.current + 1;
-        myScoreRef.current = ns;
-        setMyScoreDisplay(ns);
+        myScoreRef.current += 1;
       } else if (matchType === 'ranked') {
-        const ns = myScoreRef.current - 1;
-        myScoreRef.current = ns;
-        setMyScoreDisplay(ns);
+        myScoreRef.current -= 1;
       }
+      setMyScoreDisplay(myScoreRef.current);
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
-      setTimeout(() => setAnswerAnimation(null), 500);
-      const next = idx + 1;
-      if (next >= matchData.words.length) endMatch();
-      else { setCurrentQuestion(next); generateOptions(matchData.words, next); }
-    } finally {
-      answeringRef.current = false;
-    }
-  }, [matchData, profile, currentQuestion, quizType, generateOptions, endMatch]);
+      setTimeout(() => {
+        setAnswerAnimation(null);
+        if (matchEndedRef.current) return;
+        if (question.questionIndex + 1 >= question.total) void endMatch();
+        else void loadQuestion();
+      }, 600);
+      return serverCorrect;
+    } finally { answeringRef.current = false; }
+  }, [matchData, question, profile, loadQuestion, endMatch]);
 
   if (!profile) {
     return (
@@ -468,8 +420,8 @@ if (dacForfeit) { endMatch(dacForfeit); return; }
   }
 
   if (phase === "battle" && matchData) {
-    const currentWord = matchData.words[currentQuestion];
-    const progressPercent = (currentQuestion / matchData.words.length) * 100;
+
+    const progressPercent = (currentQuestion / matchData.question_count) * 100;
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
@@ -510,7 +462,7 @@ if (dacForfeit) { endMatch(dacForfeit); return; }
           <Progress value={progressPercent} className="h-2" />
           <div className="flex items-center justify-between mt-1">
             <span className="text-xs text-muted-foreground">
-              第 {currentQuestion + 1}/{matchData.words.length} 题
+              第 {currentQuestion + 1}/{matchData.question_count} 题
             </span>
             {comboCount >= 2 && (
               <Badge variant="default" className="animate-pulse">
@@ -520,17 +472,14 @@ if (dacForfeit) { endMatch(dacForfeit); return; }
           </div>
         </div>
         <KillStreakBanner combo={comboCount} />
-        {currentWord && (
-          <BattleQuizCard
-            word={currentWord}
-            quizType={quizType}
-            options={options}
-            wordOptions={wordOptions}
-            onAnswer={handleAnswer}
-            answerAnimation={answerAnimation}
-            comboCount={comboCount}
-          />
+        {question && (
+          <ServerBattleQuizCard key={question.questionIndex} question={question}
+            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
         )}
+        {questionError && <div role="alert" className="text-center mt-4 text-destructive">
+          <p>{questionError}</p><Button variant="outline" onClick={() => void loadQuestion()}>重试</Button>
+        </div>}
+        {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
         <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );

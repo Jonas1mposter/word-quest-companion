@@ -1,4 +1,5 @@
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
+import { coinMultiplier } from "../_shared/weekend.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -17,7 +18,8 @@ Deno.serve(async (req) => {
       hard:   [11, 4, 1],
     };
     const [cw, cd, cl] = coinTable[diff];
-    const coinsGain = result === "win" ? cw : result === "draw" ? cd : cl;
+    // 周末（北京时间周六/周日）豆子双倍
+    const coinsGain = (result === "win" ? cw : result === "draw" ? cd : cl) * coinMultiplier();
 
     let newXp = (profile.xp ?? 0) + xpGain;
     let newLevel = profile.level ?? 1;
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
     }
     await admin.rpc("award_badges_for_profile", { p_id: profile.id });
 
-    return json({ ok: true, xpEarned: xpGain, coinsEarned: coinsGain });
+    return json({ ok: true, xpEarned: xpGain, coinsEarned: coinsGain, weekendBonus: coinMultiplier() === 2 });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

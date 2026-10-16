@@ -1,5 +1,6 @@
 import { analyzeTiming } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
+import { coinMultiplier } from "../_shared/weekend.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -38,9 +39,9 @@ const computeRank = (
   return { rank_tier: t, rank_stars: s, rank_points: pts };
 };
 
-const coinReward = (score: number, isFree: boolean) =>
-  isFree ? (score === 1 ? 16 : score === 0.5 ? 8 : 5)
-         : (score === 1 ? 33 : score === 0.5 ? 16 : 10);
+const coinReward = (score: number, isFree: boolean, factor = 1) =>
+  (isFree ? (score === 1 ? 16 : score === 0.5 ? 8 : 5)
+          : (score === 1 ? 33 : score === 0.5 ? 16 : 10)) * factor;
 const xpReward = (score: number, isFree: boolean) =>
   isFree ? (score === 1 ? 30 : score === 0.5 ? 15 : 10)
          : (score === 1 ? 20 : score === 0.5 ? 10 : 5);
@@ -154,7 +155,7 @@ Deno.serve(async (req) => {
 
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, false),
+            coins: (pp.coins ?? 0) + coinReward(score, false, coinMultiplier()),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
@@ -199,7 +200,7 @@ Deno.serve(async (req) => {
       const finalWinnerTeam = match.status === "completed" ? match.winner_team : winnerTeam;
       const callerScore: 1 | 0 | 0.5 = finalWinnerTeam === null ? 0.5
         : (finalWinnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
-      const coinsEarned = coinReward(callerScore, false);
+      const coinsEarned = coinReward(callerScore, false, coinMultiplier());
       const xpEarned = xpReward(callerScore, false);
 
       await admin.from("match_queue").delete().in("profile_id", memberIds);
@@ -210,6 +211,7 @@ Deno.serve(async (req) => {
         team1_score: match.status === "completed" ? match.team1_score : t1,
         team2_score: match.status === "completed" ? match.team2_score : t2,
         coinsEarned, xpEarned,
+        weekendBonus: coinMultiplier() === 2,
       });
     }
 
@@ -269,7 +271,7 @@ Deno.serve(async (req) => {
           while (newXp >= newXpToNext) { newXp -= newXpToNext; newLevel++; newXpToNext = 100 * newLevel; }
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, isFree),
+            coins: (pp.coins ?? 0) + coinReward(score, isFree, coinMultiplier()),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
@@ -313,12 +315,12 @@ Deno.serve(async (req) => {
     }
 
     const callerScore: 1 | 0 | 0.5 = winnerId === null ? 0.5 : winnerId === profile.id ? 1 : 0;
-    const coinsEarned = coinReward(callerScore, isFree);
+    const coinsEarned = coinReward(callerScore, isFree, coinMultiplier());
     const xpEarned = xpReward(callerScore, isFree);
 
     await admin.from("match_queue").delete().in("profile_id", [match.player1_id, match.player2_id]);
 
-    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned });
+    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned, weekendBonus: coinMultiplier() === 2 });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

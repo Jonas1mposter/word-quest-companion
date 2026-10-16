@@ -1,4 +1,5 @@
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
+import { coinMultiplier } from "../_shared/weekend.ts";
 
 // Atomically award XP/coins/energy-cost for completing a learning level.
 // First-wave hardening: server computes XP/coins from accuracy, deducts energy,
@@ -48,8 +49,11 @@ Deno.serve(async (req) => {
     const bonusXp = Math.floor(accuracy * 5);
     const baseCoins = 11;
     const bonusCoins = accuracy === 1 ? 16 : Math.floor(accuracy * 11);
+    // 完美过关额外奖励；周末（北京时间周六/周日）豆子双倍
+    const perfectBonus = accuracy === 1 ? 10 : 0;
+    const coinFactor = coinMultiplier();
     const xpGained = baseXp + bonusXp;
-    const coinsGained = baseCoins + bonusCoins;
+    const coinsGained = (baseCoins + bonusCoins + perfectBonus) * coinFactor;
     const stars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
 
     // Level-up math (matches src/lib/levelUp.ts).
@@ -148,6 +152,8 @@ Deno.serve(async (req) => {
       ok: true,
       xpGained,
       coinsGained,
+      perfectBonus: perfectBonus * coinFactor,
+      weekendBonus: coinFactor === 2,
       stars,
       leveledUp,
       newLevel,

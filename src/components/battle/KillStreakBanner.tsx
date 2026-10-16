@@ -15,12 +15,12 @@ interface Props {
 const DEFAULT_ICONS = [c1.url, c2.url, c3.url, c4.url, c5.url];
 
 const TIERS = [
-  { label: "First Blood", sub: "首杀", color: "from-emerald-400 to-emerald-600", glow: "shadow-[0_0_40px_rgba(52,211,153,0.8)]" },
-  { label: "Double Kill", sub: "双杀", color: "from-sky-400 to-blue-600", glow: "shadow-[0_0_40px_rgba(56,189,248,0.8)]" },
-  { label: "Triple Kill", sub: "三杀", color: "from-violet-400 to-purple-600", glow: "shadow-[0_0_40px_rgba(167,139,250,0.9)]" },
-  { label: "Quadra Kill", sub: "四杀", color: "from-pink-400 to-fuchsia-600", glow: "shadow-[0_0_50px_rgba(244,114,182,0.9)]" },
-  { label: "PENTA KILL", sub: "超神 · 无人能敌", color: "from-yellow-300 via-amber-500 to-red-600", glow: "shadow-[0_0_60px_rgba(250,204,21,1)]" },
-  { label: "HEXA KILL", sub: "电音光谱 · 万象共鸣", color: "from-cyan-300 via-fuchsia-500 to-purple-600", glow: "shadow-[0_0_80px_rgba(217,70,239,1)]" },
+  { label: "First Blood", sub: "首杀", color: "from-emerald-400 to-emerald-600", glow: "[filter:drop-shadow(0_0_22px_rgba(52,211,153,0.9))]" },
+  { label: "Double Kill", sub: "双杀", color: "from-sky-400 to-blue-600", glow: "[filter:drop-shadow(0_0_22px_rgba(56,189,248,0.9))]" },
+  { label: "Triple Kill", sub: "三杀", color: "from-violet-400 to-purple-600", glow: "[filter:drop-shadow(0_0_26px_rgba(167,139,250,1))]" },
+  { label: "Quadra Kill", sub: "四杀", color: "from-pink-400 to-fuchsia-600", glow: "[filter:drop-shadow(0_0_30px_rgba(244,114,182,1))]" },
+  { label: "PENTA KILL", sub: "超神 · 无人能敌", color: "from-yellow-300 via-amber-500 to-red-600", glow: "[filter:drop-shadow(0_0_34px_rgba(250,204,21,1))]" },
+  { label: "HEXA KILL", sub: "电音光谱 · 万象共鸣", color: "from-cyan-300 via-fuchsia-500 to-purple-600", glow: "[filter:drop-shadow(0_0_40px_rgba(217,70,239,1))]" },
 ];
 
 let cachedIcons: string[] | null = null;

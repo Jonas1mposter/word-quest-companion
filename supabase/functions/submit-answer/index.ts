@@ -1,6 +1,8 @@
-import { isAnswerCorrect } from "../_shared/answerMatch.ts";
+import { z } from "npm:zod@3.25.76";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const AnswerRequest = z.object({ matchId: z.string().uuid(), questionIndex: z.number().int().min(0).max(999), answer: z.string().max(2000), elapsedMs: z.number().finite().nonnegative().optional() });
 import { analyzeTiming, analyzeLookup, LOOKUP_MIN_SAMPLES } from "../_shared/answerTiming.ts";
-import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
+import { requireProfile, json } from "../_shared/auth.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
 // against the stored words[] payload. Updates the player's (or team's) score atomically.
@@ -8,60 +10,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, profile } = await requireProfile(req);
-    const { matchId, questionIndex, answer, quizType, elapsedMs } = await req.json();
-
-    if (typeof matchId !== "string" || typeof questionIndex !== "number") {
-      return json({ error: "Bad request" }, 400);
-    }
-
-    const { data: match, error: mErr } = await admin
-      .from("ranked_matches")
-      .select("id, player1_id, player2_id, player3_id, player4_id, player1_score, player2_score, team1_score, team2_score, words, status, match_type, mode")
-      .eq("id", matchId)
-      .single();
+    const body = await req.json();
+    const parsed = AnswerRequest.safeParse(body);
+    if (!parsed.success) return json({ error: "Bad request" }, 400);
+    const { matchId, questionIndex, answer, elapsedMs } = parsed.data;
+    if (profile.banned_until && new Date(profile.banned_until).getTime() > Date.now()) return json({ error: "Account banned" }, 403);
+    const { data: match, error: mErr } = await admin.from("ranked_matches")
+      .select("id, status, match_type, mode, question_count").eq("id", matchId).single();
     if (mErr || !match) return json({ error: "Match not found" }, 404);
-    if (match.status === "completed") return json({ ok: true, matchEnded: true, isCorrect: false }, 200);
-
-    const isP1 = match.player1_id === profile.id;
-    const isP2 = match.player2_id === profile.id;
-    const isP3 = match.player3_id === profile.id;
-    const isP4 = match.player4_id === profile.id;
-    if (!isP1 && !isP2 && !isP3 && !isP4) return json({ error: "Not in match" }, 403);
-
-    const words = (match.words as any[]) || [];
-    const word = words[questionIndex];
-    if (!word) return json({ error: "Bad question" }, 400);
-
-    let isCorrect = false;
-    const norm = (s: any) => String(s ?? "").trim().toLowerCase();
-    switch (quizType) {
-      case "meaning":
-        isCorrect = norm(answer) === norm(word.meaning); break;
-      case "reverse":
-      case "spelling":
-      case "listening":
-        isCorrect = isAnswerCorrect(String(answer ?? ""), String(word.word ?? "")); break;
-      default:
-        isCorrect = isAnswerCorrect(String(answer ?? ""), String(word.word ?? "")) || norm(answer) === norm(word.meaning);
-    }
-
-    const { data: existing } = await admin
-      .from("match_answers")
-      .select("id")
-      .eq("match_id", matchId)
-      .eq("player_id", profile.id)
-      .eq("question_index", questionIndex)
-      .maybeSingle();
-    if (existing) return json({ ok: true, isCorrect, duplicate: true });
-
-    await admin.from("match_answers").insert({
-      match_id: matchId,
-      player_id: profile.id,
-      question_index: questionIndex,
-      answer: String(answer ?? ""),
-      is_correct: isCorrect,
+    const { data: result, error: submitError } = await admin.rpc("match_submit_question", {
+      p_match_id: matchId, p_profile_id: profile.id,
+      p_question_index: questionIndex, p_answer: answer,
     });
-
+    if (submitError) return json({ error: submitError.message }, 409);
+    if (result?.matchEnded || result?.duplicate) return json(result);
+    const isCorrect = result?.isCorrect === true;
     // ===== DAC (Dipont Anti-Cheat)：答题速度检测 =====
     // 答对且速度快到人类不可能（<1.2s）时记录可疑标记，不影响本次计分
     if (isCorrect) {
@@ -92,29 +55,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isRanked = match.match_type === "ranked";
-    const delta = isCorrect ? 1 : (isRanked ? -1 : 0);
-    if (delta !== 0) {
-      if (match.mode === "2v2") {
-        // team1 = {p1, p3}, team2 = {p2, p4}
-        const inTeam1 = isP1 || isP3;
-        const field = inTeam1 ? "team1_score" : "team2_score";
-        const current = inTeam1 ? match.team1_score : match.team2_score;
-        await admin.from("ranked_matches").update({ [field]: (current ?? 0) + delta }).eq("id", matchId);
-      } else {
-        const field = isP1 ? "player1_score" : "player2_score";
-        const newScore = (isP1 ? match.player1_score : match.player2_score) + delta;
-        await admin.from("ranked_matches").update({ [field]: newScore }).eq("id", matchId);
-      }
-    }
-
     // ===== DAC：答题节奏过于固定 → 通知客户端判负（服务端结算时也会强制判负）=====
     const { data: mine } = await admin
       .from("match_answers").select("answered_at, answer, is_correct")
       .eq("match_id", matchId).eq("player_id", profile.id);
     const timing = analyzeTiming((mine ?? []) as any);
     // ===== DAC：疑似拍照/查答案（明显比平时慢却几乎全对）→ 仅记录，管理员复查 =====
-    const checkAt = Math.max(LOOKUP_MIN_SAMPLES, words.length);
+    const checkAt = Math.max(LOOKUP_MIN_SAMPLES, match.question_count);
     if (!timing.robotic && (mine?.length ?? 0) === checkAt) {
       try {
         const since = new Date(Date.now() - 30 * 86400000).toISOString();

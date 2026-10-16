@@ -25,7 +25,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ grade: selectedGrade })
+        .update({ grade: selectedGrade, grade_selected_at: new Date().toISOString() } as any)
         .eq("id", profile.id);
 
       if (error) throw error;
@@ -47,7 +47,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && (profile as any)?.grade_selected_at && onClose()}>
       <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
@@ -55,7 +55,7 @@ const GradeSelectionDialog = ({ open, onClose }: GradeSelectionDialogProps) => {
             选择你的年级
           </DialogTitle>
           <DialogDescription>
-            系统未能自动识别你的年级，请手动选择以获取对应的学习内容。
+            请选择你现在所在的年级（高中可选 G9–G12），选好后不会再弹出，之后可点顶部分区标签修改。
           </DialogDescription>
         </DialogHeader>
 

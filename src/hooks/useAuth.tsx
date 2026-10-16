@@ -191,6 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (p) {
               const updates: Record<string, any> = {};
 
+              const userPicked = !!(p as any).grade_selected_at;
               if (isSignIn && session.provider_token) {
                 // Fetch displayName + grade from Graph API
                 const { displayName, grade: detectedGrade } = await fetchGraphProfile(session.provider_token);
@@ -211,7 +212,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 // Grade detection from Azure groups
                 if (detectedGrade) {
                   setGradeAutoDetected(true);
-                  if (p.grade !== detectedGrade) {
+                  if (!userPicked && p.grade !== detectedGrade) {
                     updates.grade = detectedGrade;
                   }
                 } else {
@@ -219,7 +220,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   const emailGrade = session.user.email ? detectGradeFromEmail(session.user.email) : null;
                   if (emailGrade) {
                     setGradeAutoDetected(true);
-                    if (p.grade !== emailGrade) updates.grade = emailGrade;
+                    if (!userPicked && p.grade !== emailGrade) updates.grade = emailGrade;
                   } else {
                     setGradeAutoDetected(false);
                   }
@@ -229,7 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const emailGrade = session.user.email ? detectGradeFromEmail(session.user.email) : null;
                 if (emailGrade) {
                   setGradeAutoDetected(true);
-                  if (p.grade !== emailGrade) updates.grade = emailGrade;
+                  if (!userPicked && p.grade !== emailGrade) updates.grade = emailGrade;
                 } else {
                   setGradeAutoDetected(false);
                 }

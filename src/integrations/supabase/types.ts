@@ -2824,6 +2824,18 @@ export type Database = {
         Returns: string
       }
       gacha_draw: { Args: { p_count: number }; Returns: Json }
+      get_hs_grade_challenge: {
+        Args: never
+        Returns: {
+          composite_score: number
+          grade: number
+          member_count: number
+          total_answered: number
+          total_correct: number
+          total_levels_completed: number
+          total_xp: number
+        }[]
+      }
       get_lottery_state: { Args: { p_pool_id?: string }; Returns: Json }
       grant_special_badge: {
         Args: { p_id: string; p_name: string }

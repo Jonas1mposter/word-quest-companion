@@ -9,8 +9,8 @@ export async function fetchBattleQuestion(matchId: string): Promise<ServerQuesti
   const { data, error } = await supabase.functions.invoke("match-question", { body: { matchId } });
   if (error || data?.error) throw new Error("题目加载失败，请重试");
   if (data?.done) return null;
-  if (!data || !Number.isInteger(data.questionIndex) || !Array.isArray(data.options) || data.options.length !== 4 || typeof data.word !== "string") throw new Error("题目加载失败，请重试");
-  return data;
+  if (!data || !Number.isInteger(data.questionIndex) || !Number.isInteger(data.total) || !Array.isArray(data.options) || data.options.length !== 4 || data.options.some((option: unknown) => typeof option !== "string") || typeof data.word !== "string") throw new Error("题目加载失败，请重试");
+  return { questionIndex: data.questionIndex, total: data.total, word: data.word, options: data.options };
 }
 export async function submitBattleAnswer(matchId: string, questionIndex: number, answer: string, elapsedMs: number) {
   const { data, error } = await supabase.functions.invoke("submit-answer", { body: { matchId, questionIndex, answer, elapsedMs } });

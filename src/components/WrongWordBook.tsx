@@ -60,7 +60,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
     try {
       setLoading(true);
       const t = TABLES[subject];
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData, error: progressError }: { data: any[] | null; error: any } = await supabase
         .from(t.progress as any)
         .select("id, word_id, incorrect_count, correct_count, last_reviewed_at")
         .eq("profile_id", profile.id)
@@ -70,7 +70,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       if (!progressData?.length) { setWrongWords([]); setLoading(false); return; }
 
       const wordIds = progressData.map(p => p.word_id);
-      const { data: wordsData, error: wordsError } = await supabase
+      const { data: wordsData, error: wordsError }: { data: any[] | null; error: any } = await supabase
         .from(t.words as any)
         .select("id, word, meaning, phonetic, example")
         .in("id", wordIds);

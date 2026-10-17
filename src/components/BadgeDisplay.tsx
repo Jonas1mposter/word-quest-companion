@@ -104,12 +104,15 @@ const BadgeDisplay = () => {
         .from("user_badges").select("badge_id, earned_at").eq("profile_id", profile.id);
       ubs?.forEach(u => { earnedMap[u.badge_id] = u.earned_at; });
 
-      const { count } = await supabase
-        .from("learning_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("profile_id", profile.id)
-        .gte("mastery_level", 3);
-      setMasteredWords(count ?? 0);
+      const tables = ["learning_progress", "hs_learning_progress", "math_learning_progress", "science_learning_progress"];
+      const counts = await Promise.all(tables.map(t =>
+        (supabase.from(t as any) as any)
+          .select("*", { count: "exact", head: true })
+          .eq("profile_id", profile.id)
+          .gte("mastery_level", 1)
+      ));
+      setMasteredWords(counts.reduce((s: number, r: any) => s + (r.count ?? 0), 0));
+      supabase.rpc("award_badges_for_profile" as any, { p_id: profile.id } as any).then(() => {}, () => {});
     }
 
     const merged: BadgeItem[] = (allBadges || []).map(b => ({

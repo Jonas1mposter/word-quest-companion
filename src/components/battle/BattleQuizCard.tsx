@@ -170,9 +170,9 @@ const BattleQuizCard = ({
                 className={cn(
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium",
                   !showResult && !disabled && "hover:border-primary/50 hover:bg-primary/5 border-border bg-card",
-                  (showResult || disabled) && !isSelected && !isCorrect && "opacity-50 cursor-not-allowed",
-                  showResult && isCorrect && "border-success bg-success/10 text-success",
-                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive"
+                  (showResult || disabled) && !isSelected && !isCorrect && "opacity-50 cursor-not-allowed dark:opacity-60",
+                  showResult && isCorrect && "border-success bg-success/10 text-success dark:text-success-foreground",
+                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive dark:text-destructive-foreground"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -227,9 +227,9 @@ const BattleQuizCard = ({
                 className={cn(
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium font-mono",
                   !showResult && !disabled && "hover:border-primary/50 hover:bg-primary/5 border-border bg-card",
-                  (showResult || disabled) && !isSelected && !isCorrect && "opacity-50 cursor-not-allowed",
-                  showResult && isCorrect && "border-success bg-success/10 text-success",
-                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive"
+                  (showResult || disabled) && !isSelected && !isCorrect && "opacity-50 cursor-not-allowed dark:opacity-60",
+                  showResult && isCorrect && "border-success bg-success/10 text-success dark:text-success-foreground",
+                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive dark:text-destructive-foreground"
                 )}
               >
                 <div className="flex items-center justify-between">

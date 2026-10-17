@@ -166,9 +166,9 @@ const QuizCard = ({
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium",
                   !showResult && "hover:border-primary/50 hover:bg-primary/5",
                   !showResult && "border-border bg-card",
-                  showResult && isCorrect && "border-success bg-success/10 text-success",
-                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive",
-                  showResult && !isSelected && !isCorrect && "opacity-50"
+                  showResult && isCorrect && "border-success bg-success/10 text-success dark:text-success-foreground",
+                   showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive dark:text-destructive-foreground",
+                  showResult && !isSelected && !isCorrect && "opacity-50 dark:opacity-60"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -236,9 +236,9 @@ const QuizCard = ({
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium",
                   !showResult && "hover:border-primary/50 hover:bg-primary/5",
                   !showResult && "border-border bg-card",
-                  showResult && isCorrect && "border-success bg-success/10 text-success",
-                  showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive",
-                  showResult && !isSelected && !isCorrect && "opacity-50"
+                  showResult && isCorrect && "border-success bg-success/10 text-success dark:text-success-foreground",
+                   showResult && isSelected && !isCorrect && "border-destructive bg-destructive/10 text-destructive dark:text-destructive-foreground",
+                  showResult && !isSelected && !isCorrect && "opacity-50 dark:opacity-60"
                 )}
               >
                 <div className="flex items-center justify-between">

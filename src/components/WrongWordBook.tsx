@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-export type WrongSubject = "english" | "math" | "science";
+export type WrongSubject = "english" | "math" | "science" | "hs";
 
 export interface WrongWord {
   id: string;            // progress row id
@@ -35,10 +35,11 @@ interface WrongWordBookProps {
   onStartReview: (words: WrongWord[], subject: WrongSubject) => void;
 }
 
-const TABLES: Record<WrongSubject, { progress: "learning_progress" | "math_learning_progress" | "science_learning_progress"; words: "words" | "math_words" | "science_words" }> = {
+const TABLES: Record<WrongSubject, { progress: string; words: string }> = {
   english: { progress: "learning_progress", words: "words" },
   math: { progress: "math_learning_progress", words: "math_words" },
   science: { progress: "science_learning_progress", words: "science_words" },
+  hs: { progress: "hs_learning_progress", words: "hs_words" },
 };
 
 const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
@@ -178,10 +179,11 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       </div>
 
       <Tabs value={subject} onValueChange={(v) => setSubject(v as WrongSubject)}>
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="english">英语</TabsTrigger>
           <TabsTrigger value="math">数学</TabsTrigger>
           <TabsTrigger value="science">科学</TabsTrigger>
+          <TabsTrigger value="hs">高中</TabsTrigger>
         </TabsList>
       </Tabs>
 

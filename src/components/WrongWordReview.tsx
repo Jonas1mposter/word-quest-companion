@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateProfileWithXp } from "@/lib/levelUp";
 
-export type WrongSubject = "english" | "math" | "science";
+export type WrongSubject = "english" | "math" | "science" | "hs";
 
 interface Word {
   id: string;
@@ -38,10 +38,11 @@ interface WrongWordReviewProps {
   onComplete: () => void;
 }
 
-const PROGRESS_TABLE: Record<WrongSubject, "learning_progress" | "math_learning_progress" | "science_learning_progress"> = {
+const PROGRESS_TABLE: Record<WrongSubject, string> = {
   english: "learning_progress",
   math: "math_learning_progress",
   science: "science_learning_progress",
+  hs: "hs_learning_progress",
 };
 
 const QUIZ_TYPES: { type: QuizType; label: string; icon: string }[] = [

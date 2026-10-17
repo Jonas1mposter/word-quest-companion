@@ -358,7 +358,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
                     "h-auto py-3 px-4 text-left justify-start",
                     isAnswered && isCorrect && "bg-success/20 border-success text-success-foreground",
                     isAnswered && isSelected && !isCorrect && "bg-destructive/20 border-destructive text-destructive-foreground",
-                    !isAnswered && "hover:bg-amber-500/10 hover:border-amber-500"
+                    !isAnswered && "hover:bg-amber-500/10 hover:border-amber-500 hover:text-foreground"
                   )}
                   onClick={() => handleQuizAnswer(option)}
                   disabled={isAnswered}

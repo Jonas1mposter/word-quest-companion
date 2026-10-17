@@ -403,7 +403,7 @@ const MathWordLearning = ({ levelId, levelName, words, onBack, onComplete }: Mat
                     "h-auto py-3 px-4 text-left justify-start",
                     isAnswered && isCorrect && "bg-success/20 border-success text-success-foreground",
                     isAnswered && isSelected && !isCorrect && "bg-destructive/20 border-destructive text-destructive-foreground",
-                    !isAnswered && "hover:bg-primary/10 hover:border-primary"
+                    !isAnswered && "hover:bg-primary/10 hover:border-primary hover:text-foreground"
                   )}
                   onClick={() => handleQuizAnswer(option)}
                   disabled={isAnswered}

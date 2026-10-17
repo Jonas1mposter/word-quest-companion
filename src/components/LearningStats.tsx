@@ -32,13 +32,24 @@ const LearningStats = () => {
       if (!profile) return;
 
       try {
-        // Fetch learning progress
-        const { data: progressData, error } = await supabase
-          .from("learning_progress")
-          .select("*")
-          .eq("profile_id", profile.id);
+        // 合并四张进度表：初中英语、数学、科学、高中
+        const [eng, math, sci, hs] = await Promise.all([
+          supabase.from("learning_progress").select("mastery_level, correct_count, incorrect_count, updated_at").eq("profile_id", profile.id),
+          supabase.from("math_learning_progress").select("mastery_level, correct_count, incorrect_count, updated_at").eq("profile_id", profile.id),
+          supabase.from("science_learning_progress").select("mastery_level, correct_count, incorrect_count, updated_at").eq("profile_id", profile.id),
+          supabase.from("hs_learning_progress" as any).select("mastery_level, correct_count, incorrect_count, updated_at").eq("profile_id", profile.id),
+        ]);
+        if (eng.error) throw eng.error;
+        if (math.error) throw math.error;
+        if (sci.error) throw sci.error;
+        if (hs.error) throw hs.error;
 
-        if (error) throw error;
+        const progressData = [
+          ...(eng.data ?? []),
+          ...(math.data ?? []),
+          ...(sci.data ?? []),
+          ...((hs.data as any[]) ?? []),
+        ];
 
         if (progressData) {
           const totalWords = progressData.length;

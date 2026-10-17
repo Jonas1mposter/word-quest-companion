@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-export type WrongSubject = "english" | "math" | "science";
+export type WrongSubject = "english" | "math" | "science" | "hs";
 
 export interface WrongWord {
   id: string;            // progress row id
@@ -35,10 +35,11 @@ interface WrongWordBookProps {
   onStartReview: (words: WrongWord[], subject: WrongSubject) => void;
 }
 
-const TABLES: Record<WrongSubject, { progress: "learning_progress" | "math_learning_progress" | "science_learning_progress"; words: "words" | "math_words" | "science_words" }> = {
+const TABLES: Record<WrongSubject, { progress: string; words: string }> = {
   english: { progress: "learning_progress", words: "words" },
   math: { progress: "math_learning_progress", words: "math_words" },
   science: { progress: "science_learning_progress", words: "science_words" },
+  hs: { progress: "hs_learning_progress", words: "hs_words" },
 };
 
 const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
@@ -59,8 +60,8 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
     try {
       setLoading(true);
       const t = TABLES[subject];
-      const { data: progressData, error: progressError } = await supabase
-        .from(t.progress)
+      const { data: progressData, error: progressError }: { data: any[] | null; error: any } = await supabase
+        .from(t.progress as any)
         .select("id, word_id, incorrect_count, correct_count, last_reviewed_at")
         .eq("profile_id", profile.id)
         .gt("incorrect_count", 0)
@@ -69,8 +70,8 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       if (!progressData?.length) { setWrongWords([]); setLoading(false); return; }
 
       const wordIds = progressData.map(p => p.word_id);
-      const { data: wordsData, error: wordsError } = await supabase
-        .from(t.words)
+      const { data: wordsData, error: wordsError }: { data: any[] | null; error: any } = await supabase
+        .from(t.words as any)
         .select("id, word, meaning, phonetic, example")
         .in("id", wordIds);
       if (wordsError) throw wordsError;
@@ -139,7 +140,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       if (masteredIds.length === 0) { toast.info("暂无已掌握的单词"); return; }
       const t = TABLES[subject];
       const { error } = await supabase
-        .from(t.progress)
+        .from(t.progress as any)
         .update({ incorrect_count: 0 })
         .in("id", masteredIds);
       if (error) throw error;
@@ -178,10 +179,11 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       </div>
 
       <Tabs value={subject} onValueChange={(v) => setSubject(v as WrongSubject)}>
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="english">英语</TabsTrigger>
           <TabsTrigger value="math">数学</TabsTrigger>
           <TabsTrigger value="science">科学</TabsTrigger>
+          <TabsTrigger value="hs">高中</TabsTrigger>
         </TabsList>
       </Tabs>
 

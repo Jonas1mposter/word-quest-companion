@@ -45,8 +45,8 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
         {question.options.map(option => (
           <Button key={option} variant="outline" disabled={pending || result !== null || disabled}
             onClick={() => void submit(option)} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg",
-              selected === option && result === true && "border-success bg-success/10 text-success",
-              selected === option && result === false && "border-destructive bg-destructive/10 text-destructive")}
+              selected === option && result === true && "border-success bg-success/10 text-success dark:text-success-foreground",
+              selected === option && result === false && "border-destructive bg-destructive/10 text-destructive dark:text-destructive-foreground")}
           >
             <span className="break-words min-w-0">{option}</span>
             {selected === option && pending && <Loader2 className="w-5 h-5 shrink-0 animate-spin" />}

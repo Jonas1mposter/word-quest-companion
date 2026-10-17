@@ -61,7 +61,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       setLoading(true);
       const t = TABLES[subject];
       const { data: progressData, error: progressError } = await supabase
-        .from(t.progress)
+        .from(t.progress as any)
         .select("id, word_id, incorrect_count, correct_count, last_reviewed_at")
         .eq("profile_id", profile.id)
         .gt("incorrect_count", 0)
@@ -71,7 +71,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
 
       const wordIds = progressData.map(p => p.word_id);
       const { data: wordsData, error: wordsError } = await supabase
-        .from(t.words)
+        .from(t.words as any)
         .select("id, word, meaning, phonetic, example")
         .in("id", wordIds);
       if (wordsError) throw wordsError;
@@ -140,7 +140,7 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
       if (masteredIds.length === 0) { toast.info("暂无已掌握的单词"); return; }
       const t = TABLES[subject];
       const { error } = await supabase
-        .from(t.progress)
+        .from(t.progress as any)
         .update({ incorrect_count: 0 })
         .in("id", masteredIds);
       if (error) throw error;

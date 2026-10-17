@@ -103,7 +103,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
       try {
         const table = PROGRESS_TABLE[subject];
         const { data: existing } = await supabase
-          .from(table)
+          .from(table as any)
           .select("*")
           .eq("profile_id", profile.id)
           .eq("word_id", currentWord.word_id)
@@ -111,7 +111,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
 
         if (existing) {
           await supabase
-            .from(table)
+            .from(table as any)
             .update({
               correct_count: (existing.correct_count || 0) + 1,
               last_reviewed_at: new Date().toISOString(),
@@ -135,7 +135,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
       try {
         const table = PROGRESS_TABLE[subject];
         const { data: existing } = await supabase
-          .from(table)
+          .from(table as any)
           .select("*")
           .eq("profile_id", profile.id)
           .eq("word_id", currentWord.word_id)
@@ -143,7 +143,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
 
         if (existing) {
           await supabase
-            .from(table)
+            .from(table as any)
             .update({
               incorrect_count: (existing.incorrect_count || 0) + 1,
               last_reviewed_at: new Date().toISOString(),

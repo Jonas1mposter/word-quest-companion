@@ -102,7 +102,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
     if (profile && currentWord) {
       try {
         const table = PROGRESS_TABLE[subject];
-        const { data: existing } = await supabase
+        const { data: existing }: { data: any } = await supabase
           .from(table as any)
           .select("*")
           .eq("profile_id", profile.id)
@@ -134,7 +134,7 @@ const WrongWordReview = ({ words, subject = "english", onBack, onComplete }: Wro
     if (profile && currentWord) {
       try {
         const table = PROGRESS_TABLE[subject];
-        const { data: existing } = await supabase
+        const { data: existing }: { data: any } = await supabase
           .from(table as any)
           .select("*")
           .eq("profile_id", profile.id)

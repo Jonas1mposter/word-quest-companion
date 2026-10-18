@@ -73,7 +73,7 @@ export const KillStreakBanner = ({ combo }: Props) => {
     if (combo >= 1) {
       setShown(combo);
       setKey((k) => k + 1);
-      const t = setTimeout(() => setShown(0), 1400);
+      const t = setTimeout(() => setShown(0), 8000);
       return () => clearTimeout(t);
     } else {
       setShown(0);
@@ -89,7 +89,7 @@ export const KillStreakBanner = ({ combo }: Props) => {
   return (
     <div
       key={key}
-      className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center animate-in fade-in zoom-in-50 slide-in-from-top-4 duration-300"
+      className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center animate-in fade-in zoom-in-50 slide-in-from-bottom-4 duration-300"
     >
       <img
         src={iconUrl}

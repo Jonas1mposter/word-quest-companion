@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep reviewed UI translations and dynamic-message patterns in the shared localization layer; mark vocabulary content with data-no-translate so English UI never changes question meanings or answer choices.
 - Keep multiplayer answer-bearing words in service-role-only match secrets and issue one persisted four-option question per player; transactional server submissions enforce ordering, idempotency and atomic scoring so client and Realtime payloads cannot reveal future answers.
 
 - Each lottery pool has its own draw RPC and progress row in lottery_progress; tickets bought in a pool carry lottery_pool_id and only work there, while untagged tickets work in any pool.

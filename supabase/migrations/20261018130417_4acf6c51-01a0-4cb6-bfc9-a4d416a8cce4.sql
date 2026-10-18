@@ -1,0 +1,1 @@
+CREATE POLICY "Service role manages reward reversal audit" ON public.leaderboard_reward_reversal_audit FOR ALL TO service_role USING (true) WITH CHECK (true);

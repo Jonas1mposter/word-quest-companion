@@ -172,7 +172,7 @@ const QuizCard = ({
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span>{option}</span>
+                  <span data-no-translate>{option}</span>
                   {showResult && isCorrect && <Check className="w-5 h-5 text-success" />}
                   {showResult && isSelected && !isCorrect && <X className="w-5 h-5 text-destructive" />}
                 </div>
@@ -201,9 +201,9 @@ const QuizCard = ({
               {word.phonetic && (
                 <p className="text-sm text-muted-foreground">{word.phonetic}</p>
               )}
-              <p className="text-success font-medium">✓ {word.meaning}</p>
+              <p className="text-success font-medium">✓ <span data-no-translate>{word.meaning}</span></p>
               {word.example && (
-                <p className="text-sm text-muted-foreground italic mt-2">例句: {word.example}</p>
+                <p className="text-sm text-muted-foreground italic mt-2">例句: <span data-no-translate>{word.example}</span></p>
               )}
             </div>
           </div>
@@ -218,7 +218,7 @@ const QuizCard = ({
       <Card variant="glow" className="p-8 max-w-lg mx-auto animate-scale-in">
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">选择正确的英文单词</p>
-          <h2 className="text-3xl font-gaming text-glow-purple">{word.meaning}</h2>
+          <h2 data-no-translate className="text-3xl font-gaming text-glow-purple">{word.meaning}</h2>
           <div className="mt-2 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
         </div>
 
@@ -242,7 +242,7 @@ const QuizCard = ({
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono">{option}</span>
+                  <span data-no-translate className="font-mono">{option}</span>
                   {showResult && isCorrect && <Check className="w-5 h-5 text-success" />}
                   {showResult && isSelected && !isCorrect && <X className="w-5 h-5 text-destructive" />}
                 </div>
@@ -271,9 +271,9 @@ const QuizCard = ({
               {word.phonetic && (
                 <p className="text-sm text-muted-foreground">{word.phonetic}</p>
               )}
-              <p className="text-success font-medium">释义: {word.meaning}</p>
+              <p className="text-success font-medium">释义: <span data-no-translate>{word.meaning}</span></p>
               {word.example && (
-                <p className="text-sm text-muted-foreground italic mt-2">例句: {word.example}</p>
+                <p className="text-sm text-muted-foreground italic mt-2">例句: <span data-no-translate>{word.example}</span></p>
               )}
             </div>
           </div>
@@ -288,7 +288,7 @@ const QuizCard = ({
       <Card variant="glow" className="p-8 max-w-lg mx-auto animate-scale-in">
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">根据中文释义拼写单词</p>
-          <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+          <h2 data-no-translate className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
           <div className="mb-3 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
           <button
             onClick={() => setShowHint(!showHint)}
@@ -338,7 +338,7 @@ const QuizCard = ({
                   <p className="text-sm text-muted-foreground text-center">{word.phonetic}</p>
                 )}
                 {word.example && (
-                  <p className="text-sm text-muted-foreground italic text-center mt-2">例句: {word.example}</p>
+                  <p className="text-sm text-muted-foreground italic text-center mt-2">例句: <span data-no-translate>{word.example}</span></p>
                 )}
               </div>
             </div>
@@ -373,7 +373,7 @@ const QuizCard = ({
           </button>
           <p className="text-sm text-muted-foreground">点击播放发音</p>
           {showHint && (
-            <p className="text-lg text-primary/70 mt-2">{word.meaning}</p>
+            <p data-no-translate className="text-lg text-primary/70 mt-2">{word.meaning}</p>
           )}
           <button
             onClick={() => setShowHint(!showHint)}
@@ -419,16 +419,16 @@ const QuizCard = ({
                 {word.phonetic && (
                   <p className="text-sm text-muted-foreground text-center">{word.phonetic}</p>
                 )}
-                <p className="text-center text-muted-foreground">{word.meaning}</p>
+                <p data-no-translate className="text-center text-muted-foreground">{word.meaning}</p>
                 {word.example && (
-                  <p className="text-sm text-muted-foreground italic text-center mt-2">例句: {word.example}</p>
+                  <p className="text-sm text-muted-foreground italic text-center mt-2">例句: <span data-no-translate>{word.example}</span></p>
                 )}
               </div>
             </div>
           )}
           {showResult && userInput.toLowerCase() === word.word.toLowerCase() && (
             <div className="text-center">
-              <p className="text-muted-foreground">{word.meaning}</p>
+              <p data-no-translate className="text-muted-foreground">{word.meaning}</p>
             </div>
           )}
 
@@ -454,7 +454,7 @@ const QuizCard = ({
         <div className="text-center mb-8">
           <p className="text-sm text-muted-foreground mb-2">根据句子填写单词</p>
           <div className="flex items-center justify-center gap-2 mb-4">
-            <p className="text-lg text-muted-foreground">{word.meaning}</p>
+            <p data-no-translate className="text-lg text-muted-foreground">{word.meaning}</p>
             <PosTag value={inferPos(word.meaning)} />
           </div>
           <p className="text-xl italic text-foreground/80">"{getBlankSentence()}"</p>
@@ -506,7 +506,7 @@ const QuizCard = ({
                   <p className="text-sm text-muted-foreground text-center">{word.phonetic}</p>
                 )}
                 {word.example && (
-                  <p className="text-sm text-muted-foreground italic text-center">完整句子: {word.example}</p>
+                  <p className="text-sm text-muted-foreground italic text-center">完整句子: <span data-no-translate>{word.example}</span></p>
                 )}
               </div>
             </div>

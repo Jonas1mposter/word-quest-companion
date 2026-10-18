@@ -103,7 +103,7 @@ const WordCard = ({
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span>{option}</span>
+                  <span data-no-translate>{option}</span>
                   {showResult && isCorrect && <Check className="w-5 h-5 text-success" />}
                   {showResult && isSelected && !isCorrect && <X className="w-5 h-5 text-destructive" />}
                 </div>
@@ -165,9 +165,9 @@ const WordCard = ({
             transform: "rotateY(180deg)"
           }}
         >
-          <p className="text-2xl text-foreground mb-4 text-center">{meaning}</p>
+          <p data-no-translate className="text-2xl text-foreground mb-4 text-center">{meaning}</p>
           {example && (
-            <p className="text-sm text-muted-foreground italic text-center mb-6">
+            <p data-no-translate className="text-sm text-muted-foreground italic text-center mb-6">
               "{example}"
             </p>
           )}

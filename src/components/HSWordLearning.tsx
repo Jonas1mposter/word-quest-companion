@@ -263,8 +263,8 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
               <Badge variant="outline" className="text-xs">{currentWord?.unit_name || `Unit ${currentWord?.unit}`}</Badge>
 
               {showMeaning ? (
-                <div className="space-y-3 animate-fade-in">
-                  <p className="text-xl text-amber-500 font-medium">{currentWord?.meaning}</p>
+                <div data-no-translate className="space-y-3 animate-fade-in">
+                  <p data-no-translate className="text-xl text-amber-500 font-medium">{currentWord?.meaning}</p>
                   {currentWord?.definition && (
                     <p className="text-sm text-muted-foreground bg-secondary/50 rounded-lg p-3">
                       {currentWord.definition}
@@ -366,7 +366,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
                   <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs mr-3">
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  {option}
+                  <span data-no-translate>{option}</span>
                   {isAnswered && isCorrect && <Check className="w-4 h-4 ml-auto text-success" />}
                   {isAnswered && isSelected && !isCorrect && <X className="w-4 h-4 ml-auto text-destructive" />}
                 </Button>

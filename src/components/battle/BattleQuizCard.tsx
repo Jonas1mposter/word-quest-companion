@@ -176,7 +176,7 @@ const BattleQuizCard = ({
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span>{option}</span>
+                  <span data-no-translate>{option}</span>
                   {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-success" />}
                   {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-destructive" />}
                 </div>
@@ -211,7 +211,7 @@ const BattleQuizCard = ({
             中译英
           </span>
         </div>
-        <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+        <h2 data-no-translate className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
         <div className="mb-6 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
 
         <div className="grid grid-cols-1 gap-3">
@@ -233,7 +233,7 @@ const BattleQuizCard = ({
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span>{option}</span>
+                  <span data-no-translate>{option}</span>
                   {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-success" />}
                   {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-destructive" />}
                 </div>
@@ -270,7 +270,7 @@ const BattleQuizCard = ({
             拼写单词
           </span>
         </div>
-        <h2 className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
+        <h2 data-no-translate className="text-3xl font-gaming text-glow-purple mb-2">{word.meaning}</h2>
         <div className="mb-2 flex justify-center"><PosTag value={inferPos(word.meaning)} /></div>
         <p className="text-muted-foreground text-sm mb-6">
           首字母提示: <span className="font-mono text-primary">{word.word[0].toUpperCase()}</span>
@@ -378,7 +378,7 @@ const BattleQuizCard = ({
                   <p className="text-xl font-mono text-success">{word.word}</p>
                 </>
               )}
-              <p className="text-muted-foreground">{word.meaning}</p>
+              <p data-no-translate className="text-muted-foreground">{word.meaning}</p>
             </div>
           )}
 

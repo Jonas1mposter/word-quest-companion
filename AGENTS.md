@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep administrative reward reversals transactional, batch-idempotent and backed by service-role-only before-state audit records; reverse only the targeted source batch so unrelated earnings survive.
 - Keep reviewed UI translations and dynamic-message patterns in the shared localization layer; mark vocabulary content with data-no-translate so English UI never changes question meanings or answer choices.
 - Keep multiplayer answer-bearing words in service-role-only match secrets and issue one persisted four-option question per player; transactional server submissions enforce ordering, idempotency and atomic scoring so client and Realtime payloads cannot reveal future answers.
 

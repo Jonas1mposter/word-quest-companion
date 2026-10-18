@@ -4,6 +4,7 @@
 // definitions of words) are intentionally left as-is.
 
 import DICT from "./i18n-dict.json";
+import { UI_UPDATES, UI_PATTERNS } from "./i18n-updates";
 
 export type Lang = "zh" | "en";
 const KEY = "ui-lang";
@@ -122,13 +123,16 @@ const PARTS: [RegExp, string][] = [
   [/前\s*(\d+)\s*名/g, "top $1"],
   [/豆/g, " Beans"],
   [/分区/g, " zone"],
+  [/(\d|\s)次(?=\s|$)/g, "$1 draws"],
+  [/(\d|\s)抽(?=\s|$)/g, "$1 draws"],
+  [/(\d|\s)天(?=\s|$)/g, "$1 days"],
 ];
 
 const HAN = /[\u4e00-\u9fff]/;
 
 // Full UI dictionary (extracted from source). Exact match first, then
 // longest-first substring replacement for strings built around variables.
-const FULL: Record<string, string> = { ...(DICT as Record<string, string>), ...EXACT };
+const FULL: Record<string, string> = { ...(DICT as Record<string, string>), ...EXACT, ...UI_UPDATES };
 const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const SEG_KEYS = Object.keys(FULL).filter((k) => k.length >= 2).sort((a, b) => b.length - a.length);
 const SEG_RE = new RegExp(SEG_KEYS.map(escapeRe).join("|"), "g");
@@ -138,6 +142,9 @@ export const translate = (s: string): string => {
   const trimmed = s.trim();
   const exact = FULL[trimmed];
   if (exact) return s.replace(trimmed, exact);
+  for (const [pattern, replacement] of UI_PATTERNS) {
+    if (pattern.test(trimmed)) return s.replace(trimmed, trimmed.replace(pattern, replacement));
+  }
   // Subject labels like "🧪 科学词汇"
   const m = trimmed.match(/^(\W*?)\s*([\u4e00-\u9fff].*)$/u);
   if (m && EXACT[m[2]]) return s.replace(m[2], EXACT[m[2]]);
@@ -178,14 +185,16 @@ export const startTranslator = () => {
   document.documentElement.lang = "en";
   document.title = "Dipont WordMaster";
   processNode(document.body);
-  new MutationObserver((muts) => {
+  const observer = new MutationObserver((muts) => {
     for (const m of muts) {
       if (m.type === "characterData") processNode(m.target);
       else if (m.type === "attributes") processNode(m.target);
       else m.addedNodes.forEach(processNode);
     }
-  }).observe(document.body, {
+  });
+  observer.observe(document.body, {
     childList: true, subtree: true, characterData: true,
     attributes: true, attributeFilter: ATTRS,
   });
+  return () => observer.disconnect();
 };

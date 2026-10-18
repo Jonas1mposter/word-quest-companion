@@ -246,9 +246,9 @@ const WrongWordBook = ({ onStartReview }: WrongWordBookProps) => {
                             <span className="text-sm text-muted-foreground">{word.phonetic}</span>
                           )}
                         </div>
-                        <p className="text-muted-foreground">{word.meaning}</p>
+                        <p data-no-translate className="text-muted-foreground">{word.meaning}</p>
                         {word.example && (
-                          <p className="text-sm text-muted-foreground/70 italic mt-1 truncate">
+                          <p data-no-translate className="text-sm text-muted-foreground/70 italic mt-1 truncate">
                             "{word.example}"
                           </p>
                         )}

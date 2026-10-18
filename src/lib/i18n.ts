@@ -123,6 +123,9 @@ const PARTS: [RegExp, string][] = [
   [/前\s*(\d+)\s*名/g, "top $1"],
   [/豆/g, " Beans"],
   [/分区/g, " zone"],
+  [/(\d|\s)次(?=\s|$)/g, "$1 draws"],
+  [/(\d|\s)抽(?=\s|$)/g, "$1 draws"],
+  [/(\d|\s)天(?=\s|$)/g, "$1 days"],
 ];
 
 const HAN = /[\u4e00-\u9fff]/;

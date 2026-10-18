@@ -862,6 +862,30 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_reward_reversal_audit: {
+        Row: {
+          batch: string
+          created_at: string
+          id: string
+          result: Json
+          snapshot: Json
+        }
+        Insert: {
+          batch: string
+          created_at?: string
+          id?: string
+          result?: Json
+          snapshot: Json
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          id?: string
+          result?: Json
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       learning_progress: {
         Row: {
           correct_count: number

@@ -16,6 +16,7 @@ BEGIN
   FOR i IN 0..3 LOOP
    q=public.match_next_question_v2(mid,p1,true);
    IF q<>public.match_next_question_v2(mid,p1,true) THEN RAISE EXCEPTION 'Refresh changed question'; END IF;
+   IF q<>public.match_next_question(mid,p1) THEN RAISE EXCEPTION 'Legacy endpoint changed issued type or leaked answer'; END IF;
    IF q->>'quizType'<>(ARRAY['meaning','reverse','spelling','listening'])[i+1] THEN RAISE EXCEPTION 'Mixed type missing'; END IF;
    IF q ? 'correctAnswer' OR q ? 'meaning' OR q ? 'words' THEN RAISE EXCEPTION 'Answer fields leaked'; END IF;
    IF i>0 AND q ? 'word' THEN RAISE EXCEPTION 'Written answer leaked'; END IF;

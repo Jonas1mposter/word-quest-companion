@@ -5,6 +5,7 @@ vi.mock("@/hooks/useMatchSounds", () => ({ useMatchSounds: () => ({ playCombo: v
 vi.mock("@/lib/haptics", () => ({ haptics: { success: vi.fn(), error: vi.fn() } }));
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
 vi.mock("@/lib/serverBattle", () => ({ fetchBattleAudio: vi.fn().mockRejectedValue(new Error("offline")) }));
+vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 
 describe("服务器判定答题", () => {
   it("拼写题只发用户输入，由服务器判定", async () => {

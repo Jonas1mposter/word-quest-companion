@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep visible-word playback fallback in the shared speech hook and use device speech after recording failure; never send hidden multiplayer listening answers to browser speech synthesis, so fallback cannot bypass question privacy.
 - Keep administrative reward reversals transactional, batch-idempotent and backed by service-role-only before-state audit records; reverse only the targeted source batch so unrelated earnings survive.
 - Keep reviewed UI translations and dynamic-message patterns in the shared localization layer; mark vocabulary content with data-no-translate so English UI never changes question meanings or answer choices.
 - Keep multiplayer answers in service-role-only match secrets and persist each player's issued mixed-type question; server-only grading and authenticated opaque listening audio preserve ordering, idempotency and atomic scoring without exposing written answers or future questions. Maintain a choice-only compatibility path for older clients. Return listening bytes as application/octet-stream because Supabase FunctionsClient decodes audio MIME types as text and corrupts playback.

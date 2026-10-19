@@ -9,12 +9,13 @@ import { haptics } from "@/lib/haptics";
 import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
 import { cn } from "@/lib/utils";
 
-export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId }: {
+export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio }: {
   question: ServerQuestion;
   onAnswer: (answer: string) => Promise<boolean | BattleAnswerResult>;
   comboCount: number;
   disabled?: boolean;
   matchId?: string;
+  loadAudio?: (questionIndex: number) => Promise<Blob>;
 }) {
   const sounds = useMatchSounds();
   const [selected, setSelected] = useState<string | null>(null);
@@ -44,14 +45,15 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
     };
   }, []);
   const playListening = async () => {
-    if (!matchId || audioLoading) return;
+    if ((!matchId && !loadAudio) || audioLoading) return;
     // Create the player synchronously on the click; never speak hidden answer text on the client.
     const audio = audioRef.current ?? new Audio();
     audioRef.current = audio;
     setAudioLoading(true); setAudioError(null);
     try {
       if (!audioUrlRef.current) {
-        const blob = await fetchBattleAudio(matchId, question.questionIndex);
+        const blob = loadAudio ? await loadAudio(question.questionIndex) : matchId ? await fetchBattleAudio(matchId, question.questionIndex) : null;
+        if (!blob) return;
         if (!activeRef.current) return;
         audioUrlRef.current = URL.createObjectURL(blob);
         audio.src = audioUrlRef.current;

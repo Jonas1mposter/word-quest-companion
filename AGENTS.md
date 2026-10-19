@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep rewarded bot battles in service-role-only sessions with ordered issued questions and atomic, profile-first locked grading/settlement; retire client-declared result payouts and record client anti-cheat reports without automatic account bans.
 - Reveal fill-in answers only through the submit response after checking the caller's persisted answer and issued question; never add answer fields to question payloads, so post-grade feedback cannot reveal unsubmitted or future questions.
 - Keep visible-word playback fallback in the shared speech hook and use device speech after recording failure; never send hidden multiplayer listening answers to browser speech synthesis, so fallback cannot bypass question privacy.
 - Keep administrative reward reversals transactional, batch-idempotent and backed by service-role-only before-state audit records; reverse only the targeted source batch so unrelated earnings survive.

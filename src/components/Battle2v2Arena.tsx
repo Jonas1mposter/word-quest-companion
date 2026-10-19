@@ -369,7 +369,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         </div>
         <KillStreakBanner combo={comboCount} />
         {question && (
-          <ServerBattleQuizCard key={question.questionIndex} question={question}
+          <ServerBattleQuizCard key={question.questionIndex} question={question} matchId={matchData.id}
             onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">

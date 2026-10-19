@@ -53,6 +53,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
   const botScoreRef = useRef(0);
   const endedRef = useRef(false);
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingForfeitRef = useRef<{ reason: string; meta: Record<string, number> } | null>(null);
 
   const finish = useCallback(async () => {
     const id = sessionRef.current;
@@ -89,6 +90,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
     const id = sessionRef.current;
     if (!id || endedRef.current) return;
     endedRef.current = true;
+    pendingForfeitRef.current = { reason, meta };
     if (tickerRef.current) clearInterval(tickerRef.current);
     if (advanceRef.current) clearTimeout(advanceRef.current);
     setQuestion(null); setRewards(null); setPhase('result');
@@ -96,6 +98,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
     try {
       const data = await botAction<BotResult>(id, 'forfeit', { reason, meta });
       setFinalResult(data);
+      pendingForfeitRef.current = null;
     } catch { setError('违规记录未能确认，请重试'); }
   }, []);
 
@@ -300,7 +303,12 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
             </div>
           </div>
           {finalResult?.forfeited && <p className="text-destructive mb-4">本局不发放奖励，已记录到 DAC 供管理员复核</p>}
-          {error && <div className="mb-4"><p role="alert" className="text-destructive">{error}</p><Button variant="outline" onClick={() => { endedRef.current = false; setError(null); if (!finalResult?.forfeited) void finish(); }}>重试</Button></div>}
+          {error && <div className="mb-4"><p role="alert" className="text-destructive">{error}</p><Button variant="outline" onClick={() => {
+            endedRef.current = false; setError(null);
+            const pending = pendingForfeitRef.current;
+            if (pending) void forfeit(pending.reason, pending.meta);
+            else void finish();
+          }}>重试</Button></div>}
           {rewards && (
             <div className="flex items-center justify-center gap-4 mb-4">
               <div className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-gaming">

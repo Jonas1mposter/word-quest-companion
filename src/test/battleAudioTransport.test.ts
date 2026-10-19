@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { FunctionsClient } from "@supabase/functions-js";
 import { battleAudioResponse } from "../../supabase/functions/_shared/battleAudio";

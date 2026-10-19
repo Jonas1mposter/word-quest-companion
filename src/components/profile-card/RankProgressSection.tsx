@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Crown, Shield, Star, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import RankEmblem from "@/components/RankEmblem";
 import { RANK_CONFIG, TIER_ORDER, RankTier, tierColors, tierNames } from "./constants";
 
 interface Props {
@@ -21,14 +22,13 @@ export const RankProgressSection = ({ rankTier, rankStars }: Props) => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br",
-              tierColors[rankTier].gradient
-            )}>
-              {rankTier === "champion" ? <Crown className="w-4 h-4 text-white" /> : <Shield className="w-4 h-4 text-white" />}
-            </div>
+            <RankEmblem tier={rankTier} rounded="rounded-lg" className="w-8 h-8">
+              <div className={cn("w-full h-full flex items-center justify-center bg-gradient-to-br", tierColors[rankTier].gradient)}>
+                {rankTier === "champion" ? <Crown className="w-4 h-4 text-white" /> : <Shield className="w-4 h-4 text-white" />}
+              </div>
+            </RankEmblem>
             <div>
-              <div className={cn("font-gaming text-sm", tierColors[rankTier].text)}>
+              <div className={cn("font-gaming text-sm", rankTier === "champion" ? "rk-champ-text" : tierColors[rankTier].text)}>
                 {tierNames[rankTier]}
               </div>
               <div className="text-xs text-muted-foreground">

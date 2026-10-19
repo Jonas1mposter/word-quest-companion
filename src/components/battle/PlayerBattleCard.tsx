@@ -1,3 +1,4 @@
+import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -264,6 +265,7 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
         <div 
           className={cn(
             "rounded-lg p-3 border min-h-[60px] flex items-center gap-2 relative overflow-hidden",
+            equippedNameCard && nameCardFxClass(equippedNameCard.rarity),
             equippedNameCard 
               ? equippedNameCard.rarity === 'mythology' 
                 ? "border-red-500/50 shadow-lg shadow-red-500/30" 
@@ -272,11 +274,12 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
           )}
           style={equippedNameCard ? {
             background: getGradientStyle(equippedNameCard.background_gradient),
+            ...nameCardFxStyle(equippedNameCard.rarity),
           } : undefined}
         >
           {/* Mythology shimmer effect */}
-          {equippedNameCard?.rarity === 'mythology' && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+          {equippedNameCard && (
+            <NameCardFx rarity={equippedNameCard.rarity} background={getGradientStyle(equippedNameCard.background_gradient)} />
           )}
           
           {equippedNameCard ? (

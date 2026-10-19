@@ -2,6 +2,7 @@ import { Star, Crown, Shield, Gem, Award, Medal, Sparkles, Flame } from "lucide-
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import RankEmblem from "@/components/RankEmblem";
 
 type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "star" | "ace" | "champion";
 
@@ -102,8 +103,10 @@ const RankDisplay = ({ tier, stars, wins, losses, compact = false }: RankDisplay
         "flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r border border-border/50",
         config.bgGradient
       )}>
-        <TierIcon className={cn("w-4 h-4", config.color)} />
-        <span className={cn("font-gaming text-sm", config.color)}>{config.name}</span>
+        <RankEmblem tier={tier} rounded="rounded-full" className="w-5 h-5">
+          <TierIcon className={cn("w-4 h-4", config.color)} />
+        </RankEmblem>
+        <span className={cn("font-gaming text-sm", tier === "champion" ? "rk-champ-text" : config.color)}>{config.name}</span>
         <div className="flex items-center gap-0.5">
           {[...Array(Math.min(stars, 6))].map((_, i) => (
             <Star key={i} className="w-3 h-3 text-accent fill-accent" />
@@ -119,8 +122,9 @@ const RankDisplay = ({ tier, stars, wins, losses, compact = false }: RankDisplay
       <CardContent className="p-4 relative">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
+            <RankEmblem tier={tier} className="w-12 h-12">
             <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg",
+              "w-full h-full flex items-center justify-center bg-gradient-to-br shadow-lg",
               tier === "bronze" && "from-amber-600 to-amber-800",
               tier === "silver" && "from-gray-300 to-gray-500",
               tier === "gold" && "from-yellow-400 to-amber-500",
@@ -132,8 +136,9 @@ const RankDisplay = ({ tier, stars, wins, losses, compact = false }: RankDisplay
             )}>
               <TierIcon className="w-6 h-6 text-white drop-shadow-lg" />
             </div>
+            </RankEmblem>
             <div>
-              <h3 className={cn("font-gaming text-lg", config.color)}>{config.name}</h3>
+              <h3 className={cn("font-gaming text-lg", tier === "champion" ? "rk-champ-text" : config.color)}>{config.name}</h3>
               <p className="text-xs text-muted-foreground">
                 排位赛段位
               </p>

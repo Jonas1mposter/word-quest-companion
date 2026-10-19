@@ -45,7 +45,7 @@ export const saveSpeed = (speed: SpeechSpeed) => {
   window.localStorage.setItem(SPEECH_SPEED_KEY, speed);
 };
 
-// ====== 发音来源：有道真人发音 → AI 配音（缓存）→ 设备自带朗读 ======
+// ====== 发音来源：有道真人发音 → 失败直接使用设备自带朗读 ======
 export type SpeechAccent = "us" | "uk";
 const ACCENT_KEY = "speech_accent_preference";
 export const getSavedAccent = (): SpeechAccent => {
@@ -57,7 +57,6 @@ export const saveAccent = (a: SpeechAccent) => {
 };
 
 const PLAYBACK_RATES: Record<SpeechSpeed, number> = { slow: 0.75, normal: 1, fast: 1.2 };
-const aiUrlCache = new Map<string, string>();
 const youdaoMissing = new Set<string>();
 let currentAudio: HTMLAudioElement | null = null;
 let playToken = 0;
@@ -165,19 +164,7 @@ const pronounce = async (text: string, speed: SpeechSpeed, overrideRate: number 
   }
   if (token !== playToken) return;
 
-  // 2. AI 配音（服务器缓存）
-  try {
-    let url = aiUrlCache.get(key);
-    if (!url) {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data } = await supabase.functions.invoke("word-tts", { body: { text: t, accent } });
-      if ((data as any)?.url) { url = (data as any).url as string; aiUrlCache.set(key, url); }
-    }
-    if (url && (await playUrl(url, rate, token))) return;
-  } catch { /* fall through */ }
-  if (token !== playToken) return;
-
-  // 3. 设备自带朗读
+  // 2. 失败直接设备朗读：不再等待需要额度的 AI 配音请求。
   speakWithDevice(t, overrideRate ?? SPEED_RATES[speed], accent, voice);
 };
 

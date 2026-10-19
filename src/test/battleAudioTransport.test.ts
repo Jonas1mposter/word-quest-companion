@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { Blob as ResponseBlob } from "node:buffer";
 import { FunctionsClient } from "@supabase/functions-js";
 import { battleAudioResponse } from "../../supabase/functions/_shared/battleAudio";
 
@@ -17,7 +16,7 @@ describe("听力二进制传输", () => {
       body: { matchId: "opaque-match", questionIndex: 3 },
     });
     expect(error).toBeNull();
-    expect(data).toBeInstanceOf(ResponseBlob);
+    expect(Object.prototype.toString.call(data)).toBe("[object Blob]");
     expect(Array.from(new Uint8Array(await data.arrayBuffer()))).toEqual(values);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
   });

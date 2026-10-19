@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import dacLogo from "@/assets/dac-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
 /** 获胜方结算页：对手因 DAC 检测到脚本/异常程序被踢出时显示 */
@@ -20,9 +20,7 @@ export function DacCheaterNotice({ matchId, isWinner }: { matchId?: string; isWi
   if (!cheated) return null;
   return (
     <div role="status" className="flex items-center justify-center gap-3 mb-4 px-4 py-3 rounded-lg border border-destructive/40 bg-destructive/10">
-      <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-destructive text-destructive-foreground font-gaming text-sm">
-        <ShieldAlert className="w-4 h-4" /> DAC
-      </div>
+      <img src={dacLogo} alt="DAC" className="w-10 h-10 object-contain" />
       <span className="font-gaming text-destructive">检测到作弊者</span>
     </div>
   );

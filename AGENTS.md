@@ -1,7 +1,7 @@
 # Architecture rules
 - Keep administrative reward reversals transactional, batch-idempotent and backed by service-role-only before-state audit records; reverse only the targeted source batch so unrelated earnings survive.
 - Keep reviewed UI translations and dynamic-message patterns in the shared localization layer; mark vocabulary content with data-no-translate so English UI never changes question meanings or answer choices.
-- Keep multiplayer answer-bearing words in service-role-only match secrets and issue one persisted four-option question per player; transactional server submissions enforce ordering, idempotency and atomic scoring so client and Realtime payloads cannot reveal future answers.
+- Keep multiplayer answers in service-role-only match secrets and persist each player's issued mixed-type question; server-only grading and authenticated opaque listening audio preserve ordering, idempotency and atomic scoring without exposing written answers or future questions. Maintain a choice-only compatibility path for older clients.
 
 - Each lottery pool has its own draw RPC and progress row in lottery_progress; tickets bought in a pool carry lottery_pool_id and only work there, while untagged tickets work in any pool.
 - Keep lottery event metadata in a shared event registry and expose each event on its own detail route; the lottery hall lists events without executing rewards, allowing more campaigns without coupling their prize pools.

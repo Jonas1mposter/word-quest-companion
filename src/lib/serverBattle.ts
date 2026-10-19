@@ -36,7 +36,7 @@ export async function fetchBattleQuestion(matchId: string): Promise<ServerQuesti
   const quizType = data?.quizType ?? "meaning";
   const choice = quizType === "meaning" || quizType === "reverse";
   const prompt = data?.prompt ?? data?.word;
-  if (!data || !Number.isInteger(data.questionIndex) || !Number.isInteger(data.total) || !["meaning", "reverse", "spelling", "listening"].includes(quizType) || !Array.isArray(data.options) || data.options.length !== (choice ? 4 : 0) || data.options.some((option: unknown) => typeof option !== "string") || typeof prompt !== "string" || (quizType === "listening" && (prompt !== "" || data.word))) throw new Error("题目加载失败，请重试");
+  if (!data || !Number.isInteger(data.questionIndex) || !Number.isInteger(data.total) || data.total <= 0 || data.questionIndex < 0 || data.questionIndex >= data.total || !["meaning", "reverse", "spelling", "listening"].includes(quizType) || !Array.isArray(data.options) || data.options.length !== (choice ? 4 : 0) || data.options.some((option: unknown) => typeof option !== "string") || typeof prompt !== "string" || (quizType === "listening" && (prompt !== "" || data.word))) throw new Error("题目加载失败，请重试");
   return { questionIndex: data.questionIndex, total: data.total, quizType, prompt, ...(quizType === "meaning" ? { word: prompt } : {}), options: data.options };
 }
 export async function fetchBattleAudio(matchId: string, questionIndex: number): Promise<Blob> {

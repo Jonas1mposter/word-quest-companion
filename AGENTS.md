@@ -1,4 +1,5 @@
 # Architecture rules
+- Gate multiplayer battle startup on a validated first server-issued question; bound question waits and surface retryable empty responses, and use the issued total for progress so failed loading cannot silently start a blank battle.
 - Keep rewarded bot battles in service-role-only sessions with ordered issued questions and atomic, profile-first locked grading/settlement; retire client-declared result payouts and record client anti-cheat reports without automatic account bans.
 - Reveal fill-in answers only through the submit response after checking the caller's persisted answer and issued question; never add answer fields to question payloads, so post-grade feedback cannot reveal unsubmitted or future questions.
 - Keep visible-word playback fallback in the shared speech hook and use device speech after recording failure; never send hidden multiplayer listening answers to browser speech synthesis, so fallback cannot bypass question privacy.

@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { Bot, ChevronLeft, Trophy, XCircle, Timer, Zap, Brain, Flame, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "./battle/ServerBattleQuizCard";
 import { botAction, botQuestion, botAnswer, botAudio, type BotResult } from "@/lib/serverBotBattle";
@@ -47,7 +46,6 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
   const [myScore, setMyScore] = useState(0);
   const [botScore, setBotScore] = useState(0);
   const [comboCount, setComboCount] = useState(0);
-  const [answerAnimation, setAnswerAnimation] = useState<'correct' | 'wrong' | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(180);
   const [rewards, setRewards] = useState<{ xp: number; coins: number } | null>(null);
@@ -149,63 +147,6 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
     }, question.quizType === 'spelling' || question.quizType === 'listening' ? 2500 : 600);
     return data;
   }, [question, finish, loadQuestion]);
-
-  if (!profile) return;
-    setDifficulty(diff);
-    setPhase("loading");
-    // Pull 10 random words for the grade (English curriculum)
-    const isHS = Number(profile.grade) >= 9;
-    const { data } = isHS
-      ? await (supabase.from("hs_words" as any).select("id, word, meaning, phonetic, example").limit(400) as any)
-      : await supabase.from("words").select("id, word, meaning, phonetic, example").eq("grade", profile.grade).limit(200);
-    const pool = (data || []).sort(() => Math.random() - 0.5).slice(0, 10);
-    if (pool.length < 4) {
-      setPhase("select");
-      return;
-    }
-    setWords(pool);
-    generateOptions(pool, 0);
-    setCurrentQuestion(0); setMyScore(0); setBotScore(0);
-    myScoreRef.current = 0; botScoreRef.current = 0;
-    endedRef.current = false;
-    setCountdown(3); setTimeLeft(180); setRewards(null);
-    setPhase("countdown");
-  }, [profile, generateOptions]);
-
-  useEffect(() => {
-    if (phase !== "countdown") return;
-    if (countdown <= 0) {
-      setPhase("battle");
-      tickerRef.current = setInterval(() => {
-        setTimeLeft(p => { if (p <= 1) { finish(); return 0; } return p - 1; });
-      }, 1000);
-      scheduleBotAnswer(0);
-      return;
-    }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [phase, countdown, finish, scheduleBotAnswer]);
-
-  useEffect(() => () => {
-    if (tickerRef.current) clearInterval(tickerRef.current);
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
-  }, []);
-
-  const handleAnswer = useCallback((isCorrect: boolean) => {
-    if (endedRef.current) return;
-    if (isCorrect) {
-      myScoreRef.current += 1;
-      setMyScore(myScoreRef.current);
-    }
-    setComboCount(prev => isCorrect ? prev + 1 : 0);
-    setAnswerAnimation(isCorrect ? "correct" : "wrong");
-    setTimeout(() => setAnswerAnimation(null), 500);
-    const next = currentQuestion + 1;
-    if (next >= words.length) { finish(); return; }
-    setCurrentQuestion(next);
-    generateOptions(words, next);
-    scheduleBotAnswer(next);
-  }, [currentQuestion, words, generateOptions, finish, scheduleBotAnswer]);
 
   if (!profile) {
     return (
@@ -359,7 +300,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
             </div>
           </div>
           {finalResult?.forfeited && <p className="text-destructive mb-4">本局不发放奖励，已记录到 DAC 供管理员复核</p>}
-          {error && <div className="mb-4"><p role="alert" className="text-destructive">{error}</p><Button variant="outline" onClick={() => { endedRef.current = false; setError(null); void finish(); }}>重试</Button></div>}
+          {error && <div className="mb-4"><p role="alert" className="text-destructive">{error}</p><Button variant="outline" onClick={() => { endedRef.current = false; setError(null); if (!finalResult?.forfeited) void finish(); }}>重试</Button></div>}
           {rewards && (
             <div className="flex items-center justify-center gap-4 mb-4">
               <div className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-gaming">
@@ -373,7 +314,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
             </div>
           )}
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" disabled={!finalResult} onClick={() => { setError(null); setPhase("select"); }}>再战一局</Button>
+            <Button variant="outline" className="flex-1" disabled={!finalResult || !!error} onClick={() => { setError(null); setPhase("select"); }}>再战一局</Button>
             <Button className="flex-1" onClick={onBack}>返回</Button>
           </div>
         </Card>

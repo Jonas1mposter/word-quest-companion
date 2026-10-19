@@ -1,54 +1,14 @@
-import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
-import { coinMultiplier } from "../_shared/weekend.ts";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { requireProfile, json } from '../_shared/auth.ts';
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+// Retire the untrusted client-result payout path, including old clients and direct requests.
+Deno.serve(async req => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
-    const { admin, profile } = await requireProfile(req);
-    const { result, difficulty } = await req.json();
-    if (!["win", "draw", "loss"].includes(result)) return json({ error: "Bad result" }, 400);
-    const diff = ["easy", "medium", "hard"].includes(difficulty) ? difficulty : "medium";
-
-    // 经验：胜=3 / 平=2 / 负=1
-    const xpGain = result === "win" ? 3 : result === "draw" ? 2 : 1;
-    // 小额狄邦豆奖励：随难度递增，仅胜利/平局
-    const coinTable: Record<string, [number, number, number]> = {
-      easy:   [4, 2, 0],
-      medium: [7, 3, 1],
-      hard:   [11, 4, 1],
-    };
-    const [cw, cd, cl] = coinTable[diff];
-    // 周末（北京时间周六/周日）豆子双倍
-    const coinsGain = (result === "win" ? cw : result === "draw" ? cd : cl) * coinMultiplier();
-
-    let newXp = (profile.xp ?? 0) + xpGain;
-    let newLevel = profile.level ?? 1;
-    let newXpToNext = profile.xp_to_next_level ?? 100;
-    while (newXp >= newXpToNext) {
-      newXp -= newXpToNext;
-      newLevel++;
-      newXpToNext = 100 * newLevel;
-    }
-
-    await admin.from("profiles").update({
-      xp: newXp,
-      level: newLevel,
-      xp_to_next_level: newXpToNext,
-      total_xp: (profile.total_xp ?? 0) + xpGain,
-      coins: (profile.coins ?? 0) + coinsGain,
-    }).eq("id", profile.id);
-
-    if (xpGain > 0) {
-      await admin.rpc("add_season_pass_xp", { p_profile_id: profile.id, p_xp: xpGain });
-    }
-    if (result === "win") {
-      await admin.rpc("bump_bot_win", { p_id: profile.id });
-    }
-    await admin.rpc("award_badges_for_profile", { p_id: profile.id });
-
-    return json({ ok: true, xpEarned: xpGain, coinsEarned: coinsGain, weekendBonus: coinMultiplier() === 2 });
-  } catch (e) {
-    if (e instanceof Response) return e;
-    return json({ error: String(e) }, 500);
+    await requireProfile(req);
+    return json({ error: '请刷新页面，使用服务器校验的人机对战；旧版结果不能领取奖励。' }, 410);
+  } catch (error) {
+    if (error instanceof Response) return error;
+    return json({ error: 'Request failed' }, 500);
   }
 });

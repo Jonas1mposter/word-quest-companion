@@ -23,7 +23,7 @@ export const RARITY_GLOW: Record<string, string> = {
 
 export function nameCardFxClass(rarity?: string) {
   const r = rarity || "common";
-  return ["nc-card", r !== "common" && "nc-sheen", ["legendary", "mythology", "hidden"].includes(r) && "nc-glow"]
+  return ["nc-card", r !== "common" && "nc-sheen", ["legendary", "hidden"].includes(r) && "nc-glow", r === "mythology" && "nc-myth"]
     .filter(Boolean)
     .join(" ");
 }
@@ -36,7 +36,8 @@ export default function NameCardFx({ rarity, background }: { rarity?: string; ba
   const r = rarity || "common";
   const border = BORDER[r];
   const pColor = PARTICLE[r];
-  const count = r === "epic" ? 5 : r === "common" || r === "rare" ? 0 : 9;
+  const count = r === "epic" ? 5 : r === "common" || r === "rare" ? 0 : r === "mythology" ? 18 : r === "legendary" ? 12 : 9;
+  const stars = r === "mythology" ? 6 : r === "legendary" ? 4 : 0;
   return (
     <>
       {border && (
@@ -45,7 +46,16 @@ export default function NameCardFx({ rarity, background }: { rarity?: string; ba
           <span className="nc-border-inner" style={{ background }} aria-hidden />
         </>
       )}
+      {r === "mythology" && <span className="nc-flame" aria-hidden />}
+      {r === "mythology" && <span className="nc-border nc-border-rev" style={{ background: "conic-gradient(from 90deg, transparent, #ffd54f, transparent 35%, #ff1744, transparent 70%)" }} aria-hidden />}
+      {r === "mythology" && border && <span className="nc-border-inner" style={{ background }} aria-hidden />}
       <span className="nc-pattern" aria-hidden />
+      {r === "mythology" && <span className="nc-bolt" aria-hidden />}
+      {Array.from({ length: stars }).map((_, i) => (
+        <span key={`s${i}`} className="nc-star" aria-hidden
+          style={{ left: `${8 + ((i * 41) % 84)}%`, top: `${12 + ((i * 29) % 70)}%`, animationDelay: `${(i * 0.45) % 2.2}s`,
+            ["--nc-star" as any]: r === "mythology" ? "#ffb199" : "#fde68a" }} />
+      ))}
       {r !== "common" && r !== "rare" && <span className="nc-holo" aria-hidden />}
       {pColor &&
         Array.from({ length: count }).map((_, i) => (

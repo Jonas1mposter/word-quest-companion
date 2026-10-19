@@ -130,6 +130,62 @@ export type Database = {
           },
         ]
       }
+      bot_battle_sessions: {
+        Row: {
+          answers: Json
+          bot_score: number
+          created_at: string
+          difficulty: string
+          id: string
+          issues: Json
+          player_score: number
+          profile_id: string
+          result: Json | null
+          started_at: string
+          status: string
+          updated_at: string
+          words: Json
+        }
+        Insert: {
+          answers?: Json
+          bot_score?: number
+          created_at?: string
+          difficulty: string
+          id: string
+          issues?: Json
+          player_score?: number
+          profile_id: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          words: Json
+        }
+        Update: {
+          answers?: Json
+          bot_score?: number
+          created_at?: string
+          difficulty?: string
+          id?: string
+          issues?: Json
+          player_score?: number
+          profile_id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          words?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_battle_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_rewards: {
         Row: {
           challenge_type: string
@@ -2886,6 +2942,19 @@ export type Database = {
       battle_spelling_correct: {
         Args: { p_answer: string; p_target: string }
         Returns: boolean
+      }
+      bot_battle_action: {
+        Args: {
+          p_action: string
+          p_answer?: string
+          p_difficulty?: string
+          p_index?: number
+          p_meta?: Json
+          p_profile_id: string
+          p_reason?: string
+          p_session_id: string
+        }
+        Returns: Json
       }
       bump_bot_win: { Args: { p_id: string }; Returns: undefined }
       bump_lifetime_coins: {

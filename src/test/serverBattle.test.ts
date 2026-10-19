@@ -8,13 +8,24 @@ describe("服务器逐题对战", () => {
   it("只请求当前题，不发送题号或正确答案", async () => {
     invoke.mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
     const question = await fetchBattleQuestion("match");
-    expect(invoke).toHaveBeenCalledWith("match-question", { body: { matchId: "match" } });
+    expect(invoke).toHaveBeenCalledWith("match-question", { body: { matchId: "match", protocol: 2 } });
     expect(question?.options).toHaveLength(4);
     expect(question).not.toHaveProperty("meaning");
     expect(question).not.toHaveProperty("correctAnswer");
   });
   it("拒绝不满四项的题目", async () => {
     invoke.mockResolvedValue({ data: { questionIndex: 0, word: "apple", options: ["苹果"] }, error: null });
+    await expect(fetchBattleQuestion("match")).rejects.toThrow();
+  });
+  it.each(["reverse", "spelling", "listening"])("接收%s题但不保留服务器多余的答案字段", async quizType => {
+    invoke.mockResolvedValue({ data: { questionIndex: 2, total: 10, quizType, prompt: quizType === "listening" ? "" : "苹果", options: quizType === "reverse" ? ["apple", "pear", "banana", "grape"] : [], correctAnswer: "apple" }, error: null });
+    const question = await fetchBattleQuestion("match");
+    expect(question?.quizType).toBe(quizType);
+    expect(question).not.toHaveProperty("word");
+    expect(question).not.toHaveProperty("correctAnswer");
+  });
+  it("拒绝听力题中的答案文字", async () => {
+    invoke.mockResolvedValue({ data: { questionIndex: 3, total: 10, quizType: "listening", prompt: "apple", options: [] }, error: null });
     await expect(fetchBattleQuestion("match")).rejects.toThrow();
   });
   it("提交不包含客户端正确性或可篡改题型", async () => {

@@ -1,0 +1,3 @@
+CREATE OR REPLACE FUNCTION public.match_next_question(p_match_id uuid,p_profile_id uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path=public AS $$ SELECT public.match_next_question_v2(p_match_id,p_profile_id,false); $$;
+REVOKE ALL ON FUNCTION public.match_next_question(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.match_next_question(uuid,uuid) TO service_role;

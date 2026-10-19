@@ -1,3 +1,4 @@
+import { DacCheaterNotice } from "@/components/battle/DacCheaterNotice";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -523,6 +524,7 @@ const BattleArena = ({
               </div>
             </div>
           )}
+          <DacCheaterNotice matchId={matchData?.id} isWinner={isWinner} />
           <Button onClick={onBack} className="w-full" size="lg">返回</Button>
         </Card>
       </div>

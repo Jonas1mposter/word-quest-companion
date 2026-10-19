@@ -8,6 +8,7 @@ export const UI_UPDATES: Record<string, string> = {
   "违规记录未能确认，请重试": "Violation report could not be confirmed. Please retry.",
   "对局创建失败，请重试": "Could not start the match. Please retry.",
   "正确答案": "Correct answer",
+  "检测到作弊者": "Cheater detected",
   "抽奖大厅": "Lottery Hall",
   "荣光铸冠": "Crown of Glory",
   "常驻奖池": "Permanent Prize Pool",

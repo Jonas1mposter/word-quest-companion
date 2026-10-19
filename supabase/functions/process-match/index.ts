@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, profile } = await requireProfile(req);
-    const { matchId, forfeit } = await req.json();
+    const { matchId, forfeit, checkCheat } = await req.json();
     let isForfeit = !!forfeit && typeof forfeit === "object";
     if (typeof matchId !== "string") return json({ error: "Bad request" }, 400);
 
@@ -63,6 +63,22 @@ Deno.serve(async (req) => {
       ? [match.player1_id, match.player2_id, match.player3_id, match.player4_id].filter(Boolean)
       : [match.player1_id, match.player2_id];
     if (!memberIds.includes(profile.id)) return json({ error: "Not in match" }, 403);
+
+    // 获胜方查询：对方是否因 DAC 作弊（脚本/异常程序）被判负
+    const opponentIds = is2v2
+      ? ([match.player1_id, match.player3_id].includes(profile.id)
+          ? [match.player2_id, match.player4_id] : [match.player1_id, match.player3_id]).filter(Boolean)
+      : memberIds.filter((id: string) => id !== profile.id);
+    const opponentCheated = async () => {
+      const { count } = await admin.from("dac_flags").select("id", { count: "exact", head: true })
+        .in("profile_id", opponentIds).eq("source", "bot_input").eq("severity", "high")
+        .eq("meta->>match_id", matchId);
+      return (count ?? 0) > 0;
+    };
+    if (checkCheat) {
+      if (match.status !== "completed") return json({ ok: true, opponentCheated: false });
+      return json({ ok: true, opponentCheated: await opponentCheated() });
+    }
 
     const { data: answers } = await admin
       .from("match_answers").select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);

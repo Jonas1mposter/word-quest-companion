@@ -1,5 +1,6 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "正确答案": "Correct answer",
   "抽奖大厅": "Lottery Hall",
   "荣光铸冠": "Crown of Glory",
   "常驻奖池": "Permanent Prize Pool",

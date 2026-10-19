@@ -7,6 +7,13 @@ export interface ServerQuestion {
   word?: string;
   options: string[];
 }
+export interface BattleAnswerResult {
+  ok: boolean;
+  isCorrect: boolean;
+  correctAnswer?: string;
+  matchEnded?: boolean;
+  dacForfeit?: { reason: string; meta: Record<string, number> };
+}
 // Both server calls are idempotent (same issued question / duplicate-safe submit), so retry on flaky networks.
 async function invokeWithRetry(name: string, body: Record<string, unknown>, attempts = 3) {
   let last: { data: any; error: any } = { data: null, error: null };
@@ -40,5 +47,5 @@ export async function fetchBattleAudio(matchId: string, questionIndex: number): 
 export async function submitBattleAnswer(matchId: string, questionIndex: number, answer: string, elapsedMs: number) {
   const { data, error } = await invokeWithRetry("submit-answer", { matchId, questionIndex, answer, elapsedMs });
   if (error || data?.error || !data?.ok) throw new Error("答案提交失败，请重试；本题尚未跳过");
-  return data as { ok: boolean; isCorrect: boolean; matchEnded?: boolean; dacForfeit?: { reason: string; meta: Record<string, number> } };
+  return data as BattleAnswerResult;
 }

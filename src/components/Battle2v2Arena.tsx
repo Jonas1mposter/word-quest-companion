@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
 import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
-import { submitBattleAnswer } from "@/lib/serverBattle";
+import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
 import DacBadge from "./battle/DacBadge";
@@ -225,13 +225,13 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     if (phase === "battle") questionShownAtRef.current = Date.now();
   }, [currentQuestion, phase]);
 
-  const handleAnswer = useCallback(async (answer: string): Promise<boolean> => {
+  const handleAnswer = useCallback(async (answer: string): Promise<BattleAnswerResult> => {
     if (!matchData || !question || !profile || matchEndedRef.current || answeringRef.current) throw new Error("对局已结束");
     answeringRef.current = true;
     try {
       const data = await submitBattleAnswer(matchData.id, question.questionIndex, answer, Date.now() - questionShownAtRef.current);
-      if (data.dacForfeit) { void endMatch(data.dacForfeit); return data.isCorrect; }
-      if (data.matchEnded) { void endMatch(); return data.isCorrect; }
+      if (data.dacForfeit) { void endMatch(data.dacForfeit); return data; }
+      if (data.matchEnded) { void endMatch(); return data; }
       const serverCorrect = data.isCorrect;
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
@@ -240,8 +240,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         if (matchEndedRef.current) return;
         if (question.questionIndex + 1 >= question.total) void endMatch();
         else void loadQuestion();
-      }, 600);
-      return serverCorrect;
+      }, question.quizType === "spelling" || question.quizType === "listening" ? 2500 : 600);
+      return data;
     } finally { answeringRef.current = false; }
   }, [matchData, question, profile, loadQuestion, endMatch]);
 

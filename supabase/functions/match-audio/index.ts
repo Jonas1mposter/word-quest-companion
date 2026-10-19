@@ -1,6 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.25.76";
 import { requireProfile, json } from "../_shared/auth.ts";
+import { battleAudioResponse } from "../_shared/battleAudio.ts";
 
 const RequestSchema = z.object({ matchId: z.string().uuid(), questionIndex: z.number().int().min(0).max(999) });
 Deno.serve(async (req) => {
@@ -17,7 +18,6 @@ Deno.serve(async (req) => {
     // Never redirect or return provider URLs: their query strings contain the answer.
     const text = target.toLowerCase().replace(/[(（][^)）]*[)）]/g, " ").split("/")[0].trim();
     let bytes: ArrayBuffer | null = null;
-    let contentType = "audio/mpeg";
     try {
       const audio = await fetch(`https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`, { signal: AbortSignal.timeout(6000) });
       if (audio.ok && (audio.headers.get("content-type") ?? "").includes("audio")) {
@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
       if (!generated.ok || typeof result.url !== "string") return json({ error: "Audio unavailable, please retry" }, 503);
       const audio = await fetch(result.url, { signal: AbortSignal.timeout(6000) });
       if (!audio.ok) return json({ error: "Audio unavailable, please retry" }, 503);
-      bytes = await audio.arrayBuffer(); contentType = "audio/wav";
+      bytes = await audio.arrayBuffer();
     }
-    return new Response(bytes, { headers: { ...corsHeaders, "Content-Type": contentType, "Cache-Control": "no-store" } });
+    return battleAudioResponse(bytes, corsHeaders);
   } catch (error) {
     if (error instanceof Response) return error;
     return json({ error: "Audio unavailable, please retry" }, 503);

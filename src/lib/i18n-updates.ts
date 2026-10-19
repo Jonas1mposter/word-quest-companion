@@ -1,5 +1,12 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "DAC 已终止对局": "DAC Ended This Match",
+  "本局不发放奖励，已记录到 DAC 供管理员复核": "No rewards for this match. Recorded for DAC administrator review.",
+  "结算中...": "Settling Match...",
+  "请求未能确认，请重试": "Request could not be confirmed. Please retry.",
+  "结算未能确认，请重试": "Settlement could not be confirmed. Please retry.",
+  "违规记录未能确认，请重试": "Violation report could not be confirmed. Please retry.",
+  "对局创建失败，请重试": "Could not start the match. Please retry.",
   "正确答案": "Correct answer",
   "抽奖大厅": "Lottery Hall",
   "荣光铸冠": "Crown of Glory",

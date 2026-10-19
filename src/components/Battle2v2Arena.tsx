@@ -209,6 +209,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   useEffect(() => {
     if (phase !== "countdown") return;
     if (countdown <= 0) {
+      if (!question || questionLoading || questionError) return;
       setPhase("battle");
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => { if (prev <= 1) { endMatch(); return 0; } return prev - 1; });
@@ -217,7 +218,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     }
     const t = setTimeout(() => setCountdown(p => p - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown, endMatch]);
+  }, [phase, countdown, endMatch, question, questionLoading, questionError]);
 
   useEffect(() => { if (question) setCurrentQuestion(question.questionIndex); }, [question]);
 
@@ -320,8 +321,13 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             </div>
           </div>
           <div className="text-8xl font-gaming animate-bounce text-primary">
-            {countdown > 0 ? countdown : 'GO!'}
+            {countdown > 0 ? countdown : question ? 'GO!' : '…'}
           </div>
+          {countdown <= 0 && !question && !questionError && <p className="mt-4 text-muted-foreground">题目加载中...</p>}
+          {questionError && <div role="alert" className="mt-4 text-destructive">
+            <p>{questionError}</p>
+            <Button variant="outline" onClick={() => void loadQuestion()} disabled={questionLoading}>重试</Button>
+          </div>}
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -330,7 +336,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   if (phase === "battle" && matchData) {
 
-    const progressPercent = (currentQuestion / matchData.question_count) * 100;
+    const total = question?.total || matchData.question_count;
+    const progressPercent = total > 0 ? (currentQuestion / total) * 100 : 0;
     const myTeamScore = onTeam1Ref.current ? team1Score : team2Score;
     const oppTeamScore = onTeam1Ref.current ? team2Score : team1Score;
     const myTeam = onTeam1Ref.current ? team1Profiles : team2Profiles;
@@ -360,7 +367,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           </div>
           <Progress value={progressPercent} className="h-2" />
           <div className="flex items-center justify-between mt-1">
-            <span className="text-xs text-muted-foreground">第 {currentQuestion + 1}/{matchData.question_count} 题</span>
+            <span className="text-xs text-muted-foreground">{total > 0 ? <>第 {currentQuestion + 1}/{total} 题</> : "题目加载中..."}</span>
             {comboCount >= 2 && (
               <Badge variant="default" className="animate-pulse">
                 <Zap className="w-3 h-3 mr-1" />{comboCount} 连击!

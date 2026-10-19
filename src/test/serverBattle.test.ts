@@ -17,6 +17,10 @@ describe("服务器逐题对战", () => {
     invoke.mockResolvedValue({ data: { questionIndex: 0, word: "apple", options: ["苹果"] }, error: null });
     await expect(fetchBattleQuestion("match")).rejects.toThrow();
   });
+  it.each([{ total: 0, questionIndex: 0 }, { total: 10, questionIndex: -1 }, { total: 10, questionIndex: 10 }])("拒绝无效进度 $questionIndex/$total", async progress => {
+    invoke.mockResolvedValue({ data: { ...progress, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
+    await expect(fetchBattleQuestion("match")).rejects.toThrow();
+  });
   it.each(["reverse", "spelling", "listening"])("接收%s题但不保留服务器多余的答案字段", async quizType => {
     invoke.mockResolvedValue({ data: { questionIndex: 2, total: 10, quizType, prompt: quizType === "listening" ? "" : "苹果", options: quizType === "reverse" ? ["apple", "pear", "banana", "grape"] : [], correctAnswer: "apple" }, error: null });
     const question = await fetchBattleQuestion("match");

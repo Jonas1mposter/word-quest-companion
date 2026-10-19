@@ -242,6 +242,7 @@ const BattleArena = ({
   useEffect(() => {
     if (phase !== "countdown") return;
     if (countdown <= 0) {
+      if (!question || questionLoading || questionError) return;
       setPhase("battle");
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => { if (prev <= 1) { endMatch(); return 0; } return prev - 1; });
@@ -250,7 +251,7 @@ const BattleArena = ({
     }
     const t = setTimeout(() => setCountdown(p => p - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown, endMatch]);
+  }, [phase, countdown, endMatch, question, questionLoading, questionError]);
 
   useEffect(() => { if (question) setCurrentQuestion(question.questionIndex); }, [question]);
 
@@ -412,8 +413,13 @@ const BattleArena = ({
             <PlayerBattleCard profile={mkPlayerProfile(opponentProfile)} variant="right" />
           </div>
           <div className={cn("text-8xl font-gaming animate-bounce", theme.accentText)}>
-            {countdown > 0 ? countdown : 'GO!'}
+            {countdown > 0 ? countdown : question ? 'GO!' : '…'}
           </div>
+          {countdown <= 0 && !question && !questionError && <p className="mt-4 text-muted-foreground">题目加载中...</p>}
+          {questionError && <div role="alert" className="mt-4 text-destructive">
+            <p>{questionError}</p>
+            <Button variant="outline" onClick={() => void loadQuestion()} disabled={questionLoading}>重试</Button>
+          </div>}
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -422,7 +428,8 @@ const BattleArena = ({
 
   if (phase === "battle" && matchData) {
 
-    const progressPercent = (currentQuestion / matchData.question_count) * 100;
+    const total = question?.total || matchData.question_count;
+    const progressPercent = total > 0 ? (currentQuestion / total) * 100 : 0;
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
@@ -463,7 +470,7 @@ const BattleArena = ({
           <Progress value={progressPercent} className="h-2" />
           <div className="flex items-center justify-between mt-1">
             <span className="text-xs text-muted-foreground">
-              第 {currentQuestion + 1}/{matchData.question_count} 题
+              {total > 0 ? <>第 {currentQuestion + 1}/{total} 题</> : "题目加载中..."}
             </span>
             {comboCount >= 2 && (
               <Badge variant="default" className="animate-pulse">

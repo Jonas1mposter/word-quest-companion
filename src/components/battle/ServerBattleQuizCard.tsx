@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { speakWord } from "@/hooks/useSpeech";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
-import { fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
+import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
 import { cn } from "@/lib/utils";
 
 export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId }: {
   question: ServerQuestion;
-  onAnswer: (answer: string) => Promise<boolean>;
+  onAnswer: (answer: string) => Promise<boolean | BattleAnswerResult>;
   comboCount: number;
   disabled?: boolean;
   matchId?: string;
@@ -19,6 +19,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
   const sounds = useMatchSounds();
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<boolean | null>(null);
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -67,7 +68,9 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
     submitLock.current = true;
     setPending(true); setSelected(option); setError(null);
     try {
-      const correct = await onAnswer(option);
+      const response = await onAnswer(option);
+      const correct = typeof response === "boolean" ? response : response.isCorrect;
+      if (!choice && typeof response !== "boolean" && typeof response.correctAnswer === "string") setCorrectAnswer(response.correctAnswer);
       setResult(correct);
       if (correct) { sounds.playCombo(comboCount + 1); haptics.success(); }
       else { sounds.playWrong(); haptics.error(); }
@@ -126,6 +129,9 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
           {pending ? <Loader2 className="animate-spin" /> : <CheckCircle />}确认
         </Button>
       </form>}
+      {!choice && result !== null && correctAnswer && <div className="mt-4 text-sm text-muted-foreground" aria-live="polite">
+        <span>正确答案</span><p data-no-translate className="mt-1 text-xl font-mono text-foreground break-words [overflow-wrap:anywhere]">{correctAnswer}</p>
+      </div>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
       <div aria-live="polite" className="min-h-6 mt-4 text-sm flex items-center justify-center gap-2">
         {result !== null && <><span className={result ? "text-success" : "text-destructive"}>{result ? "回答正确" : "回答错误"}</span><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></>}

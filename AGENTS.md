@@ -1,4 +1,5 @@
 # Architecture rules
+- Reveal fill-in answers only through the submit response after checking the caller's persisted answer and issued question; never add answer fields to question payloads, so post-grade feedback cannot reveal unsubmitted or future questions.
 - Keep visible-word playback fallback in the shared speech hook and use device speech after recording failure; never send hidden multiplayer listening answers to browser speech synthesis, so fallback cannot bypass question privacy.
 - Keep administrative reward reversals transactional, batch-idempotent and backed by service-role-only before-state audit records; reverse only the targeted source batch so unrelated earnings survive.
 - Keep reviewed UI translations and dynamic-message patterns in the shared localization layer; mark vocabulary content with data-no-translate so English UI never changes question meanings or answer choices.

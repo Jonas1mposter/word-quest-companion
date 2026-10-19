@@ -3,6 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const AnswerRequest = z.object({ matchId: z.string().uuid(), questionIndex: z.number().int().min(0).max(999), answer: z.string().max(2000), elapsedMs: z.number().finite().nonnegative().optional() });
 import { analyzeTiming, analyzeLookup, LOOKUP_MIN_SAMPLES } from "../_shared/answerTiming.ts";
 import { requireProfile, json } from "../_shared/auth.ts";
+import { submittedSpellingFeedback } from "../_shared/answerFeedback.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
 // against the stored words[] payload. Updates the player's (or team's) score atomically.
@@ -23,7 +24,8 @@ Deno.serve(async (req) => {
       p_question_index: questionIndex, p_answer: answer,
     });
     if (submitError) return json({ error: submitError.message }, 409);
-    if (result?.matchEnded || result?.duplicate) return json(result);
+    const feedback = await submittedSpellingFeedback(admin, matchId, profile.id, questionIndex, result);
+    if (result?.matchEnded || result?.duplicate) return json({ ...result, ...feedback });
     const isCorrect = result?.isCorrect === true;
     // ===== DAC (Dipont Anti-Cheat)：答题速度检测 =====
     // 答对且速度快到人类不可能（<1.2s）时记录可疑标记，不影响本次计分
@@ -82,10 +84,10 @@ Deno.serve(async (req) => {
     }
 
     if (timing.robotic) {
-      return json({ ok: true, isCorrect, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
+      return json({ ok: true, isCorrect, ...feedback, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
     }
 
-    return json({ ok: true, isCorrect });
+    return json({ ok: true, isCorrect, ...feedback });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

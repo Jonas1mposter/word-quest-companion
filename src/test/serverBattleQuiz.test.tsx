@@ -8,6 +8,18 @@ vi.mock("@/lib/serverBattle", () => ({ fetchBattleAudio: vi.fn().mockRejectedVal
 vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 
 describe("服务器判定答题", () => {
+  it("填空题仅在服务器判分响应后显示正确答案", async () => {
+    let resolveAnswer: ((value: { ok: boolean; isCorrect: boolean; correctAnswer: string }) => void) | undefined;
+    const onAnswer = vi.fn(() => new Promise<{ ok: boolean; isCorrect: boolean; correctAnswer: string }>(resolve => { resolveAnswer = resolve; }));
+    render(<ServerBattleQuizCard question={{ questionIndex: 2, total: 10, quizType: "spelling", prompt: "苹果", options: [] }} onAnswer={onAnswer} comboCount={0} />);
+    expect(screen.queryByText("apple")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "pear" } });
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
+    expect(screen.queryByText("apple")).not.toBeInTheDocument();
+    resolveAnswer?.({ ok: true, isCorrect: false, correctAnswer: "apple" });
+    await waitFor(() => expect(screen.getByText("apple")).toBeInTheDocument());
+    expect(screen.getByRole("textbox")).toBeDisabled();
+  });
   it("拼写题只发用户输入，由服务器判定", async () => {
     const onAnswer = vi.fn().mockResolvedValue(false);
     render(<ServerBattleQuizCard question={{ questionIndex: 2, total: 10, quizType: "spelling", prompt: "苹果", options: [] }} onAnswer={onAnswer} comboCount={0} />);

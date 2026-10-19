@@ -1202,6 +1202,7 @@ export type Database = {
           options: Json
           profile_id: string
           question_index: number
+          question_type: string
         }
         Insert: {
           issued_at?: string
@@ -1209,6 +1210,7 @@ export type Database = {
           options: Json
           profile_id: string
           question_index: number
+          question_type?: string
         }
         Update: {
           issued_at?: string
@@ -1216,6 +1218,7 @@ export type Database = {
           options?: Json
           profile_id?: string
           question_index?: number
+          question_type?: string
         }
         Relationships: [
           {
@@ -2879,6 +2882,11 @@ export type Database = {
         Returns: Json
       }
       award_badges_for_profile: { Args: { p_id: string }; Returns: number }
+      battle_clean_answer: { Args: { p_text: string }; Returns: string }
+      battle_spelling_correct: {
+        Args: { p_answer: string; p_target: string }
+        Returns: boolean
+      }
       bump_bot_win: { Args: { p_id: string }; Returns: undefined }
       bump_lifetime_coins: {
         Args: { p_amount: number; p_id: string }
@@ -2990,8 +2998,20 @@ export type Database = {
         Args: { p_coins: number; p_discounted: boolean; p_used: number }
         Returns: Json
       }
+      match_listening_word: {
+        Args: {
+          p_match_id: string
+          p_profile_id: string
+          p_question_index: number
+        }
+        Returns: string
+      }
       match_next_question: {
         Args: { p_match_id: string; p_profile_id: string }
+        Returns: Json
+      }
+      match_next_question_v2: {
+        Args: { p_match_id: string; p_mixed: boolean; p_profile_id: string }
         Returns: Json
       }
       match_submit_question: {

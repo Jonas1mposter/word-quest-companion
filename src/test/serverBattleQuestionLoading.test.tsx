@@ -8,7 +8,7 @@ import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
 const firstQuestion = { questionIndex: 0, total: 10, quizType: "meaning", prompt: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] };
 
 describe("对战题目加载恢复", () => {
-  beforeEach(() => fetchQuestion.mockReset());
+  beforeEach(() => { fetchQuestion.mockReset(); });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
 
   it("服务器无可作答题目时给出错误，不能留下无题无提示状态", async () => {

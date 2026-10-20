@@ -6,8 +6,8 @@ import { CalendarCheck, Flame, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// 连签第 1-7 天的豆子奖励，第 7 天起每天 100（周末北京时间双倍）
-const SCHEDULE = [20, 25, 30, 35, 40, 50, 100];
+// 连签第 1-7 天的豆子奖励，第 7 天起每天 200（周末北京时间双倍）
+const SCHEDULE = [40, 50, 60, 70, 80, 100, 200];
 
 const isBeijingWeekend = () => {
   const bj = new Date(Date.now() + 8 * 3600_000);

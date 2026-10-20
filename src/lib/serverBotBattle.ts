@@ -4,6 +4,7 @@ import type { BattleAnswerResult, ServerQuestion } from './serverBattle';
 export interface BotResult {
   ok: boolean; result: 'win' | 'draw' | 'loss'; playerScore: number; botScore: number;
   xpEarned: number; coinsEarned: number; forfeited?: boolean;
+  baseCoins?: number; firstWinCoins?: number; perfectCoins?: number; weekend?: boolean;
 }
 export async function botAction<T>(sessionId: string, action: string, values: Record<string, unknown> = {}): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt++) {

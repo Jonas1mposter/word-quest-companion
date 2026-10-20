@@ -2956,6 +2956,16 @@ export type Database = {
         }
         Returns: Json
       }
+      bot_coin_reward: {
+        Args: {
+          p_at?: string
+          p_difficulty: string
+          p_first_win: boolean
+          p_outcome: string
+          p_perfect: boolean
+        }
+        Returns: Json
+      }
       bump_bot_win: { Args: { p_id: string }; Returns: undefined }
       bump_lifetime_coins: {
         Args: { p_amount: number; p_id: string }
@@ -2972,6 +2982,10 @@ export type Database = {
           p_roll: number
         }
         Returns: string
+      }
+      checkin_coin_reward: {
+        Args: { p_at?: string; p_streak: number }
+        Returns: number
       }
       choose_backpack_reward: {
         Args: { p_choice: string; p_item_id: string }

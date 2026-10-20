@@ -22,9 +22,9 @@ const DIFF_CONFIG: Record<Difficulty, {
   label: string; desc: string; accuracy: number; minDelay: number; maxDelay: number;
   icon: typeof Bot; color: string; coins: string;
 }> = {
-  easy:   { label: "简单", desc: "新手AI · 反应慢、易出错",  accuracy: 0.30, minDelay: 5000, maxDelay: 9000, icon: Sparkles, color: "from-emerald-500 to-green-500", coins: "+4/+2" },
-  medium: { label: "中等", desc: "标准AI · 实力相当",        accuracy: 0.60, minDelay: 3000, maxDelay: 6000, icon: Brain,    color: "from-amber-500 to-orange-500",  coins: "+7/+3" },
-  hard:   { label: "困难", desc: "高手AI · 反应快、准确高",  accuracy: 0.85, minDelay: 2000, maxDelay: 4000, icon: Flame,    color: "from-rose-500 to-red-500",      coins: "+11/+4" },
+  easy:   { label: "简单", desc: "新手AI · 反应慢、易出错",  accuracy: 0.30, minDelay: 5000, maxDelay: 9000, icon: Sparkles, color: "from-emerald-500 to-green-500", coins: "+10/+5/+2" },
+  medium: { label: "中等", desc: "标准AI · 实力相当",        accuracy: 0.60, minDelay: 3000, maxDelay: 6000, icon: Brain,    color: "from-amber-500 to-orange-500",  coins: "+20/+10/+4" },
+  hard:   { label: "困难", desc: "高手AI · 反应快、准确高",  accuracy: 0.85, minDelay: 2000, maxDelay: 4000, icon: Flame,    color: "from-rose-500 to-red-500",      coins: "+30/+15/+6" },
 };
 
 interface BotBattleProps { onBack: () => void; }
@@ -190,14 +190,18 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
                         <Badge variant="secondary" className="text-xs">命中率 {Math.round(cfg.accuracy * 100)}%</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{cfg.desc}</p>
-                      <p className="text-xs text-muted-foreground mt-1">狄邦豆 胜{cfg.coins.split('/')[0]} / 平{cfg.coins.split('/')[1]}</p>
+                      <p className="text-xs text-muted-foreground mt-1">狄邦豆 胜{cfg.coins.split('/')[0]} / 平{cfg.coins.split('/')[1]} / 负{cfg.coins.split('/')[2]}</p>
                     </div>
                   </div>
                 </Card>
               );
             })}
           </div>
-          <p className="text-center text-xs text-muted-foreground">人机模式不计入排位和ELO，仅奖励少量经验和狄邦豆</p>
+          <div className="space-y-1 text-center text-xs text-muted-foreground">
+            <p>每日人机首胜 +50豆 · 满分完赛 +20豆</p>
+            <p>至少完成10题；首胜北京时间每日重置，周末所有豆子双倍</p>
+            <p>完整作答且至少答对1题才有豆子；未完成或违规退出不发奖励</p>
+          </div>
         </div>
       </div>
     );
@@ -319,6 +323,13 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
                   +{rewards.coins} 狄邦豆
                 </div>
               )}
+            </div>
+          )}
+          {finalResult && !finalResult.forfeited && (
+            <div className="mb-4 space-y-1 text-sm text-muted-foreground">
+              {(finalResult.firstWinCoins ?? 0) > 0 && <p>每日首胜：+{finalResult.firstWinCoins} 狄邦豆</p>}
+              {(finalResult.perfectCoins ?? 0) > 0 && <p>满分奖励：+{finalResult.perfectCoins} 狄邦豆</p>}
+              {finalResult.weekend && <p>周末双倍豆已计入</p>}
             </div>
           )}
           <div className="flex gap-2">

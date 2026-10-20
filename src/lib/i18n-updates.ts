@@ -1,5 +1,9 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "每日人机首胜 +50豆 · 满分完赛 +20豆": "Daily first bot win +50 Beans · Perfect finish +20 Beans",
+  "至少完成10题；首胜北京时间每日重置，周末所有豆子双倍": "Finish at least 10 questions; first-win rewards reset at Beijing midnight. All Beans double on weekends.",
+  "完整作答且至少答对1题才有豆子；未完成或违规退出不发奖励": "Finish every question with at least one correct answer to earn Beans. Incomplete or forfeited matches earn no rewards.",
+  "周末双倍豆已计入": "Weekend Double Beans Included",
   "重试原答案": "Retry Original Answer",
   "重新匹配": "Search Again",
   "返回大厅（保留对局）": "Return to Lobby (Keep Match)",
@@ -170,6 +174,9 @@ export const UI_UPDATES: Record<string, string> = {
 // Match variable-bearing messages before fragment replacement so their grammar
 // and numbers survive intact. No reward or gameplay values are computed here.
 export const UI_PATTERNS: [RegExp, string][] = [
+  [/^每日首胜：\+(\d+) 狄邦豆$/, "Daily First Win: +$1 Dipont Beans"],
+  [/^满分奖励：\+(\d+) 狄邦豆$/, "Perfect Finish: +$1 Dipont Beans"],
+  [/^狄邦豆 胜\+(\d+) \/ 平\+(\d+) \/ 负\+(\d+)$/, "Dipont Beans · Win +$1 / Draw +$2 / Loss +$3"],
   [/^已完成 (\d+) 抽，其余未能开奖，券未扣除$/, "$1 draws completed. Remaining draws did not complete; their tickets were not used."],
   [/^已完成 (\d+) 抽，请刷新查看奖励$/, "$1 draws completed. Refresh to check your rewards."],
   [/^已用 (\d+) 狄邦豆兑换 1 张荣光铸冠抽奖券$/, "Exchanged $1 Dipont Beans for 1 Crown of Glory ticket."],

@@ -1,4 +1,4 @@
-import { contentGrade } from "@/lib/zones";
+import { canTeamUp2v2 } from "@/lib/partyRules";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -92,7 +92,7 @@ export const PartyInviteReceiver = () => {
     setProcessing(true);
     try {
       if (accept) {
-        if (contentGrade(profile.grade) !== invite.grade) {
+        if (!canTeamUp2v2(profile.grade, invite.grade)) {
           toast({
             title: "无法组队",
             description: `对方创建的是 ${invite.grade} 年级场次，与你的年级不同`,

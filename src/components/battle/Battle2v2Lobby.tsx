@@ -1,4 +1,5 @@
 import { contentGrade } from "@/lib/zones";
+import { canTeamUp2v2 } from "@/lib/partyRules";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -274,7 +275,7 @@ const Battle2v2Lobby = ({ onBack, subject = "mixed" }: Props) => {
           ) : (
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
               {friends.map((f) => {
-                const sameGrade = contentGrade(f.grade) === myGrade;
+                const sameGrade = canTeamUp2v2(f.grade, profile.grade);
                 return (
                   <div
                     key={f.id}

@@ -20,7 +20,9 @@ import ChallengeArena from "./ChallengeArena";
 import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
-import Battle2v2Lobby from "./battle/Battle2v2Lobby";
+import Battle2v2Arena from "./Battle2v2Arena";
+import { useLobbyParty } from "@/hooks/useLobbyParty";
+import { canSelectPartyMode } from "@/lib/partyRules";
 import Battle2v2Practice from "./Battle2v2Practice";
 import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
@@ -71,15 +73,34 @@ const Dashboard = ({ grade }: DashboardProps) => {
   const [reconnectMatchType, setReconnectMatchType] = useState<"ranked" | "free">("ranked");
   const [battleSubject, setBattleSubject] = useState<BattleSubject>("mixed");
   const { isClassic } = useUiMode();
+  const partyState = useLobbyParty(profile);
+  const [partyMatchId, setPartyMatchId] = useState<string | null>(null);
+  const [startingPartyId, setStartingPartyId] = useState<string | null>(null);
+  const navigateView = (view: DashboardView) => {
+    const mode = view.startsWith("battle2v2") ? "2v2" : view.startsWith("battle") ? "ranked"
+      : view.startsWith("freematch") ? "free" : view === "bot" ? "bot" : view.includes("learn") || view === "wrongbook" ? "levels" : null;
+    if (mode && !canSelectPartyMode(mode, !!partyState.party)) return;
+    if (mode === "2v2" && partyState.party && !partyState.canStart) return;
+    setActiveView(view);
+  };
+
+  useEffect(() => {
+    const party = partyState.party;
+    if (party?.status === "matched" && party.match_id) {
+      setPartyMatchId(party.match_id);
+      setBattleSubject(party.subject as BattleSubject);
+      setActiveView("battle2v2");
+    }
+  }, [partyState.party?.status, partyState.party?.match_id]);
 
   const { activeMatch, dismissMatch, clearActiveMatch } = useMatchReconnect({
     profileId: profile?.id,
     enabled: activeView === "home",
   });
 
-  // 接受 2v2 组队邀请后（PartyInviteReceiver 全局弹窗）跳转到组队大厅
+  // 接受组队邀请后返回主大厅，共享队伍状态继续同步。
   useEffect(() => {
-    const onPartyAccepted = () => setActiveView("battle2v2");
+    const onPartyAccepted = () => setActiveView("home");
     window.addEventListener("party-2v2-accepted", onPartyAccepted);
     return () => window.removeEventListener("party-2v2-accepted", onPartyAccepted);
   }, []);
@@ -122,6 +143,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
     setRefreshKey(p => p + 1); refreshProfile();
   };
   const handleFriendBattleStart = (matchId: string) => {
+    if (partyState.party) return;
     setFriendBattleMatchId(matchId); setActiveView("battle");
   };
   const handleSpectate = (matchId: string) => {
@@ -160,13 +182,21 @@ const Dashboard = ({ grade }: DashboardProps) => {
   }
   if (activeView === "battle2v2-select") {
     return <SubjectBattleSelector battleType="ranked" isHighSchool={isHighSchool} zoneGrade={Number(grade)}
-      onSelectSubject={s => { setBattleSubject(s); setActiveView("battle2v2"); }}
+      onSelectSubject={async s => {
+        if (partyState.party) {
+          if (!await partyState.prepare(s)) return;
+          setStartingPartyId(partyState.party.id);
+        }
+        setBattleSubject(s); setActiveView("battle2v2");
+      }}
       onBack={() => setActiveView("home")} />;
   }
   if (activeView === "battle2v2") {
     if (!user) return <LoginRequired Icon={Swords} title="登录后参与 2v2 排位赛"
       subtitle="组队 4 人切磋词汇！" onBack={() => setActiveView("home")} />;
-    return <Battle2v2Lobby subject={battleSubject} onBack={() => {
+    return <Battle2v2Arena subject={battleSubject} partyId={startingPartyId} initialMatchId={partyMatchId} onBack={async () => {
+      setPartyMatchId(null); setStartingPartyId(null);
+      if (partyState.party) await partyState.leave();
       setActiveView("home");
       setRefreshKey(p => p + 1); refreshProfile();
       setBattleSubject("mixed");
@@ -257,11 +287,11 @@ const Dashboard = ({ grade }: DashboardProps) => {
   return (
     <div className="min-h-screen bg-background bg-grid-pattern">
       <DashboardHeader grade={grade} className={profile?.class} user={user} isAdmin={isAdmin} onSignOut={handleSignOut} />
-      <DashboardNav activeView={activeView} onSelect={setActiveView} />
+      <DashboardNav activeView={activeView} onSelect={navigateView} />
 
       <main className="container mx-auto px-4 py-6">
         {activeView === "home" && (
-          isClassic ? (
+          isClassic && !partyState.party ? (
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="space-y-6">
                 <div data-tour="stats"><PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={refreshProfile} /></div>
@@ -285,14 +315,15 @@ const Dashboard = ({ grade }: DashboardProps) => {
             </div>
           ) : (
             <HomeLobby
+              partyState={partyState}
               profile={profile}
               grade={grade}
               playerData={playerData}
               refreshKey={refreshKey}
               onEnergyPurchased={refreshProfile}
-              onNavigate={setActiveView}
-              onStartMatch={() => setActiveView("battle-select")}
-              onFreeMatch={() => setActiveView("freematch-select")}
+              onNavigate={navigateView}
+              onStartMatch={() => navigateView("battle-select")}
+              onFreeMatch={() => navigateView("freematch-select")}
             />
           )
         )}

@@ -1,7 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { canTeamUp2v2 } from "@/lib/partyRules";
+import { canTeamUp2v2, canSelectPartyMode, canHostStartParty } from "@/lib/partyRules";
 
 describe("2v2 组队年级规则", () => {
+  it("组队后仅可选择2v2，不可选择单人模式", () => {
+    expect(canSelectPartyMode("2v2", true)).toBe(true);
+    for (const mode of ["ranked", "levels", "free", "bot", "friends"] as const) {
+      expect(canSelectPartyMode(mode, true)).toBe(false);
+      expect(canSelectPartyMode(mode, false)).toBe(true);
+    }
+  });
+  it("只有房主且好友已加入时可以开始", () => {
+    const party = { leader_id: "host", member_id: "friend", status: "ready" };
+    expect(canHostStartParty(party, "host")).toBe(true);
+    expect(canHostStartParty(party, "friend")).toBe(false);
+    expect(canHostStartParty({ ...party, member_id: null, status: "pending" }, "host")).toBe(false);
+  });
   it("同年级可以组队", () => {
     expect(canTeamUp2v2(7, 7)).toBe(true);
     expect(canTeamUp2v2(3, 3)).toBe(true);

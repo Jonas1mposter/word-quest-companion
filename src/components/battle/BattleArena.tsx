@@ -93,6 +93,8 @@ const BattleArena = ({
   const [myScoreDisplay, setMyScoreDisplay] = useState(0);
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false);
+  const gradedQuestionsRef = useRef(new Set<number>());
+  const [answerHealthy, setAnswerHealthy] = useState(true);
   const winnerIdRef = useRef<string | null>(null);
   const [rewards, setRewards] = useState<{ coins: number; xp: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -173,7 +175,7 @@ const BattleArena = ({
     setTimeout(() => loadMatch(matchId, true), 1000);
   }, [loadMatch, sounds]);
 
-  const { joinQueue, leaveQueue, error: queueError } = useMatchQueue({
+  const { joinQueue, leaveQueue, isSearching, error: queueError } = useMatchQueue({
     profileId: profile?.id || null,
     grade: profile?.grade || 7,
     matchType,
@@ -197,10 +199,10 @@ const BattleArena = ({
   }, [profile?.id]);
 
   useEffect(() => {
-    if (phase !== "searching") return;
+    if (phase !== "searching" || !isSearching) return;
     const i = setInterval(() => setSearchTime(p => p + 1), 1000);
     return () => clearInterval(i);
-  }, [phase]);
+  }, [phase, isSearching]);
 
   const endMatch = useCallback(async (forfeit?: { reason: string; meta: Record<string, number> }) => {
     if (!profile || matchEndedRef.current) return;
@@ -268,6 +270,8 @@ const BattleArena = ({
       if (data.dacForfeit) { void endMatch(data.dacForfeit); return data; }
       if (data.matchEnded) { void endMatch(); return data; }
       const serverCorrect = data.isCorrect;
+      if (!gradedQuestionsRef.current.has(question.questionIndex)) {
+      gradedQuestionsRef.current.add(question.questionIndex);
       if (serverCorrect) {
         myScoreRef.current += 1;
       } else if (matchType === 'ranked') {
@@ -276,6 +280,7 @@ const BattleArena = ({
       setMyScoreDisplay(myScoreRef.current);
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
+      }
       setTimeout(() => {
         setAnswerAnimation(null);
         if (matchEndedRef.current) return;
@@ -314,6 +319,7 @@ const BattleArena = ({
           </p>
           <p className="text-sm text-muted-foreground mb-2">搜索时间: {searchTime}秒</p>
           {queueError && <p className="text-sm text-destructive mb-2">{queueError}</p>}
+          {queueError && !isSearching && <Button className="mr-2" onClick={() => { setSearchTime(0); void joinQueue(); }}>重新匹配</Button>}
           <Button variant="outline" onClick={async () => { await leaveQueue(); onBack(); }}>
             <XCircle className="w-4 h-4 mr-2" />取消匹配
           </Button>
@@ -482,13 +488,13 @@ const BattleArena = ({
         <KillStreakBanner combo={comboCount} />
         {question && (
           <ServerBattleQuizCard key={question.questionIndex} question={question} matchId={matchData.id}
-            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
+            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading || !!questionError} onHealthChange={setAnswerHealthy} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">
           <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
-        <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
+        <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );
   }

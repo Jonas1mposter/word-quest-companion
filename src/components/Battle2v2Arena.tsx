@@ -58,6 +58,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false);
+  const gradedQuestionsRef = useRef(new Set<number>());
+  const [answerHealthy, setAnswerHealthy] = useState(true);
   const onTeam1Ref = useRef(false);
   const winnerTeamRef = useRef<number | null>(null);
   const channelRef = useRef<any>(null);
@@ -235,8 +237,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       if (data.dacForfeit) { void endMatch(data.dacForfeit); return data; }
       if (data.matchEnded) { void endMatch(); return data; }
       const serverCorrect = data.isCorrect;
+      if (!gradedQuestionsRef.current.has(question.questionIndex)) {
+      gradedQuestionsRef.current.add(question.questionIndex);
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
+      }
       setTimeout(() => {
         setAnswerAnimation(null);
         if (matchEndedRef.current) return;
@@ -378,13 +383,13 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         <KillStreakBanner combo={comboCount} />
         {question && (
           <ServerBattleQuizCard key={question.questionIndex} question={question} matchId={matchData.id}
-            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
+            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading || !!questionError} onHealthChange={setAnswerHealthy} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">
           <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
-        <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
+        <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );
   }

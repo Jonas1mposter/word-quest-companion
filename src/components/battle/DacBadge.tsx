@@ -13,6 +13,7 @@ type ForfeitFn = (reason: string, meta: Record<string, number>) => void;
 
 const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | "监控中"; onForfeit?: ForfeitFn }) => {
   const [online, setOnline] = useState(navigator.onLine);
+  const onlineRef = useRef(navigator.onLine);
   const monitoring = status === "监控中" && online;
   const [count, setCount] = useState(0);
   const [warn, setWarn] = useState(false);
@@ -31,8 +32,8 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   };
 
   useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
+    const onOnline = () => { onlineRef.current = true; setOnline(true); };
+    const onOffline = () => { onlineRef.current = false; awayRef.current = false; setOnline(false); };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
@@ -43,7 +44,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     awaySinceRef.current = 0;
     if (!monitoring) { setWarn(false); return; }
     const leave = () => {
-      if (!navigator.onLine || awayRef.current) return;
+      if (!onlineRef.current || !navigator.onLine || awayRef.current) return;
       awayRef.current = true;
       awaySinceRef.current = Date.now();
       countRef.current += 1;

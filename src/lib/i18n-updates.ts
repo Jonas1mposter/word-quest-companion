@@ -1,5 +1,7 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "重试原答案": "Retry Original Answer",
+  "重新匹配": "Search Again",
   "房主": "Host",
   "开始游戏": "Start Game",
   "等待房主开始": "Waiting for Host",

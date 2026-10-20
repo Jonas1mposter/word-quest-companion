@@ -141,7 +141,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       )}
       {choice ? <div className="grid gap-3">
         {question.options.map(option => (
-          <Button key={option} variant="outline" disabled={pending || result !== null || disabled}
+          <Button key={option} variant="outline" disabled={pending || result !== null || disabled || (attemptedAnswer.current !== null && attemptedAnswer.current !== option)}
             onClick={() => void submit(option)} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
               result !== null && selected !== option && "opacity-60",
               selected === option && pending && "border-primary bg-primary/10",

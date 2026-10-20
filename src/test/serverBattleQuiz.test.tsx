@@ -80,8 +80,9 @@ describe("服务器判定答题", () => {
     const onAnswer = vi.fn().mockRejectedValueOnce(new Error("response lost")).mockResolvedValueOnce(true);
     render(<ServerBattleQuizCard question={{ questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }} onAnswer={onAnswer} comboCount={0} />);
     fireEvent.click(screen.getByRole("button", { name: "苹果" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "梨" })).not.toBeDisabled());
-    fireEvent.click(screen.getByRole("button", { name: "梨" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "重试原答案" })).not.toBeDisabled());
+    expect(screen.getByRole("button", { name: "梨" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "重试原答案" }));
     await waitFor(() => expect(onAnswer).toHaveBeenCalledTimes(2));
     expect(onAnswer.mock.calls).toEqual([["苹果"], ["苹果"]]);
   });

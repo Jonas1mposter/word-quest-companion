@@ -34,13 +34,14 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
 
     try {
       // Check for in_progress matches
-      const { data: matches } = await boundedRequest(supabase
+      const { data: matches, error: matchError } = await boundedRequest(supabase
         .from('ranked_matches')
         .select('*')
         .eq('status', 'in_progress')
         .or(`player1_id.eq.${profileId},player2_id.eq.${profileId},player3_id.eq.${profileId},player4_id.eq.${profileId}`)
         .order('created_at', { ascending: false })
         .limit(1));
+      if (matchError) throw matchError;
 
       if (matches && matches.length > 0) {
         const match = matches[0];

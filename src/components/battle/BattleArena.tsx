@@ -199,9 +199,11 @@ const BattleArena = ({
 
   useEffect(() => {
     if (!profile) return;
+    let mounted = true;
     if (initialMatchId) loadMatch(initialMatchId, false);
-    else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => joinQueue());
+    else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => { if (mounted) void joinQueue(); });
     return () => {
+      mounted = false;
       leaveQueue();
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       if (timerRef.current) clearInterval(timerRef.current);

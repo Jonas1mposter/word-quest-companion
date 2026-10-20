@@ -70,6 +70,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queueBusyRef = useRef(false);
   // DAC：记录当前题目展示时间，用于答题速度检测
   const questionShownAtRef = useRef(Date.now());
 
@@ -132,7 +133,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       _subject: subject,
     };
     if (partyId) args._party_id = partyId;
-    const { data, error } = await supabase.rpc('find_match_2v2', args);
+    const { data, error } = await boundedRequest(supabase.rpc('find_match_2v2', args));
     if (error) { setQueueError(error.message); return null; }
     return data as string | null;
   }, [profile, subject, partyId]);
@@ -142,26 +143,51 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     if (initialMatchId) { loadMatch(initialMatchId); return; }
 
     let mounted = true;
+    const startedAt = Date.now();
     (async () => {
+      try {
       const mid = await tryFindMatch();
       if (!mounted) return;
-      if (mid) { sounds.playMatchFound(); setPhase("found"); setTimeout(() => loadMatch(mid), 800); return; }
+      if (mid) { sounds.playMatchFound(); setPhase("found"); setTimeout(() => { if (mounted) void loadMatch(mid); }, 800); return; }
+      } catch { if (mounted) setQueueError("网络连接不稳定，请检查网络后重试"); }
+      if (!mounted) return;
 
       // Poll queue for match
       queuePollRef.current = window.setInterval(async () => {
-        if (!mounted || matchEndedRef.current) return;
-        const { data: q } = await supabase.from('match_queue')
+        if (!mounted || matchEndedRef.current || queueBusyRef.current) return;
+        queueBusyRef.current = true;
+        try {
+        const { data: q, error } = await boundedRequest(supabase.from('match_queue')
           .select('status, match_id')
           .eq('profile_id', profile.id).eq('mode', '2v2')
-          .eq('status', 'matched').order('created_at', { ascending: false }).limit(1);
+          .eq('status', 'matched').order('created_at', { ascending: false }).limit(1));
+        if (!mounted) return;
+        if (error) throw error;
         if (q && q[0]?.match_id) {
           if (queuePollRef.current) clearInterval(queuePollRef.current);
           sounds.playMatchFound(); setPhase("found");
           const matchId = q[0].match_id;
-          setTimeout(() => loadMatch(matchId), 800);
+          setTimeout(() => { if (mounted) void loadMatch(matchId); }, 800);
           return;
         }
-        await tryFindMatch();
+        if (Date.now() - startedAt >= 60000) {
+          if (queuePollRef.current) clearInterval(queuePollRef.current);
+          setQueueError("匹配超时，请返回大厅后重试");
+          await boundedRequest(supabase.from('match_queue').delete().eq('profile_id', profile.id).eq('mode', '2v2').eq('status', 'searching'));
+          return;
+        }
+        const mid = await tryFindMatch();
+        if (!mounted) return;
+        if (mid) {
+          if (queuePollRef.current) clearInterval(queuePollRef.current);
+          sounds.playMatchFound(); setPhase("found"); void loadMatch(mid);
+        }
+        } catch {
+          if (mounted) {
+            setQueueError("网络连接不稳定，请检查网络后重试");
+            if (Date.now() - startedAt >= 60000 && queuePollRef.current) clearInterval(queuePollRef.current);
+          }
+        } finally { queueBusyRef.current = false; }
       }, 3000);
     })();
 

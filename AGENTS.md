@@ -1,4 +1,5 @@
 # Architecture rules
+- Observe online bans centrally in AuthProvider through verified profile reads triggered by Realtime, bounded fallback polling and reconnection; clear local auth state before sign-out and reject stale loads so open pages cannot retain access after a ban notification.
 - Resolve leaderboard and leaderboard-reward exclusions through the shared server RPC using stable profile IDs, so renaming an excluded account cannot restore eligibility.
 - Resolve achievement symbols through one presentation registry in the shared BadgeIcon, passing the original badge name at every achievement display; keep explicit upgrade families together and unrelated symbols unique without changing stored unlock rules or name-card icons.
 - Gate multiplayer battle startup on a validated first server-issued question; use abortable bounded transport, single-flight question loads and network-restoration recovery, and use issued totals so failed loading cannot silently start a blank battle.

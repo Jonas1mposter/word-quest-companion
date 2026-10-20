@@ -2982,6 +2982,10 @@ export type Database = {
         Args: { p_correct: number; p_total: number }
         Returns: Json
       }
+      complete_empty_match: {
+        Args: { p_forfeiter_id?: string; p_match_id: string }
+        Returns: Json
+      }
       dac_flag: {
         Args: {
           p_meta?: Json

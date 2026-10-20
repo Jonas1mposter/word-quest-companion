@@ -2,6 +2,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.25.76';
 import { requireProfile, json } from '../_shared/auth.ts';
 import { battleAudioResponse } from '../_shared/battleAudio.ts';
+import { listeningAudio } from '../_shared/listeningAudio.ts';
 
 const Request = z.object({
   sessionId: z.string().uuid(), action: z.enum(['start', 'question', 'answer', 'finish', 'forfeit', 'audio']),
@@ -26,16 +27,7 @@ Deno.serve(async req => {
     if (body.action !== 'audio') return json(data);
     if (typeof data?.target !== 'string') return json({ error: 'Audio unavailable' }, 403);
     // Fetch recordings server-side. Provider URLs and hidden listening words never reach the browser.
-    const text = data.target.toLowerCase().replace(/[(（][^)）]*[)）]/g, ' ').split('/')[0].trim();
-    for (const type of [2, 1]) {
-      try {
-        const audio = await fetch(`https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=${type}`, { signal: AbortSignal.timeout(6000) });
-        if (!audio.ok || !(audio.headers.get('content-type') ?? '').includes('audio')) continue;
-        const bytes = await audio.arrayBuffer();
-        if (bytes.byteLength > 512) return battleAudioResponse(bytes, corsHeaders);
-      } catch { /* Try the other recording. Never synthesize hidden words on the client. */ }
-    }
-    return json({ error: 'Audio unavailable, please retry' }, 503);
+    return battleAudioResponse(await listeningAudio(data.target), corsHeaders);
   } catch (error) {
     if (error instanceof Response) return error;
     return json({ error: 'Request failed' }, 500);

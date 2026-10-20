@@ -1,6 +1,7 @@
 import { analyzeTiming } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 import { coinMultiplier } from "../_shared/weekend.ts";
+import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -193,11 +194,12 @@ Deno.serve(async (req) => {
 
         await Promise.all(updates);
 
-        // 双子星：完赛领先 20 分
+        // 双子星：完赛领先 15 分
         if (winnerTeam !== null) {
           const winners = winnerTeam === 1 ? team1 : team2;
-          const diff = Math.abs(t1 - t2);
-          if (diff >= 20) {
+          const winnerScore = winnerTeam === 1 ? t1 : t2;
+          const loserScore = winnerTeam === 1 ? t2 : t1;
+          if (earnsTwinStars(winnerScore, loserScore)) {
             await Promise.all(winners.map(id => admin.rpc("grant_special_badge", { p_id: id, p_name: "双子星" })));
           }
         }
@@ -311,11 +313,11 @@ Deno.serve(async (req) => {
         await Promise.all(updates);
 
 
-        // 降维打击：排位 10-0 零封
+        // 降维打击：排位领先对手至少 8 分
         if (!isFree && winnerId) {
           const loserScore = winnerId === match.player1_id ? p2 : p1;
           const winnerScore = winnerId === match.player1_id ? p1 : p2;
-          if (loserScore === 0 && winnerScore >= 10) {
+          if (earnsDimensionalStrike(winnerScore, loserScore)) {
             await admin.rpc("grant_special_badge", { p_id: winnerId, p_name: "降维打击" });
           }
         }

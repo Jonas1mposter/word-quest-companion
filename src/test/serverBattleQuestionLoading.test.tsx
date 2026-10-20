@@ -8,7 +8,7 @@ import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
 const firstQuestion = { questionIndex: 0, total: 10, quizType: "meaning", prompt: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] };
 
 describe("对战题目加载恢复", () => {
-  beforeEach(() => fetchQuestion.mockReset());
+  beforeEach(() => { fetchQuestion.mockReset(); });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
 
   it("服务器无可作答题目时给出错误，不能留下无题无提示状态", async () => {
@@ -39,5 +39,22 @@ describe("对战题目加载恢复", () => {
     await waitFor(() => expect(result.current.question?.prompt).toBe("pear"));
     await act(async () => resolveOld(firstQuestion));
     expect(result.current.question?.prompt).toBe("pear");
+  });
+  it("同局多次重试合并为一个请求", async () => {
+    let resolve: (value: typeof firstQuestion) => void = () => {};
+    fetchQuestion.mockImplementation(() => new Promise(done => { resolve = done; }));
+    const { result } = renderHook(() => useServerBattleQuestion("match"));
+    let retry: Promise<void> | undefined;
+    act(() => { retry = result.current.loadQuestion(); });
+    expect(fetchQuestion).toHaveBeenCalledTimes(1);
+    await act(async () => { resolve(firstQuestion); await retry; });
+    expect(result.current.question?.prompt).toBe("apple");
+  });
+  it("断网错误后恢复网络会自动重新领题", async () => {
+    fetchQuestion.mockRejectedValueOnce(new Error("offline")).mockResolvedValue(firstQuestion);
+    const { result } = renderHook(() => useServerBattleQuestion("match"));
+    await waitFor(() => expect(result.current.questionError).toBe("offline"));
+    act(() => { window.dispatchEvent(new Event("online")); });
+    await waitFor(() => expect(result.current.question?.total).toBe(10));
   });
 });

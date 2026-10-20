@@ -485,7 +485,7 @@ const BattleArena = ({
             onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">
-          <p>{questionError}</p><Button variant="outline" onClick={() => void loadQuestion()}>重试</Button>
+          <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
         <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />

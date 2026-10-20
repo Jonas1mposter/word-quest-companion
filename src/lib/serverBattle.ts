@@ -15,15 +15,17 @@ export interface BattleAnswerResult {
   dacForfeit?: { reason: string; meta: Record<string, number> };
 }
 // Both server calls are idempotent (same issued question / duplicate-safe submit), so retry on flaky networks.
-async function invokeWithRetry(name: string, body: Record<string, unknown>, attempts = 3) {
+async function invokeWithRetry(name: string, body: Record<string, unknown>, attempts = 3, timeoutMs = 4000) {
   let last: { data: any; error: any } = { data: null, error: null };
   for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      last = await supabase.functions.invoke(name, { body });
+      last = await supabase.functions.invoke(name, { body, signal: controller.signal });
     } catch (e) {
       last = { data: null, error: e };
-    }
-    if (!last.error && !last.data?.error) return last;
+    } finally { clearTimeout(timeout); }
+    if (!last.error && last.data != null && !last.data?.error) return last;
     if (last.data?.error) return last; // server rejected: don't retry
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
   }
@@ -40,7 +42,7 @@ export async function fetchBattleQuestion(matchId: string): Promise<ServerQuesti
   return { questionIndex: data.questionIndex, total: data.total, quizType, prompt, ...(quizType === "meaning" ? { word: prompt } : {}), options: data.options };
 }
 export async function fetchBattleAudio(matchId: string, questionIndex: number): Promise<Blob> {
-  const { data, error } = await invokeWithRetry("match-audio", { matchId, questionIndex });
+  const { data, error } = await invokeWithRetry("match-audio", { matchId, questionIndex }, 2, 15000);
   if (error || !(data instanceof Blob) || data.size === 0) throw new Error("发音加载失败，请点击重试");
   return data;
 }

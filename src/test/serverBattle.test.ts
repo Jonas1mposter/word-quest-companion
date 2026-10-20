@@ -4,11 +4,11 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invo
 import { fetchBattleQuestion, submitBattleAnswer } from "@/lib/serverBattle";
 
 describe("服务器逐题对战", () => {
-  beforeEach(() => invoke.mockReset());
+  beforeEach(() => { invoke.mockReset(); });
   it("只请求当前题，不发送题号或正确答案", async () => {
     invoke.mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
     const question = await fetchBattleQuestion("match");
-    expect(invoke).toHaveBeenCalledWith("match-question", { body: { matchId: "match", protocol: 2 } });
+    expect(invoke).toHaveBeenCalledWith("match-question", { body: { matchId: "match", protocol: 2 }, signal: expect.any(AbortSignal) });
     expect(question?.options).toHaveLength(4);
     expect(question).not.toHaveProperty("meaning");
     expect(question).not.toHaveProperty("correctAnswer");
@@ -35,10 +35,26 @@ describe("服务器逐题对战", () => {
   it("提交不包含客户端正确性或可篡改题型", async () => {
     invoke.mockResolvedValue({ data: { ok: true, isCorrect: false }, error: null });
     expect((await submitBattleAnswer("match", 0, "梨", 3000)).isCorrect).toBe(false);
-    expect(invoke).toHaveBeenCalledWith("submit-answer", { body: { matchId: "match", questionIndex: 0, answer: "梨", elapsedMs: 3000 } });
+    expect(invoke).toHaveBeenCalledWith("submit-answer", { body: { matchId: "match", questionIndex: 0, answer: "梨", elapsedMs: 3000 }, signal: expect.any(AbortSignal) });
   });
   it("服务器失败时不回退到本地判定", async () => {
     invoke.mockResolvedValue({ data: null, error: new Error("offline") });
     await expect(submitBattleAnswer("match", 0, "苹果", 3000)).rejects.toThrow("答案提交失败");
+  });
+  it("空响应自动重试而非直接留下无题", async () => {
+    invoke.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
+    expect((await fetchBattleQuestion("match"))?.questionIndex).toBe(0);
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+  it("卡住的请求在4秒后被取消并重试", async () => {
+    vi.useFakeTimers();
+    invoke.mockImplementationOnce(({ signal }: { signal: AbortSignal }) => new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(new Error("timeout")))))
+      .mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
+    try {
+      const pending = fetchBattleQuestion("match");
+      await vi.advanceTimersByTimeAsync(4400);
+      expect((await pending)?.total).toBe(10);
+      expect(invoke).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
   });
 });

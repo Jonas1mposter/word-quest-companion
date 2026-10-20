@@ -206,7 +206,7 @@ export default function GloryCrownLottery() {
           {state ? gloryTiers(state).map((t) => (
             <div key={t.label} className="flex justify-between gap-3"><span className="text-muted-foreground">{t.label}</span><span className="font-mono">{t.pct}%</span></div>
           )) : <p className="text-muted-foreground">概率加载中…</p>}
-          <p className="text-xs text-muted-foreground pt-2">保底：20 抽必出传说名片、25 抽必出神话名片、50 抽必得副套音效、100 抽必得主套音效；获得对应奖励后该保底重新计数。同时触发时按 主套 → 副套 → 神话 → 传说 顺序，其余保底顺延到下一抽。</p>
+          <p className="text-xs text-muted-foreground pt-2">保底：14 抽必出传说名片、17 抽必出神话名片、34 抽必得副套音效、67 抽必得主套音效；获得对应奖励后该保底重新计数。同时触发时按 主套 → 副套 → 神话 → 传说 顺序，其余保底顺延到下一抽。</p>
           <p className="text-xs text-muted-foreground">已拥有的名片或音效不会重复，优先发放未拥有的；该类全部拥有时改发 200 狄邦豆。</p>
         </CardContent></Card>
       </div>

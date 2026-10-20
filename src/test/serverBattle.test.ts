@@ -57,4 +57,16 @@ describe("服务器逐题对战", () => {
       expect(invoke).toHaveBeenCalledTimes(2);
     } finally { vi.useRealTimers(); }
   });
+  it("即使底层忽略取消信号，4秒后仍释放请求并恢复", async () => {
+    vi.useFakeTimers();
+    invoke.mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
+    let restored = false;
+    const pending = fetchBattleQuestion("match").then(question => { restored = question?.total === 10; });
+    try {
+      await vi.advanceTimersByTimeAsync(4400);
+      expect(restored).toBe(true);
+      await pending;
+    } finally { vi.useRealTimers(); }
+  });
 });

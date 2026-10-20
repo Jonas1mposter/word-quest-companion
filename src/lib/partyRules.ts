@@ -7,3 +7,10 @@ import { contentGrade } from "./zones";
  */
 export const canTeamUp2v2 = (gradeA: number, gradeB: number): boolean =>
   contentGrade(gradeA) === contentGrade(gradeB);
+
+export type PartyGameMode = "ranked" | "levels" | "free" | "2v2" | "bot" | "friends";
+export const canSelectPartyMode = (mode: PartyGameMode, grouped: boolean): boolean =>
+  !grouped || mode === "2v2";
+
+export const canHostStartParty = (party: { leader_id: string; member_id: string | null; status: string } | null, profileId?: string): boolean =>
+  !!party && party.leader_id === profileId && !!party.member_id && party.status === "ready";

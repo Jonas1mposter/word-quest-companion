@@ -19,12 +19,17 @@ async function invokeWithRetry(name: string, body: Record<string, unknown>, atte
   let last: { data: any; error: any } = { data: null, error: null };
   for (let i = 0; i < attempts; i++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      last = await supabase.functions.invoke(name, { body, signal: controller.signal });
+      last = await Promise.race([
+        supabase.functions.invoke(name, { body, signal: controller.signal }),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => { controller.abort(); reject(new Error("Request timed out")); }, timeoutMs);
+        }),
+      ]);
     } catch (e) {
       last = { data: null, error: e };
-    } finally { clearTimeout(timeout); }
+    } finally { if (timeout !== undefined) clearTimeout(timeout); }
     if (!last.error && last.data != null && !last.data?.error) return last;
     if (last.data?.error) return last; // server rejected: don't retry
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));

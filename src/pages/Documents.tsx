@@ -215,15 +215,13 @@ const DeliveryDoc = () => (
       <h3 className="text-xl font-semibold mt-6">3.2 性能指标 / Performance Metrics</h3>
       <ul>
         <li>
-          <strong>并发能力 / Concurrency</strong>：优化后支持800-1000+用户同时在线 / Supports 800-1000+ simultaneous
-          users after optimization
+          <strong>并发能力 / Concurrency</strong>：尚无经验证的并发压测结果，不公布支持人数 / No verified load-test results; supported concurrent user count is not claimed.
         </li>
         <li>
-          <strong>实时同步 / Real-time Sync</strong>：对战延迟 &lt;100ms / Battle latency &lt;100ms
+          <strong>实时同步 / Real-time Sync</strong>：使用实时通知和定期查询；延迟取决于网络，尚未完成测量 / Uses realtime updates and polling; latency depends on the network and has not been benchmarked.
         </li>
         <li>
-          <strong>离线友好 / Offline Friendly</strong>：本地缓存机制，弱网可用 / Local caching mechanism for weak
-          network conditions
+          <strong>网络要求 / Network Requirements</strong>：真人对战领题、判分和结算需要联网；本地缓存不支持离线对战 / Multiplayer question issuance, grading and settlement require connectivity; local caching does not enable offline battles.
         </li>
       </ul>
 

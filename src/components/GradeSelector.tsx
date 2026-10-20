@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, BookOpen, Trophy, ArrowRight } from "lucide-react";
+import { BookOpen, Trophy, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface GradeSelectorProps {
@@ -17,7 +17,7 @@ const GradeSelector = ({ onSelectGrade }: GradeSelectorProps) => {
       color: "from-neon-blue to-neon-cyan",
       borderColor: "border-neon-blue/30 hover:border-neon-blue/60",
       shadowColor: "shadow-neon-blue/20 hover:shadow-neon-blue/40",
-      stats: { players: 156, levels: 24 },
+      stats: { levels: 24 },
     },
     {
       grade: 8 as const,
@@ -27,7 +27,7 @@ const GradeSelector = ({ onSelectGrade }: GradeSelectorProps) => {
       color: "from-primary to-neon-pink",
       borderColor: "border-primary/30 hover:border-primary/60",
       shadowColor: "shadow-primary/20 hover:shadow-primary/40",
-      stats: { players: 142, levels: 32 },
+      stats: { levels: 32 },
     },
   ];
 
@@ -100,10 +100,6 @@ const GradeSelector = ({ onSelectGrade }: GradeSelectorProps) => {
                 </div>
 
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>{item.stats.players} 玩家在线</span>
-                  </div>
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-accent" />
                     <span>赛季进行中</span>

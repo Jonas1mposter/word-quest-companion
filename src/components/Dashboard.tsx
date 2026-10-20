@@ -153,12 +153,14 @@ const Dashboard = ({ grade }: DashboardProps) => {
     if (!activeMatch) return;
     setReconnectMatchId(activeMatch.id);
     setReconnectMatchType(activeMatch.type);
+    setBattleSubject(activeMatch.subject as BattleSubject);
+    if (activeMatch.mode === "2v2") setPartyMatchId(activeMatch.id);
     clearActiveMatch();
-    setActiveView(activeMatch.type === "ranked" ? "battle" : "freematch");
+    setActiveView(activeMatch.mode === "2v2" ? "battle2v2" : activeMatch.type === "ranked" ? "battle" : "freematch");
   };
   const handleDismissReconnect = async () => {
-    await dismissMatch();
-    toast.info("已放弃比赛");
+    try { await dismissMatch(); toast.info("已放弃比赛"); }
+    catch { toast.error("退赛未能确认，请重试"); }
   };
 
   // ===== Full-screen subviews =====

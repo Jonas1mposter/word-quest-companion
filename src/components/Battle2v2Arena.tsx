@@ -16,6 +16,8 @@ import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
 import DacBadge from "./battle/DacBadge";
+import { remainingBattleSeconds } from "@/lib/battleClock";
+import { boundedRequest } from "@/lib/boundedRequest";
 
 interface MatchData {
   id: string;
@@ -42,6 +44,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const [phase, setPhase] = useState<Phase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const [matchLoadError, setMatchLoadError] = useState<string | null>(null);
+  const loadingMatchIdRef = useRef<string | null>(initialMatchId ?? null);
   const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
   const [team1Profiles, setTeam1Profiles] = useState<any[]>([]);
   const [team2Profiles, setTeam2Profiles] = useState<any[]>([]);
@@ -58,26 +62,33 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const matchEndedRef = useRef(false);
   const answeringRef = useRef(false);
+  const gradedQuestionsRef = useRef(new Set<number>());
+  const [answerHealthy, setAnswerHealthy] = useState(true);
   const onTeam1Ref = useRef(false);
   const winnerTeamRef = useRef<number | null>(null);
   const channelRef = useRef<any>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queueBusyRef = useRef(false);
   // DAC：记录当前题目展示时间，用于答题速度检测
   const questionShownAtRef = useRef(Date.now());
 
   const loadMatch = useCallback(async (matchId: string) => {
-    const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
-    if (!match || !profile) return;
+    loadingMatchIdRef.current = matchId;
+    setMatchLoadError(null);
+    try {
+    const { data: match } = await boundedRequest(supabase.from('ranked_matches').select('*').eq('id', matchId).single());
+    if (!match || !profile || match.mode !== '2v2') throw new Error("对局加载失败，请重试");
     const team1Ids = [match.player1_id, match.player3_id].filter(Boolean) as string[];
     const team2Ids = [match.player2_id, match.player4_id].filter(Boolean) as string[];
     onTeam1Ref.current = team1Ids.includes(profile.id);
     setMatchData(match as unknown as MatchData);
+    setTimeLeft(remainingBattleSeconds(match.started_at));
     setTeam1Score(match.team1_score ?? 0);
     setTeam2Score(match.team2_score ?? 0);
 
-    const { data: profs } = await supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]);
+    const { data: profs } = await boundedRequest(supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]));
     setTeam1Profiles(team1Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
     setTeam2Profiles(team2Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
 
@@ -110,6 +121,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     }, 2000);
 
     setPhase("countdown");
+    } catch { setMatchLoadError("对局加载失败，请重试"); setPhase("found"); }
   }, [profile]);
 
   const tryFindMatch = useCallback(async () => {
@@ -121,7 +133,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       _subject: subject,
     };
     if (partyId) args._party_id = partyId;
-    const { data, error } = await supabase.rpc('find_match_2v2', args);
+    const { data, error } = await boundedRequest(supabase.rpc('find_match_2v2', args));
     if (error) { setQueueError(error.message); return null; }
     return data as string | null;
   }, [profile, subject, partyId]);
@@ -131,25 +143,51 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     if (initialMatchId) { loadMatch(initialMatchId); return; }
 
     let mounted = true;
+    const startedAt = Date.now();
     (async () => {
+      try {
       const mid = await tryFindMatch();
       if (!mounted) return;
-      if (mid) { sounds.playMatchFound(); setPhase("found"); setTimeout(() => loadMatch(mid), 800); return; }
+      if (mid) { sounds.playMatchFound(); setPhase("found"); setTimeout(() => { if (mounted) void loadMatch(mid); }, 800); return; }
+      } catch { if (mounted) setQueueError("网络连接不稳定，请检查网络后重试"); }
+      if (!mounted) return;
 
       // Poll queue for match
       queuePollRef.current = window.setInterval(async () => {
-        if (!mounted || matchEndedRef.current) return;
-        const { data: q } = await supabase.from('match_queue')
+        if (!mounted || matchEndedRef.current || queueBusyRef.current) return;
+        queueBusyRef.current = true;
+        try {
+        const { data: q, error } = await boundedRequest(supabase.from('match_queue')
           .select('status, match_id')
           .eq('profile_id', profile.id).eq('mode', '2v2')
-          .eq('status', 'matched').order('created_at', { ascending: false }).limit(1);
+          .eq('status', 'matched').order('created_at', { ascending: false }).limit(1));
+        if (!mounted) return;
+        if (error) throw error;
         if (q && q[0]?.match_id) {
           if (queuePollRef.current) clearInterval(queuePollRef.current);
           sounds.playMatchFound(); setPhase("found");
-          setTimeout(() => loadMatch(q[0].match_id!), 800);
+          const matchId = q[0].match_id;
+          setTimeout(() => { if (mounted) void loadMatch(matchId); }, 800);
           return;
         }
-        await tryFindMatch();
+        if (Date.now() - startedAt >= 60000) {
+          if (queuePollRef.current) clearInterval(queuePollRef.current);
+          setQueueError("匹配超时，请返回大厅后重试");
+          await boundedRequest(supabase.from('match_queue').delete().eq('profile_id', profile.id).eq('mode', '2v2').eq('status', 'searching'));
+          return;
+        }
+        const mid = await tryFindMatch();
+        if (!mounted) return;
+        if (mid) {
+          if (queuePollRef.current) clearInterval(queuePollRef.current);
+          sounds.playMatchFound(); setPhase("found"); void loadMatch(mid);
+        }
+        } catch {
+          if (mounted) {
+            setQueueError("网络连接不稳定，请检查网络后重试");
+            if (Date.now() - startedAt >= 60000 && queuePollRef.current) clearInterval(queuePollRef.current);
+          }
+        } finally { queueBusyRef.current = false; }
       }, 3000);
     })();
 
@@ -235,8 +273,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       if (data.dacForfeit) { void endMatch(data.dacForfeit); return data; }
       if (data.matchEnded) { void endMatch(); return data; }
       const serverCorrect = data.isCorrect;
+      if (!gradedQuestionsRef.current.has(question.questionIndex)) {
+      gradedQuestionsRef.current.add(question.questionIndex);
       setComboCount(prev => serverCorrect ? prev + 1 : 0);
       setAnswerAnimation(serverCorrect ? 'correct' : 'wrong');
+      }
       setTimeout(() => {
         setAnswerAnimation(null);
         if (matchEndedRef.current) return;
@@ -295,6 +336,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <Swords className="w-20 h-20 mx-auto mb-4 animate-bounce text-primary" />
           <h2 className="text-3xl font-gaming mb-2 text-primary">4 人已就位！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+          {matchLoadError && <div role="alert" className="mt-4 space-y-3">
+            <p className="text-destructive">{matchLoadError}</p>
+            <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id); }}>重试</Button>
+          </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -328,6 +374,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             <p>{questionError}</p>
             <Button variant="outline" onClick={() => void loadQuestion()} disabled={questionLoading}>重试</Button>
           </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -378,13 +425,14 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         <KillStreakBanner combo={comboCount} />
         {question && (
           <ServerBattleQuizCard key={question.questionIndex} question={question} matchId={matchData.id}
-            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading} />
+            onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading || !!questionError} onHealthChange={setAnswerHealthy} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">
           <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
-        <DacBadge onForfeit={(reason, meta) => endMatch({ reason, meta })} />
+        <div className="text-center mt-4"><Button variant="outline" onClick={onBack}>返回大厅（保留对局）</Button></div>
+        <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );
   }

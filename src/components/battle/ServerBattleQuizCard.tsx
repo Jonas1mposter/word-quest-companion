@@ -10,13 +10,14 @@ import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serv
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/lib/audioManager";
 
-export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio }: {
+export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio, onHealthChange }: {
   question: ServerQuestion;
   onAnswer: (answer: string) => Promise<boolean | BattleAnswerResult>;
   comboCount: number;
   disabled?: boolean;
   matchId?: string;
   loadAudio?: (questionIndex: number) => Promise<Blob>;
+  onHealthChange?: (healthy: boolean) => void;
 }) {
   const sounds = useMatchSounds();
   const [selected, setSelected] = useState<string | null>(null);
@@ -34,11 +35,15 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const activeRef = useRef(true);
   const submitLock = useRef(false);
+  const attemptedAnswer = useRef<string | null>(null);
   const type = question.quizType ?? "meaning";
   const prompt = question.prompt ?? question.word ?? "";
   const choice = type === "meaning" || type === "reverse";
   const labels = { meaning: "选择释义", reverse: "中译英", spelling: "拼写单词", listening: "听音拼写" };
   const TypeIcon = { meaning: BookOpen, reverse: Languages, spelling: PenLine, listening: Headphones }[type];
+  useEffect(() => {
+    onHealthChange?.(!pending && !error && !audioError && (type !== "listening" || audioReady));
+  }, [pending, error, audioError, audioReady, type, onHealthChange]);
   useEffect(() => {
     activeRef.current = true;
     return () => {
@@ -92,6 +97,9 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
   const submit = async (option: string) => {
     if (submitLock.current || pending || result !== null || disabled || (!choice && !option.trim()) || (type === "listening" && !audioReady)) return;
     submitLock.current = true;
+    // A lost response may already have committed this answer. Never retry a different answer.
+    attemptedAnswer.current ??= option;
+    option = attemptedAnswer.current;
     setPending(true); setSelected(option); setError(null);
     try {
       const response = await onAnswer(option);
@@ -102,7 +110,6 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       else { sounds.playWrong(); haptics.error(); }
     } catch (err) {
       setError(err instanceof Error ? err.message : "答案提交失败，请重试");
-      setSelected(null);
     } finally { setPending(false); submitLock.current = false; }
   };
   return (
@@ -134,7 +141,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       )}
       {choice ? <div className="grid gap-3">
         {question.options.map(option => (
-          <Button key={option} variant="outline" disabled={pending || result !== null || disabled}
+          <Button key={option} variant="outline" disabled={pending || result !== null || disabled || (attemptedAnswer.current !== null && attemptedAnswer.current !== option)}
             onClick={() => void submit(option)} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
               result !== null && selected !== option && "opacity-60",
               selected === option && pending && "border-primary bg-primary/10",
@@ -149,7 +156,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
         ))}
       </div> : <form className="space-y-4" onSubmit={event => { event.preventDefault(); void submit(input.trim()); }}>
         <Input data-no-translate aria-label="输入英文单词" placeholder="输入英文单词..." value={input} onChange={event => setInput(event.target.value)}
-          disabled={pending || result !== null || disabled} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
+          disabled={pending || result !== null || disabled || attemptedAnswer.current !== null} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
           className={cn("h-14 text-center text-xl font-mono text-foreground", result === true && "border-success bg-success/10", result === false && "border-destructive bg-destructive/10")} />
         <Button type="submit" className="w-full h-12" disabled={!input.trim() || pending || result !== null || disabled || (type === "listening" && !audioReady)}>
           {pending ? <Loader2 className="animate-spin" /> : <CheckCircle />}确认
@@ -159,6 +166,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
         <span>正确答案</span><p data-no-translate className="mt-1 text-xl font-mono text-foreground break-words [overflow-wrap:anywhere]">{correctAnswer}</p>
       </div>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
+      {error && attemptedAnswer.current !== null && <Button variant="outline" className="mt-3" disabled={pending || disabled} onClick={() => void submit(attemptedAnswer.current ?? "")}>重试原答案</Button>}
       <div aria-live="polite" className="min-h-6 mt-4 text-sm flex items-center justify-center gap-2">
         {result !== null && <><span className={result ? "text-success" : "text-destructive"}>{result ? "回答正确" : "回答错误"}</span><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></>}
       </div>

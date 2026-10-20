@@ -3,6 +3,7 @@ import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 import { coinMultiplier } from "../_shared/weekend.ts";
 import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.ts";
 import { settleEmptyMatch } from "../_shared/emptyMatch.ts";
+import { classifyForfeit } from "../_shared/forfeitReason.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -113,9 +114,10 @@ Deno.serve(async (req) => {
 
     // DAC：疑似自动化操控，判负并记录
     if (isForfeit && match.status !== "completed" && !robotic.has(profile.id)) {
+      const classification = classifyForfeit(forfeit.reason);
       await admin.rpc("dac_flag", {
-        p_profile_id: profile.id, p_source: "bot_input",
-        p_reason: "疑似 AI/脚本操控，已判负", p_severity: "high",
+        p_profile_id: profile.id, p_source: classification.source,
+        p_reason: classification.reason, p_severity: classification.severity,
         p_meta: { match_id: matchId, mode: match.mode, match_type: match.match_type,
           reason: String(forfeit.reason ?? "").slice(0, 60), detail: forfeit.meta ?? null },
       });

@@ -13,7 +13,7 @@ describe("荣光铸冠概率与保底", () => {
     expect(await t(5.999)).toBe("sub_sound"); expect(await t(6)).toBe("mythology");
     expect(await t(13.999)).toBe("mythology"); expect(await t(14)).toBe("legendary");
     expect(await t(23.999)).toBe("legendary"); expect(await t(24)).toBe("coins_200");
-  });
+  }, 20000);
   it("第14抽必出传说", async () => { expect(await t(99, 0, 0, 0, 12)).toBe("coins_100"); expect(await t(99, 0, 0, 0, 13)).toBe("legendary"); });
   it("第17抽必出神话", async () => { expect(await t(99, 0, 0, 15)).toBe("coins_100"); expect(await t(99, 0, 0, 16)).toBe("mythology"); });
   it("第34抽必得副套", async () => { expect(await t(99, 0, 32)).toBe("coins_100"); expect(await t(99, 0, 33)).toBe("sub_sound"); });

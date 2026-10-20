@@ -8,6 +8,7 @@ import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
 import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
 import { cn } from "@/lib/utils";
+import { audioManager } from "@/lib/audioManager";
 
 export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio }: {
   question: ServerQuestion;
@@ -29,6 +30,8 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
   const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const audioBlobRef = useRef<Promise<Blob> | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const activeRef = useRef(true);
   const submitLock = useRef(false);
   const type = question.quizType ?? "meaning";
@@ -41,25 +44,46 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
     return () => {
       activeRef.current = false;
       audioRef.current?.pause();
+      audioSourceRef.current?.stop();
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     };
   }, []);
+  useEffect(() => {
+    if (type !== "listening" || (!matchId && !loadAudio)) return;
+    // Prefetch only this issued question's authenticated opaque bytes, not future answers.
+    const promise = loadAudio ? loadAudio(question.questionIndex) : fetchBattleAudio(matchId ?? "", question.questionIndex);
+    audioBlobRef.current = promise;
+    void promise.catch(() => { if (audioBlobRef.current === promise) audioBlobRef.current = null; });
+  }, [type, matchId, loadAudio, question.questionIndex]);
   const playListening = async () => {
     if ((!matchId && !loadAudio) || audioLoading) return;
     // Create the player synchronously on the click; never speak hidden answer text on the client.
     const audio = audioRef.current ?? new Audio();
     audioRef.current = audio;
+    const contextReady = audioManager.ensureReady().catch(() => null);
     setAudioLoading(true); setAudioError(null);
     try {
       if (!audioUrlRef.current) {
-        const blob = loadAudio ? await loadAudio(question.questionIndex) : matchId ? await fetchBattleAudio(matchId, question.questionIndex) : null;
+        const blob = await (audioBlobRef.current ?? (loadAudio ? loadAudio(question.questionIndex) : matchId ? fetchBattleAudio(matchId, question.questionIndex) : Promise.resolve(null)));
         if (!blob) return;
         if (!activeRef.current) return;
         audioUrlRef.current = URL.createObjectURL(blob);
         audio.src = audioUrlRef.current;
       }
       audio.currentTime = 0;
-      await audio.play();
+      try { await audio.play(); }
+      catch {
+        // Safari may reject HTML playback after an async download. Unlock Web Audio on the click instead.
+        const context = await contextReady;
+        if (!context || context.state !== "running") throw new Error("Audio not ready");
+        const blob = await fetch(audioUrlRef.current ?? "").then(response => response.arrayBuffer());
+        const buffer = await context.decodeAudioData(blob);
+        if (!activeRef.current) return;
+        audioSourceRef.current?.stop();
+        const source = context.createBufferSource();
+        source.buffer = buffer; source.connect(context.destination); source.start();
+        audioSourceRef.current = source;
+      }
       if (activeRef.current) setAudioReady(true);
     } catch {
       if (activeRef.current) setAudioError("发音加载失败，请点击重试");

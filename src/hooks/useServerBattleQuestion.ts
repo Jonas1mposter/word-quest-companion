@@ -6,8 +6,11 @@ export function useServerBattleQuestion(matchId?: string) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const generation = useRef(0);
+  const inFlight = useRef<Promise<void> | null>(null);
   const load = useCallback(async () => {
     if (!matchId) return;
+    if (inFlight.current) return inFlight.current;
+    const work = (async () => {
     const request = ++generation.current;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     setLoading(true); setError(null);
@@ -26,7 +29,22 @@ export function useServerBattleQuestion(matchId?: string) {
       if (timeout !== undefined) clearTimeout(timeout);
       if (request === generation.current) setLoading(false);
     }
+    })();
+    inFlight.current = work;
+    try { await work; } finally { if (inFlight.current === work) inFlight.current = null; }
   }, [matchId]);
-  useEffect(() => { setQuestion(null); void load(); return () => { generation.current++; }; }, [load]);
+  useEffect(() => {
+    inFlight.current = null;
+    setQuestion(null);
+    void load();
+    return () => { generation.current++; inFlight.current = null; };
+  }, [load]);
+  useEffect(() => {
+    if (!error) return;
+    const recover = () => { if (!document.hidden) void load(); };
+    window.addEventListener("online", recover);
+    document.addEventListener("visibilitychange", recover);
+    return () => { window.removeEventListener("online", recover); document.removeEventListener("visibilitychange", recover); };
+  }, [error, load]);
   return { question, questionError: error, questionLoading: loading, loadQuestion: load };
 }

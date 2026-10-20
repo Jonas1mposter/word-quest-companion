@@ -1,5 +1,7 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "在 2v2 模式中，完赛时己方队伍领先对方队伍 15 分及以上": "Finish a 2v2 match with your team ahead by at least 15 points",
+  "在排位赛中领先对手 8 分及以上": "Lead your opponent by at least 8 points in a ranked match",
   "DAC 已终止对局": "DAC Ended This Match",
   "本局不发放奖励，已记录到 DAC 供管理员复核": "No rewards for this match. Recorded for DAC administrator review.",
   "结算中...": "Settling Match...",

@@ -40,4 +40,21 @@ describe("对战题目加载恢复", () => {
     await act(async () => resolveOld(firstQuestion));
     expect(result.current.question?.prompt).toBe("pear");
   });
+  it("同局多次重试合并为一个请求", async () => {
+    let resolve: (value: typeof firstQuestion) => void = () => {};
+    fetchQuestion.mockImplementation(() => new Promise(done => { resolve = done; }));
+    const { result } = renderHook(() => useServerBattleQuestion("match"));
+    let retry: Promise<void> | undefined;
+    act(() => { retry = result.current.loadQuestion(); });
+    expect(fetchQuestion).toHaveBeenCalledTimes(1);
+    await act(async () => { resolve(firstQuestion); await retry; });
+    expect(result.current.question?.prompt).toBe("apple");
+  });
+  it("断网错误后恢复网络会自动重新领题", async () => {
+    fetchQuestion.mockRejectedValueOnce(new Error("offline")).mockResolvedValue(firstQuestion);
+    const { result } = renderHook(() => useServerBattleQuestion("match"));
+    await waitFor(() => expect(result.current.questionError).toBe("offline"));
+    act(() => { window.dispatchEvent(new Event("online")); });
+    await waitFor(() => expect(result.current.question?.total).toBe(10));
+  });
 });

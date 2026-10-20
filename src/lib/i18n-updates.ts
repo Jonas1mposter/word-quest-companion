@@ -2,6 +2,10 @@
 export const UI_UPDATES: Record<string, string> = {
   "重试原答案": "Retry Original Answer",
   "重新匹配": "Search Again",
+  "返回大厅（保留对局）": "Return to Lobby (Keep Match)",
+  "对局加载失败，请重试": "Match could not be loaded. Please retry.",
+  "取消匹配未能确认，请检查网络": "Queue cancellation could not be confirmed. Check your connection.",
+  "退赛未能确认，请重试": "Surrender could not be confirmed. Please retry.",
   "房主": "Host",
   "开始游戏": "Start Game",
   "等待房主开始": "Waiting for Host",

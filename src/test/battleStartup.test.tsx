@@ -11,7 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   functions: { invoke: mocks.invoke }, removeChannel: mocks.removeChannel,
   channel: () => { const c = { on: () => c, subscribe: () => c }; return c; },
   from: (table: string) => {
-    const data = table === "ranked_matches" ? { id: "match", player1_id: "p1", player2_id: "p2", question_count: 0, status: "in_progress", team1_score: 0, team2_score: 0 } : [];
+    const data = table === "ranked_matches" ? { id: "match", mode: "2v2", player1_id: "p1", player2_id: "p2", question_count: 0, status: "in_progress", team1_score: 0, team2_score: 0 } : [];
     const q = { select: () => q, eq: () => q, in: () => q, limit: () => Promise.resolve({ data }), single: () => Promise.resolve({ data }), then: (resolve: (value: unknown) => void) => Promise.resolve({ data }).then(resolve) };
     return q;
   },

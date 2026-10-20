@@ -17,6 +17,7 @@ import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
 import DacBadge from "./battle/DacBadge";
 import { remainingBattleSeconds } from "@/lib/battleClock";
+import { boundedRequest } from "@/lib/boundedRequest";
 
 interface MatchData {
   id: string;
@@ -43,6 +44,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
 
   const [phase, setPhase] = useState<Phase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const [matchLoadError, setMatchLoadError] = useState<string | null>(null);
+  const loadingMatchIdRef = useRef<string | null>(initialMatchId ?? null);
   const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
   const [team1Profiles, setTeam1Profiles] = useState<any[]>([]);
   const [team2Profiles, setTeam2Profiles] = useState<any[]>([]);
@@ -71,8 +74,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const questionShownAtRef = useRef(Date.now());
 
   const loadMatch = useCallback(async (matchId: string) => {
-    const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
-    if (!match || !profile) return;
+    loadingMatchIdRef.current = matchId;
+    setMatchLoadError(null);
+    try {
+    const { data: match } = await boundedRequest(supabase.from('ranked_matches').select('*').eq('id', matchId).single());
+    if (!match || !profile || match.mode !== '2v2') throw new Error("对局加载失败，请重试");
     const team1Ids = [match.player1_id, match.player3_id].filter(Boolean) as string[];
     const team2Ids = [match.player2_id, match.player4_id].filter(Boolean) as string[];
     onTeam1Ref.current = team1Ids.includes(profile.id);
@@ -81,7 +87,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     setTeam1Score(match.team1_score ?? 0);
     setTeam2Score(match.team2_score ?? 0);
 
-    const { data: profs } = await supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]);
+    const { data: profs } = await boundedRequest(supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]));
     setTeam1Profiles(team1Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
     setTeam2Profiles(team2Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
 
@@ -114,6 +120,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     }, 2000);
 
     setPhase("countdown");
+    } catch { setMatchLoadError("对局加载失败，请重试"); setPhase("found"); }
   }, [profile]);
 
   const tryFindMatch = useCallback(async () => {
@@ -150,7 +157,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         if (q && q[0]?.match_id) {
           if (queuePollRef.current) clearInterval(queuePollRef.current);
           sounds.playMatchFound(); setPhase("found");
-          setTimeout(() => loadMatch(q[0].match_id!), 800);
+          const matchId = q[0].match_id;
+          setTimeout(() => loadMatch(matchId), 800);
           return;
         }
         await tryFindMatch();
@@ -302,6 +310,11 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <Swords className="w-20 h-20 mx-auto mb-4 animate-bounce text-primary" />
           <h2 className="text-3xl font-gaming mb-2 text-primary">4 人已就位！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+          {matchLoadError && <div role="alert" className="mt-4 space-y-3">
+            <p className="text-destructive">{matchLoadError}</p>
+            <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id); }}>重试</Button>
+          </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -335,6 +348,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             <p>{questionError}</p>
             <Button variant="outline" onClick={() => void loadQuestion()} disabled={questionLoading}>重试</Button>
           </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -391,6 +405,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
+        <div className="text-center mt-4"><Button variant="outline" onClick={onBack}>返回大厅（保留对局）</Button></div>
         <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );

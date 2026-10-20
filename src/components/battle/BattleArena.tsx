@@ -22,6 +22,7 @@ import { getNameCardGradientStyle } from "@/components/profile-card/utils";
 import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
 import { BadgeIcon } from "@/components/ui/badge-icon";
 import { remainingBattleSeconds } from "@/lib/battleClock";
+import { boundedRequest } from "@/lib/boundedRequest";
 
 interface MatchData {
   id: string;
@@ -79,6 +80,8 @@ const BattleArena = ({
 
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const [matchLoadError, setMatchLoadError] = useState<string | null>(null);
+  const loadingMatchIdRef = useRef<string | null>(initialMatchId ?? null);
   const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
   const [opponentProfile, setOpponentProfile] = useState<any>(null);
   const [opponentNameCard, setOpponentNameCard] = useState<NameCardData | null>(null);
@@ -106,8 +109,11 @@ const BattleArena = ({
   const questionShownAtRef = useRef(Date.now());
 
   const loadMatch = useCallback(async (matchId: string, showIntel = true) => {
-    const { data: match } = await supabase.from('ranked_matches').select('*').eq('id', matchId).single();
-    if (!match || !profile) return;
+    loadingMatchIdRef.current = matchId;
+    setMatchLoadError(null);
+    try {
+    const { data: match } = await boundedRequest(supabase.from('ranked_matches').select('*').eq('id', matchId).single());
+    if (!match || !profile) throw new Error("对局加载失败，请重试");
     isPlayer1Ref.current = match.player1_id === profile.id;
     if (!match.player1_id || !match.player2_id) return;
     setMatchData({ ...match, player1_id: match.player1_id, player2_id: match.player2_id });
@@ -116,17 +122,17 @@ const BattleArena = ({
     setOpponentScore(isPlayer1Ref.current ? match.player2_score : match.player1_score);
     setTimeLeft(remainingBattleSeconds(match.started_at));
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
-    const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId ?? '').single();
+    const { data: opp } = await boundedRequest(supabase.from('profiles').select('*').eq('id', opponentId ?? '').single());
     setOpponentProfile(opp);
 
     // 预讯过场：拉取对手佩戴的名片
     if (showIntel && opponentId) {
-      const { data: cardRows } = await supabase
+      const { data: cardRows } = await boundedRequest(supabase
         .from('user_name_cards')
         .select('rank_position, name_cards (id, name, description, background_gradient, icon, category, rarity)')
         .eq('profile_id', opponentId)
         .eq('is_equipped', true)
-        .limit(1);
+        .limit(1));
       const row: any = cardRows?.[0];
       if (row?.name_cards) {
         setOpponentNameCard({ ...row.name_cards, rank_position: row.rank_position, is_equipped: true, is_owned: true });
@@ -168,10 +174,11 @@ const BattleArena = ({
 
     if (showIntel) {
       setPhase("loading");
-      setTimeout(() => setPhase("countdown"), 6000);
+      setTimeout(() => { if (!matchEndedRef.current) setPhase("countdown"); }, 6000);
     } else {
       setPhase("countdown");
     }
+    } catch { setMatchLoadError("对局加载失败，请重试"); setPhase("found"); }
   }, [profile]);
 
   const handleMatchFound = useCallback((matchId: string) => {
@@ -341,6 +348,11 @@ const BattleArena = ({
           <Icon className={cn("w-20 h-20 mx-auto mb-4 animate-bounce", theme.accentText)} />
           <h2 className={cn("text-3xl font-gaming mb-2", theme.accentText)}>对手已找到！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+          {matchLoadError && <div role="alert" className="mt-4 space-y-3">
+            <p className="text-destructive">{matchLoadError}</p>
+            <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id, false); }}>重试</Button>
+          </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -402,6 +414,7 @@ const BattleArena = ({
           )}
 
           <p className="text-xs text-muted-foreground mt-6 animate-pulse">数据同步中，即将开战…</p>
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -431,6 +444,7 @@ const BattleArena = ({
             <p>{questionError}</p>
             <Button variant="outline" onClick={() => void loadQuestion()} disabled={questionLoading}>重试</Button>
           </div>}
+          <Button variant="outline" className="mt-4" onClick={onBack}>返回大厅（保留对局）</Button>
         </div>
         <DacBadge status="启动中" />
       </div>
@@ -499,6 +513,7 @@ const BattleArena = ({
           <p>{questionError}</p><Button variant="outline" disabled={questionLoading} onClick={() => void loadQuestion()}>重试</Button>
         </div>}
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
+        <div className="text-center mt-4"><Button variant="outline" onClick={onBack}>返回大厅（保留对局）</Button></div>
         <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
       </div>
     );

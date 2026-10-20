@@ -16,7 +16,7 @@ interface Props {
 }
 export default function LobbyFriendPicker({ open, onOpenChange, grade, friends, loading, busy, onInvite, onRetry }: Props) {
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-md">
+    <DialogContent className="max-w-md" aria-describedby={undefined}>
       <DialogHeader><DialogTitle>邀请好友组队</DialogTitle></DialogHeader>
       {loading ? <div role="status" className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         : <div className="max-h-[55vh] space-y-2 overflow-y-auto">

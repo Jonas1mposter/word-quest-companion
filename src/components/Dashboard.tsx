@@ -98,7 +98,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
     enabled: activeView === "home",
   });
 
-  // 接受 2v2 组队邀请后（PartyInviteReceiver 全局弹窗）跳转到组队大厅
+  // 接受组队邀请后返回主大厅，共享队伍状态继续同步。
   useEffect(() => {
     const onPartyAccepted = () => setActiveView("home");
     window.addEventListener("party-2v2-accepted", onPartyAccepted);
@@ -143,6 +143,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
     setRefreshKey(p => p + 1); refreshProfile();
   };
   const handleFriendBattleStart = (matchId: string) => {
+    if (partyState.party) return;
     setFriendBattleMatchId(matchId); setActiveView("battle");
   };
   const handleSpectate = (matchId: string) => {

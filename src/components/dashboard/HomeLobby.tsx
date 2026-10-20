@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { Swords, ChevronRight, Plus, ImagePlus, Trash2, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import PlayerStats from "../PlayerStats";

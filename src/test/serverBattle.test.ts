@@ -4,7 +4,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invo
 import { fetchBattleQuestion, submitBattleAnswer } from "@/lib/serverBattle";
 
 describe("服务器逐题对战", () => {
-  beforeEach(() => invoke.mockReset());
+  beforeEach(() => { invoke.mockReset(); });
   it("只请求当前题，不发送题号或正确答案", async () => {
     invoke.mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
     const question = await fetchBattleQuestion("match");
@@ -45,5 +45,16 @@ describe("服务器逐题对战", () => {
     invoke.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
     expect((await fetchBattleQuestion("match"))?.questionIndex).toBe(0);
     expect(invoke).toHaveBeenCalledTimes(2);
+  });
+  it("卡住的请求在4秒后被取消并重试", async () => {
+    vi.useFakeTimers();
+    invoke.mockImplementationOnce(({ signal }: { signal: AbortSignal }) => new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(new Error("timeout")))))
+      .mockResolvedValue({ data: { questionIndex: 0, total: 10, word: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] }, error: null });
+    try {
+      const pending = fetchBattleQuestion("match");
+      await vi.advanceTimersByTimeAsync(4400);
+      expect((await pending)?.total).toBe(10);
+      expect(invoke).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
   });
 });

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { remainingBattleSeconds } from "@/lib/battleClock";
 import { supabase } from "@/integrations/supabase/client";
+import { boundedRequest } from "@/lib/boundedRequest";
 
 interface ActiveMatch {
   id: string;
@@ -33,13 +34,13 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
 
     try {
       // Check for in_progress matches
-      const { data: matches } = await supabase
+      const { data: matches } = await boundedRequest(supabase
         .from('ranked_matches')
         .select('*')
         .eq('status', 'in_progress')
         .or(`player1_id.eq.${profileId},player2_id.eq.${profileId},player3_id.eq.${profileId},player4_id.eq.${profileId}`)
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1));
 
       if (matches && matches.length > 0) {
         const match = matches[0];
@@ -47,23 +48,23 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
         const opponentId = isPlayer1 ? match.player2_id : match.player1_id;
 
         // Get opponent profile
-        const { data: opponent } = await supabase
+        const { data: opponent } = await boundedRequest(supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', opponentId ?? '')
-          .single();
+          .single());
 
         // Count answered questions
-        const { count } = await supabase
+        const { count } = await boundedRequest(supabase
           .from('match_answers')
           .select('*', { count: 'exact', head: true })
           .eq('match_id', match.id)
-          .eq('player_id', profileId);
+          .eq('player_id', profileId));
 
         const timeRemaining = remainingBattleSeconds(match.started_at);
         if (generation !== generationRef.current) return null;
 
-        if (timeRemaining > 0) {
+        {
           setActiveMatch({
             id: match.id,
             type: match.match_type as "ranked" | "free",
@@ -99,9 +100,9 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
 
   const dismissMatch = useCallback(async () => {
     if (activeMatch && profileId) {
-      const { data, error } = await supabase.functions.invoke('process-match', {
+      const { data, error } = await boundedRequest(supabase.functions.invoke('process-match', {
         body: { matchId: activeMatch.id, forfeit: { reason: 'surrender', meta: {} } },
-      });
+      }));
       if (error || !data?.ok) throw new Error('退赛未能确认，请重试');
     }
     setActiveMatch(null);

@@ -240,7 +240,7 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
               style={badge ? getHiddenBadgeStyle(badge.rarity) : undefined}
               title={badge?.name || "空勋章槽"}
             >
-              {badge ? <BadgeIcon icon={badge.icon} className="w-5 h-5" /> : <span className="text-muted-foreground">○</span>}
+              {badge ? <BadgeIcon icon={badge.icon} badgeName={badge.name} className="w-5 h-5" /> : <span className="text-muted-foreground">○</span>}
             </div>
           ))}
         </div>

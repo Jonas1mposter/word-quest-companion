@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
+import { resolveAchievementIcon } from "@/lib/achievementIcons";
 import { Award, Banknote, BookOpen, BookOpenCheck, CalendarDays, Code, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Infinity, Library, Lightbulb, Medal, Megaphone, Mountain, Shield, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap, type LucideIcon } from "lucide-react";
 
-const iconMap: Record<string, LucideIcon> = { Award, Banknote, BookOpen, BookOpenCheck, CalendarDays, Code, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Infinity, Library, Lightbulb, Medal, Megaphone, Mountain, Shield, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap };
+import { AudioLines, BadgeCheck, Bot, BotOff, CalendarCheck2, Clover, Flag, GalleryVerticalEnd, Handshake, Landmark, MountainSnow, Orbit, PackageOpen, RadioTower, Rocket, ShieldCheck, Timer } from "lucide-react";
 
-interface BadgeIconProps { icon: string; className?: string; fallbackClassName?: string; }
+const iconMap: Record<string, LucideIcon> = { Award, Banknote, BookOpen, BookOpenCheck, CalendarDays, Code, Coins, Compass, Crown, Flame, Gem, GraduationCap, HandMetal, Heart, Infinity, Library, Lightbulb, Medal, Megaphone, Mountain, Shield, Sparkles, Sprout, Star, Sword, Swords, Target, TrendingUp, Trophy, User, Users, Zap, AudioLines, BadgeCheck, Bot, BotOff, CalendarCheck2, Clover, Flag, GalleryVerticalEnd, Handshake, Landmark, MountainSnow, Orbit, PackageOpen, RadioTower, Rocket, ShieldCheck, Timer };
 
-export const BadgeIcon = ({ icon, className }: BadgeIconProps) => {
-  if (!icon) return <Award className={cn("w-5 h-5", className)} />;
-  const trimmedIcon = icon.trim();
+interface BadgeIconProps { icon: string | null; badgeName?: string; className?: string; fallbackClassName?: string; }
+
+export const BadgeIcon = ({ icon, badgeName, className }: BadgeIconProps) => {
+  const trimmedIcon = resolveAchievementIcon(badgeName, icon?.trim() ?? "");
+  if (!trimmedIcon) return <Award className={cn("w-5 h-5", className)} />;
   const IconComponent = iconMap[trimmedIcon];
   if (IconComponent) return <IconComponent className={cn("w-5 h-5", className)} />;
   const emojiRegex = /^(?:[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2B50}]|[\u{1FA00}-\u{1FAFF}]|[\u{FE00}-\u{FE0F}]|[\u{200D}])+$/u;

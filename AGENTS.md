@@ -1,4 +1,5 @@
 # Architecture rules
+- Own temporary duo state in Dashboard through the shared lobby-party hook and render both players with the shared lobby card; gate grouped mode selection through partyRules and let only the ready host initiate the existing 2v2 matchmaking flow, so navigating away from the home view does not lose party synchronization.
 - Route empty multiplayer settlements through a service-role-only match-row-locked RPC shared with grading; return no winner or benefits while atomically applying only the caller's forfeit penalty, so empty games cannot farm victories and retries cannot double-penalize.
 - Observe online bans centrally in AuthProvider through verified profile reads triggered by Realtime, bounded fallback polling and reconnection; clear local auth state before sign-out and reject stale loads so open pages cannot retain access after a ban notification.
 - Resolve leaderboard and leaderboard-reward exclusions through the shared server RPC using stable profile IDs, so renaming an excluded account cannot restore eligibility.

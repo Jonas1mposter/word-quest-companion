@@ -106,6 +106,7 @@ export const PartyInviteReceiver = () => {
           .update({ member_id: profile.id, status: "ready" })
           .eq("id", invite.id)
           .eq("status", "pending")
+          .gt("expires_at", new Date().toISOString())
           .select();
         if (error) throw error;
         if (!data || data.length === 0) throw new Error("邀请已失效");

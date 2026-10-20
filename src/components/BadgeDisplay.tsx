@@ -284,10 +284,10 @@ const BadgeDisplay = () => {
                             title={b.name}
                           >
                             {b.earned ? (
-                              <BadgeIcon icon={b.icon} className="h-6 w-6 text-white drop-shadow" />
+                              <BadgeIcon icon={b.icon} badgeName={b.name} className="h-6 w-6 text-white drop-shadow" />
                             ) : (
                               <>
-                                <BadgeIcon icon={b.icon} className="h-6 w-6 text-muted-foreground/70" />
+                                <BadgeIcon icon={b.icon} badgeName={b.name} className="h-6 w-6 text-muted-foreground/70" />
                                 <Lock className="absolute top-0.5 right-0.5 h-3 w-3 text-muted-foreground" />
                               </>
                             )}
@@ -310,7 +310,7 @@ const BadgeDisplay = () => {
                     "h-12 w-12 rounded-md flex items-center justify-center bg-gradient-to-br",
                     rarityColors[selected.rarity]
                   )}>
-                    <BadgeIcon icon={selected.icon} className="h-7 w-7 text-white drop-shadow" />
+                    <BadgeIcon icon={selected.icon} badgeName={selected.name} className="h-7 w-7 text-white drop-shadow" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold leading-tight">{selected.name}</h3>
@@ -345,6 +345,7 @@ const BadgeDisplay = () => {
                             )}>
                               <BadgeIcon
                                 icon={sib.icon}
+                                badgeName={sib.name}
                                 className={cn("h-5 w-5", isEarned ? "text-white" : "text-muted-foreground/50")}
                               />
                               {!isEarned && (

@@ -1,4 +1,5 @@
 # Architecture rules
+- Resolve achievement symbols through one presentation registry in the shared BadgeIcon, passing the original badge name at every achievement display; keep explicit upgrade families together and unrelated symbols unique without changing stored unlock rules or name-card icons.
 - Gate multiplayer battle startup on a validated first server-issued question; use abortable bounded transport, single-flight question loads and network-restoration recovery, and use issued totals so failed loading cannot silently start a blank battle.
 - Resolve listening recordings and speech fallback through a shared server-side audio provider with validated binary signatures; prefetch only issued audio and unlock Web Audio on user clicks so Safari async playback does not expose hidden answers or depend on AI quota.
 - Keep final score-difference badge predicates in a server-shared module tested at inclusive boundaries; matching creates the per-player question sequence while the UI displays issued totals.

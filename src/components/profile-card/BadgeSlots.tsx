@@ -43,7 +43,7 @@ export const BadgeSlots = ({ equippedBadges, userBadges, onEquip, onUnequip }: P
                   style={badge ? { ...getRarityBorderStyle(badge.rarity), borderWidth: "2px" } : undefined}
                 >
                   {badge ? (
-                    <BadgeIcon icon={badge.icon} className="w-7 h-7 text-white drop-shadow-md" />
+                    <BadgeIcon icon={badge.icon} badgeName={badge.name} className="w-7 h-7 text-white drop-shadow-md" />
                   ) : (
                     <Award className="w-5 h-5 text-muted-foreground/50" />
                   )}
@@ -87,7 +87,7 @@ export const BadgeSlots = ({ equippedBadges, userBadges, onEquip, onUnequip }: P
                         >
                           <CardContent className="p-4 flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
-                              <BadgeIcon icon={b.icon} className={cn("w-6 h-6", getRarityColor(b.rarity))} />
+                              <BadgeIcon icon={b.icon} badgeName={b.name} className={cn("w-6 h-6", getRarityColor(b.rarity))} />
                             </div>
                             <div className="flex-1">
                               <div className="font-semibold">{b.name}</div>

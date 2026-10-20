@@ -1,6 +1,7 @@
-import { showBanScreen } from "@/components/BanScreen";
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { showBanScreen, type BanInfo } from "@/components/BanScreen";
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLiveBan } from "@/hooks/useLiveBan";
 
 interface Profile {
   id: string;
@@ -60,6 +61,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [gradeAutoDetected, setGradeAutoDetected] = useState(true);
+  const blockedUser = useRef<string | null>(null);
+  const enforceBan = (info: BanInfo, userId: string) => {
+    if (blockedUser.current === userId) return;
+    blockedUser.current = userId;
+    showBanScreen(info);
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    setLoading(false);
+    void supabase.auth.signOut({ scope: "local" });
+  };
+  useLiveBan(user?.id, (info) => { if (user) enforceBan(info, user.id); });
 
   const detectGradeFromEmail = (email: string): number | null => {
     const lower = email.toLowerCase();
@@ -146,10 +159,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
-    const bu = (data as any)?.banned_until;
+    const bu = data?.banned_until;
     if (data && bu && new Date(bu) > new Date()) {
-      showBanScreen({ profileId: data.id, username: data.username, bannedUntil: bu, reason: (data as any)?.ban_reason });
-      await supabase.auth.signOut();
+      enforceBan({ profileId: data.id, username: data.username, bannedUntil: bu, reason: data.ban_reason }, userId);
       return null;
     }
 
@@ -173,7 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshProfile = async () => {
     if (user) {
       const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      if (blockedUser.current !== user.id) setProfile(profileData);
     }
   };
 
@@ -181,6 +193,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
         const isSignIn = event === 'SIGNED_IN';
+        if (session?.user && blockedUser.current === session.user.id) return;
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -188,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to avoid potential deadlock with Supabase auth
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
+            if (blockedUser.current === session.user.id) return;
             if (p) {
               const updates: Record<string, any> = {};
 
@@ -238,6 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // On non-SIGNED_IN events (token refresh etc.), keep gradeAutoDetected as-is
 
               // Apply all updates in one query
+              if (blockedUser.current === session.user.id) return;
               if (Object.keys(updates).length > 0) {
                 const { data: updated } = await supabase
                   .from("profiles")
@@ -246,6 +261,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   .select()
                   .single();
                 if (updated) {
+                  if (blockedUser.current === session.user.id) return;
                   setProfile(updated as Profile);
                   setLoading(false);
                   return;
@@ -268,7 +284,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         const p = await fetchProfile(session.user.id);
-        setProfile(p);
+        if (blockedUser.current !== session.user.id) setProfile(p);
       }
       setLoading(false);
     });

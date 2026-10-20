@@ -2,6 +2,7 @@ import { analyzeTiming } from "../_shared/answerTiming.ts";
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 import { coinMultiplier } from "../_shared/weekend.ts";
 import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.ts";
+import { settleEmptyMatch } from "../_shared/emptyMatch.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -81,8 +82,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, opponentCheated: await opponentCheated() });
     }
 
-    const { data: answers } = await admin
+    // Check inside a match-row lock shared with answer submission. Empty
+    // forfeits keep only the caller's penalty, never a rewarded winner/draw.
+    const emptyResult = await settleEmptyMatch(admin, matchId, match.mode,
+      isForfeit ? profile.id : null);
+    if (emptyResult) return json(emptyResult);
+
+    const { data: answers, error: answerError } = await admin
       .from("match_answers").select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);
+    if (answerError || !answers?.length) throw new Error("Unable to verify match answers");
 
     const isRanked = match.match_type === "ranked";
 

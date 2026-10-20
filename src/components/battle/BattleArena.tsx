@@ -21,6 +21,7 @@ import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameC
 import { getNameCardGradientStyle } from "@/components/profile-card/utils";
 import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
 import { BadgeIcon } from "@/components/ui/badge-icon";
+import { remainingBattleSeconds } from "@/lib/battleClock";
 
 interface MatchData {
   id: string;
@@ -110,6 +111,10 @@ const BattleArena = ({
     isPlayer1Ref.current = match.player1_id === profile.id;
     if (!match.player1_id || !match.player2_id) return;
     setMatchData({ ...match, player1_id: match.player1_id, player2_id: match.player2_id });
+    myScoreRef.current = isPlayer1Ref.current ? match.player1_score : match.player2_score;
+    setMyScoreDisplay(myScoreRef.current);
+    setOpponentScore(isPlayer1Ref.current ? match.player2_score : match.player1_score);
+    setTimeLeft(remainingBattleSeconds(match.started_at));
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
     const { data: opp } = await supabase.from('profiles').select('*').eq('id', opponentId ?? '').single();
     setOpponentProfile(opp);

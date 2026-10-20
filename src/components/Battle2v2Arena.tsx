@@ -16,6 +16,7 @@ import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./battle/PlayerBattleCard";
 import { KillStreakBanner } from "./battle/KillStreakBanner";
 import DacBadge from "./battle/DacBadge";
+import { remainingBattleSeconds } from "@/lib/battleClock";
 
 interface MatchData {
   id: string;
@@ -76,6 +77,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     const team2Ids = [match.player2_id, match.player4_id].filter(Boolean) as string[];
     onTeam1Ref.current = team1Ids.includes(profile.id);
     setMatchData(match as unknown as MatchData);
+    setTimeLeft(remainingBattleSeconds(match.started_at));
     setTeam1Score(match.team1_score ?? 0);
     setTeam2Score(match.team2_score ?? 0);
 

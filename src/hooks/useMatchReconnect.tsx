@@ -1,9 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { remainingBattleSeconds } from "@/lib/battleClock";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ActiveMatch {
   id: string;
   type: "ranked" | "free";
+  mode: "1v1" | "2v2";
+  subject: string;
   opponentName: string;
   opponentAvatar?: string;
   myScore: number;
@@ -21,9 +24,11 @@ interface UseMatchReconnectProps {
 export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconnectProps) => {
   const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const generationRef = useRef(0);
 
   const checkForActiveMatch = useCallback(async () => {
     if (!profileId || !enabled) return null;
+    const generation = ++generationRef.current;
     setIsChecking(true);
 
     try {
@@ -32,20 +37,20 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
         .from('ranked_matches')
         .select('*')
         .eq('status', 'in_progress')
-        .or(`player1_id.eq.${profileId},player2_id.eq.${profileId}`)
+        .or(`player1_id.eq.${profileId},player2_id.eq.${profileId},player3_id.eq.${profileId},player4_id.eq.${profileId}`)
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (matches && matches.length > 0) {
         const match = matches[0];
-        const isPlayer1 = match.player1_id === profileId;
+        const isPlayer1 = match.player1_id === profileId || match.player3_id === profileId;
         const opponentId = isPlayer1 ? match.player2_id : match.player1_id;
 
         // Get opponent profile
         const { data: opponent } = await supabase
           .from('profiles')
           .select('username, avatar_url')
-          .eq('id', opponentId!)
+          .eq('id', opponentId ?? '')
           .single();
 
         // Count answered questions
@@ -55,18 +60,19 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
           .eq('match_id', match.id)
           .eq('player_id', profileId);
 
-        const startedAt = match.started_at ? new Date(match.started_at).getTime() : Date.now();
-        const elapsed = (Date.now() - startedAt) / 1000;
-        const timeRemaining = Math.max(0, 300 - elapsed); // 5 min matches
+        const timeRemaining = remainingBattleSeconds(match.started_at);
+        if (generation !== generationRef.current) return null;
 
         if (timeRemaining > 0) {
           setActiveMatch({
             id: match.id,
             type: match.match_type as "ranked" | "free",
+            mode: match.mode === '2v2' ? '2v2' : '1v1',
+            subject: match.subject ?? 'mixed',
             opponentName: opponent?.username || '对手',
             opponentAvatar: opponent?.avatar_url || undefined,
-            myScore: isPlayer1 ? match.player1_score : match.player2_score,
-            opponentScore: isPlayer1 ? match.player2_score : match.player1_score,
+            myScore: match.mode === '2v2' ? (isPlayer1 ? match.team1_score : match.team2_score) : (isPlayer1 ? match.player1_score : match.player2_score),
+            opponentScore: match.mode === '2v2' ? (isPlayer1 ? match.team2_score : match.team1_score) : (isPlayer1 ? match.player2_score : match.player1_score),
             currentQuestion: count || 0,
             timeRemaining,
             createdAt: match.created_at,
@@ -75,33 +81,28 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
         }
       }
 
+      if (generation === generationRef.current) setActiveMatch(null);
       return null;
     } catch (err) {
       console.error('Check active match error:', err);
       return null;
     } finally {
-      setIsChecking(false);
+      if (generation === generationRef.current) setIsChecking(false);
     }
   }, [profileId, enabled]);
 
   // Auto-check on mount
-  useState(() => {
-    if (profileId && enabled) {
-      checkForActiveMatch();
-    }
-  });
+  useEffect(() => {
+    if (profileId && enabled) void checkForActiveMatch();
+    return () => { generationRef.current++; };
+  }, [profileId, enabled, checkForActiveMatch]);
 
   const dismissMatch = useCallback(async () => {
     if (activeMatch && profileId) {
-      // Forfeit the match
-      await supabase
-        .from('ranked_matches')
-        .update({
-          status: 'completed',
-          ended_at: new Date().toISOString(),
-          winner_id: activeMatch.opponentName ? undefined : null,
-        })
-        .eq('id', activeMatch.id);
+      const { data, error } = await supabase.functions.invoke('process-match', {
+        body: { matchId: activeMatch.id, forfeit: { reason: 'surrender', meta: {} } },
+      });
+      if (error || !data?.ok) throw new Error('退赛未能确认，请重试');
     }
     setActiveMatch(null);
   }, [activeMatch, profileId]);

@@ -30,6 +30,8 @@ export const useMatchQueue = ({
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<any>(null);
   const matchFoundRef = useRef(false);
+  const generationRef = useRef(0);
+  const pollBusyRef = useRef(false);
   const onMatchFoundRef = useRef(onMatchFound);
   onMatchFoundRef.current = onMatchFound;
 
@@ -45,35 +47,41 @@ export const useMatchQueue = ({
   }, []);
 
   useEffect(() => {
-    return cleanup;
+    return () => { generationRef.current++; cleanup(); };
   }, [cleanup]);
 
   const handleMatchResolved = useCallback(async (matchId: string) => {
     if (matchFoundRef.current) return; // prevent double-fire
+    const generation = generationRef.current;
     matchFoundRef.current = true;
-    cleanup();
 
     const { data: match } = await supabase
       .from('ranked_matches')
       .select('player1_id, player2_id')
       .eq('id', matchId)
       .single();
+    if (generation !== generationRef.current) return;
 
     if (match && profileId) {
       const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
       setIsSearching(false);
       setIsQueued(false);
-      onMatchFoundRef.current(matchId, opponentId!);
+      if (!opponentId) { matchFoundRef.current = false; setError('对局加载失败，请重试'); return; }
+      cleanup();
+      onMatchFoundRef.current(matchId, opponentId);
     } else {
       // match lookup failed, reset state
       matchFoundRef.current = false;
       setIsSearching(false);
       setIsQueued(false);
+      setError('对局加载失败，请重试');
     }
   }, [profileId, cleanup]);
 
   const joinQueue = useCallback(async () => {
     if (!profileId || !enabled) return null;
+    cleanup();
+    const generation = ++generationRef.current;
     setError(null);
     setIsSearching(true);
     setIsQueued(true);
@@ -97,9 +105,11 @@ export const useMatchQueue = ({
         } catch (e) {
           rpcError = e;
         }
+        if (generation !== generationRef.current) return null;
         const msg = String(rpcError?.message || '');
         if (!rpcError || !/fetch|network|load failed/i.test(msg)) break;
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        if (generation !== generationRef.current) return null;
       }
 
       if (rpcError) {
@@ -123,6 +133,7 @@ export const useMatchQueue = ({
           table: 'match_queue',
           filter: `profile_id=eq.${profileId}`,
         }, async (payload) => {
+          if (generation !== generationRef.current) return;
           const entry = payload.new as any;
           if (entry.status === 'matched' && entry.match_id) {
             await handleMatchResolved(entry.match_id);
@@ -135,6 +146,9 @@ export const useMatchQueue = ({
       // Poll with the SAME elo (don't inflate), let the server-side function handle range
       let pollCount = 0;
       pollingRef.current = setInterval(async () => {
+        if (generation !== generationRef.current || pollBusyRef.current) return;
+        pollBusyRef.current = true;
+        try {
         pollCount++;
         if (matchFoundRef.current) return;
 
@@ -163,6 +177,7 @@ export const useMatchQueue = ({
             .eq('status', 'matched')
             .order('created_at', { ascending: false })
             .limit(1);
+          if (generation !== generationRef.current) return;
 
           const queueEntry = queueEntries?.[0];
           if (queueEntry?.match_id && !matchFoundRef.current) {
@@ -178,6 +193,7 @@ export const useMatchQueue = ({
             _elo_rating: eloRating,
             _subject: subject,
           });
+          if (generation !== generationRef.current) return;
 
           if (pollData && !matchFoundRef.current) {
             await handleMatchResolved(pollData as string);
@@ -185,10 +201,12 @@ export const useMatchQueue = ({
         } catch {
           // Ignore polling errors
         }
+        } finally { pollBusyRef.current = false; }
       }, POLL_INTERVAL_MS);
 
       return null;
     } catch (err: any) {
+      if (generation !== generationRef.current) return null;
       console.error('Join queue error:', err);
       setError(err.message || '加入匹配失败');
       setIsSearching(false);
@@ -198,14 +216,19 @@ export const useMatchQueue = ({
   }, [profileId, grade, matchType, eloRating, enabled, subject, handleMatchResolved, cleanup]);
 
   const leaveQueue = useCallback(async () => {
+    generationRef.current++;
     cleanup();
+    setIsQueued(false);
+    setIsSearching(false);
 
     if (profileId) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from('match_queue')
         .delete()
         .eq('profile_id', profileId)
+        .eq('mode', '1v1')
         .eq('status', 'searching');
+      if (deleteError) setError('取消匹配未能确认，请检查网络');
     }
 
     setIsQueued(false);

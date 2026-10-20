@@ -1,30 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Swords, ChevronRight, Award, ImagePlus, Trash2, Loader2 } from "lucide-react";
+import { Swords, ChevronRight, Plus, ImagePlus, Trash2, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import PlayerStats from "../PlayerStats";
 import RankDisplay from "../RankDisplay";
 import DailyQuest from "../DailyQuest";
 import CheckInCard from "./CheckInCard";
-import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "../NameCardFx";
-import BadgeIcon from "../ui/badge-icon";
-import { getNameCardGradientStyle } from "../profile-card/utils";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import LobbyPlayerCard, { LOBBY_RANK_NAMES } from "./LobbyPlayerCard";
+import LobbyFriendPicker from "./LobbyFriendPicker";
+import type { useLobbyParty } from "@/hooks/useLobbyParty";
 import { zoneName } from "@/lib/zones";
 import ModeSelect from "./ModeSelect";
 import LobbyCardCropper from "./LobbyCardCropper";
 import type { DashboardView } from "./DashboardNav";
 
-interface EquippedCard {
-  name: string;
-  icon: string | null;
-  rarity: string;
-  background_gradient: string;
-}
-
-
 interface HomeLobbyProps {
+  partyState: ReturnType<typeof useLobbyParty>;
   profile: any;
   grade: number;
   playerData: any;
@@ -35,16 +28,12 @@ interface HomeLobbyProps {
   onFreeMatch: () => void;
 }
 
-const RANK_NAME: Record<string, string> = {
-  bronze: "青铜", silver: "白银", gold: "黄金", platinum: "铂金",
-  diamond: "钻石", star: "星耀", ace: "王牌", champion: "狄邦巅峰",
-};
-
 const HomeLobby = ({
-  profile, grade, playerData, refreshKey,
+  partyState, profile, grade, playerData, refreshKey,
   onEnergyPurchased, onNavigate, onStartMatch, onFreeMatch,
 }: HomeLobbyProps) => {
-  const [card, setCard] = useState<EquippedCard | null>(null);
+  const [showFriends, setShowFriends] = useState(false);
+  const { party, teammate, isHost, canStart } = partyState;
   const [showModes, setShowModes] = useState(false);
   const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
   const [uploading, setUploading] = useState(false);
@@ -113,35 +102,20 @@ const HomeLobby = ({
     toast.success("已恢复名片原始样式");
   };
 
-  useEffect(() => {
-    if (!profile?.id) { setCard(null); return; }
-    supabase
-      .from("user_name_cards")
-      .select("name_cards (name, icon, rarity, background_gradient)")
-      .eq("profile_id", profile.id)
-      .eq("is_equipped", true)
-      .maybeSingle()
-      .then(({ data }) => {
-        const c = (data as any)?.name_cards;
-        setCard(c ?? null);
-      });
-  }, [profile?.id, refreshKey]);
-
-  const cardBg = card ? getNameCardGradientStyle(card.background_gradient) : undefined;
-  const rankName = RANK_NAME[profile?.rank_tier] ?? "青铜";
+  const rankName = LOBBY_RANK_NAMES[profile?.rank_tier] ?? "青铜";
 
   return (
     <>
-    <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+    <div className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)_260px]">
       {/* ===== 左栏：玩家数据 ===== */}
-      <div className="order-2 lg:order-1 space-y-4">
+      <div className="order-2 xl:order-1 space-y-4">
         <div data-tour="stats">
           <PlayerStats {...playerData} profileId={profile?.id} onEnergyPurchased={onEnergyPurchased} />
         </div>
       </div>
 
       {/* ===== 中栏：名片英雄位 + 匹配按钮 ===== */}
-      <div className="order-1 lg:order-2 flex flex-col items-center justify-center gap-6 py-2">
+      <div className="order-1 xl:order-2 flex flex-col items-center justify-center gap-6 py-2">
         {/* 顶部状态条 */}
         <div className="flex items-center gap-8 text-center">
           <div>
@@ -158,88 +132,36 @@ const HomeLobby = ({
           </div>
         </div>
 
-        {/* 名片主视觉 */}
-        <div
-          className={cn(
-            "relative w-72 max-w-full aspect-[4/7] overflow-hidden border border-border/60 val-cut shadow-2xl",
-            card && !customImage && nameCardFxClass(card.rarity)
-          )}
-          style={
-            customImage
-              ? { backgroundImage: `url(${customImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : card
-                ? { background: cardBg, ...nameCardFxStyle(card.rarity) }
-                : { background: "linear-gradient(160deg, hsl(213 24% 14%), hsl(213 28% 8%))" }
-          }
-        >
-          {card && !customImage && <NameCardFx rarity={card.rarity} background={cardBg} />}
-          {!card && !customImage && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Award className="h-16 w-16 text-muted-foreground/30" />
+        <div className="grid w-full max-w-[592px] grid-cols-2 items-start gap-3 sm:gap-4">
+          <LobbyPlayerCard profile={profile ?? { username: playerData.username }} image={customImage}
+            refreshKey={refreshKey} host={!!party && isHost}>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileSelect} className="hidden" disabled={uploading} />
+            <div className="absolute right-2 top-2 z-20 flex gap-1">
+              {customImage && <Button variant="secondary" size="icon" title="恢复原始名片" aria-label="恢复原始名片"
+                className="h-8 w-8" onClick={handleRemoveImage}><Trash2 /></Button>}
+              <Button variant="secondary" size="icon" title="上传自定义名片图片" aria-label="上传自定义名片图片"
+                className="h-8 w-8" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+                {uploading ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+              </Button>
             </div>
-          )}
-          {/* 自定义图片按钮 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={uploading}
-          />
-          <div className="absolute right-2 top-2 z-20 flex gap-1.5">
-            {customImage && (
-              <button
-                onClick={handleRemoveImage}
-                title="恢复原始名片"
-                className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              title="上传自定义名片图片"
-              className="flex h-8 w-8 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white disabled:opacity-50"
-            >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-            </button>
-          </div>
-          {/* 底部信息条 */}
-          <div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/15 bg-black/45 px-4 py-3 backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 bg-emerald-400" />
-              <span className="text-[11px] font-semibold tracking-widest text-emerald-300">就绪</span>
-            </div>
-            <div className="mt-1 font-tactical text-xl font-bold uppercase leading-none text-white">
-              {playerData.username}
-            </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-white/70">
-              {card ? (
-                <>
-                  <BadgeIcon icon={card.icon ?? ""} className="h-3.5 w-3.5 text-amber-300" />
-                  <span className="font-semibold text-amber-200">{card.name}</span>
-                </>
-              ) : (
-                <span>未佩戴称号</span>
-              )}
-              <span className="text-white/40">·</span>
-              <span>{rankName}</span>
-            </div>
-          </div>
+          </LobbyPlayerCard>
+          {teammate && party ? <LobbyPlayerCard profile={teammate} image={teammate.lobby_card_image}
+            refreshKey={refreshKey} host={!isHost} status={party.member_id ? "就绪" : "等待接受..."} />
+            : <Button variant="outline" aria-label="邀请好友组队" title="邀请好友组队"
+              disabled={!profile || !!party} onClick={() => { setShowFriends(true); void partyState.loadFriends(); }}
+              className="h-auto w-full aspect-[4/7] border-dashed border-2 bg-secondary/20 text-muted-foreground val-cut">
+              {party ? <Loader2 className="!h-10 !w-10 animate-spin" /> : <Plus className="!h-12 !w-12" />}
+            </Button>}
         </div>
-
-        {/* 匹配按钮 */}
-        <button
-          onClick={() => setShowModes(true)}
-          data-tour="levels"
-          className="val-cut h-14 w-72 max-w-full bg-primary font-tactical text-xl font-bold uppercase tracking-[0.3em] text-primary-foreground shadow-lg shadow-primary/40 transition-all hover:bg-primary/90 hover:shadow-primary/60 active:scale-[0.98]"
-        >
-          <span className="inline-flex items-center gap-2">
-            <Swords className="h-5 w-5" /> 匹配游戏
-          </span>
-        </button>
+        <div className="flex w-full max-w-[592px] flex-col items-center gap-3">
+          <Button onClick={() => setShowModes(true)} disabled={!canStart || partyState.busy}
+            data-tour="levels" className="val-cut h-14 w-72 max-w-full font-tactical text-xl font-bold">
+            <Swords className="!h-5 !w-5" /> {party && !isHost ? "等待房主开始" : party && !party.member_id ? "等待好友加入" : "开始游戏"}
+          </Button>
+          {party && <Button variant="ghost" disabled={partyState.busy || party.status === "queued"}
+            onClick={() => void partyState.leave()}><LogOut />{isHost ? "解散队伍" : "离开队伍"}</Button>}
+        </div>
       </div>
 
       {/* ===== 右栏：段位 + 每日任务 + 赛季手册 ===== */}
@@ -275,8 +197,14 @@ const HomeLobby = ({
         />
       )}
 
+      <LobbyFriendPicker open={showFriends} onOpenChange={setShowFriends} grade={grade}
+        friends={partyState.friends} loading={partyState.loadingFriends} busy={partyState.busy}
+        onRetry={() => void partyState.loadFriends()}
+        onInvite={async friend => { if (await partyState.invite(friend)) setShowFriends(false); }} />
+
       {showModes && (
         <ModeSelect
+          grouped={!!party} canStart={canStart}
           onClose={() => setShowModes(false)}
           onRanked={onStartMatch}
           onFree={onFreeMatch}

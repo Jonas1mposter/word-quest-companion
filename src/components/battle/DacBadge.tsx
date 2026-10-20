@@ -12,7 +12,8 @@ import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway"
 type ForfeitFn = (reason: string, meta: Record<string, number>) => void;
 
 const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | "监控中"; onForfeit?: ForfeitFn }) => {
-  const monitoring = status === "监控中";
+  const [online, setOnline] = useState(navigator.onLine);
+  const monitoring = status === "监控中" && online;
   const [count, setCount] = useState(0);
   const [warn, setWarn] = useState(false);
   const countRef = useRef(0);
@@ -30,9 +31,19 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   };
 
   useEffect(() => {
-    if (!monitoring) return;
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
+  }, []);
+
+  useEffect(() => {
+    awayRef.current = false;
+    awaySinceRef.current = 0;
+    if (!monitoring) { setWarn(false); return; }
     const leave = () => {
-      if (awayRef.current) return;
+      if (!navigator.onLine || awayRef.current) return;
       awayRef.current = true;
       awaySinceRef.current = Date.now();
       countRef.current += 1;
@@ -55,13 +66,11 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     }, 1000);
     const onVis = () => (document.hidden ? leave() : back());
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("blur", leave);
-    window.addEventListener("focus", back);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("blur", leave);
-      window.removeEventListener("focus", back);
+      awayRef.current = false;
+      awaySinceRef.current = 0;
     };
   }, [monitoring]);
 
@@ -125,7 +134,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
         <div className="val-cut-sm flex items-center gap-1.5 px-2.5 py-1.5 bg-background/85 backdrop-blur border border-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.25)]">
           <img src={dacLogo} alt="DAC" className="w-5 h-5 object-contain" />
           <span className="font-tactical text-[10px] uppercase tracking-widest text-muted-foreground leading-none">
-            Dipont Anti-Cheat <span className="text-primary">{status}</span>
+            Dipont Anti-Cheat <span className="text-primary">{online ? status : "启动中"}</span>
           </span>
         </div>
       </div>

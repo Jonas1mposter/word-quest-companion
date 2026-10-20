@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { seedWordsIfNeeded } from "@/lib/seedData";
 import Dashboard from "@/components/Dashboard";
+import { PartyInviteReceiver } from "@/components/friends/PartyInviteReceiver";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 import OnboardingTour from "@/components/OnboardingTour";
 import { Loader2 } from "lucide-react";
@@ -81,6 +82,7 @@ const Index = () => {
   return (
     <>
       <Dashboard grade={grade} />
+      <PartyInviteReceiver />
       <GradeSelectionDialog
         open={showGradeDialog}
         onClose={() => setShowGradeDialog(false)}

@@ -20,7 +20,7 @@ import ChallengeArena from "./ChallengeArena";
 import WordLearning from "./WordLearning";
 import RankedBattle from "./RankedBattle";
 import FreeMatchBattle from "./FreeMatchBattle";
-import Battle2v2Arena from "./Battle2v2Arena";
+import Battle2v2Lobby from "./battle/Battle2v2Lobby";
 import Battle2v2Practice from "./Battle2v2Practice";
 import BotBattle from "./BotBattle";
 import ProfileCard from "./ProfileCard";
@@ -76,6 +76,13 @@ const Dashboard = ({ grade }: DashboardProps) => {
     profileId: profile?.id,
     enabled: activeView === "home",
   });
+
+  // 接受 2v2 组队邀请后（PartyInviteReceiver 全局弹窗）跳转到组队大厅
+  useEffect(() => {
+    const onPartyAccepted = () => setActiveView("battle2v2");
+    window.addEventListener("party-2v2-accepted", onPartyAccepted);
+    return () => window.removeEventListener("party-2v2-accepted", onPartyAccepted);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -159,7 +166,7 @@ const Dashboard = ({ grade }: DashboardProps) => {
   if (activeView === "battle2v2") {
     if (!user) return <LoginRequired Icon={Swords} title="登录后参与 2v2 排位赛"
       subtitle="组队 4 人切磋词汇！" onBack={() => setActiveView("home")} />;
-    return <Battle2v2Arena subject={battleSubject} onBack={() => {
+    return <Battle2v2Lobby subject={battleSubject} onBack={() => {
       setActiveView("home");
       setRefreshKey(p => p + 1); refreshProfile();
       setBattleSubject("mixed");

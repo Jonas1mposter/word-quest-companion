@@ -140,7 +140,6 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     if (initialMatchId) void loadMatch(initialMatchId);
     else void joinQueue();
     return () => {
-      void leaveQueue();
       if (channelRef.current) void supabase.removeChannel(channelRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);

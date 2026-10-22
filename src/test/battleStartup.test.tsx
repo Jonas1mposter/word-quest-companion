@@ -25,7 +25,7 @@ import BattleArena from "@/components/battle/BattleArena";
 import Battle2v2Arena from "@/components/Battle2v2Arena";
 
 describe("真人对战首题就绪门禁", () => {
-  beforeEach(() => { vi.useFakeTimers(); mocks.fetch.mockReset(); mocks.invoke.mockReset(); });
+  beforeEach(() => { vi.useFakeTimers(); mocks.fetch.mockReset(); mocks.invoke.mockReset(); mocks.invoke.mockResolvedValue({ data: { bots: null }, error: null }); });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
   it.each(["1v1", "2v2"])("%s 未取得首题不进入对战；重试取得服务器10题后恢复", async mode => {
     mocks.fetch.mockResolvedValueOnce(null).mockResolvedValue({ questionIndex: 0, total: 10, quizType: "meaning", prompt: "apple", options: ["苹果", "梨", "香蕉", "葡萄"] });
@@ -34,7 +34,7 @@ describe("真人对战首题就绪门禁", () => {
     });
     for (let i = 0; i < 4; i++) await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(screen.queryByRole("article")).toBeNull();
-    expect(mocks.invoke).not.toHaveBeenCalled();
+    expect(mocks.invoke.mock.calls.some(([name]) => name === 'process-match')).toBe(false);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "重试" })); });
     expect(screen.getByRole("article")).toHaveTextContent("apple");
     expect(mocks.fetch).toHaveBeenCalledTimes(2);

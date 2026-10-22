@@ -49,11 +49,11 @@ export const useMatchReconnect = ({ profileId, enabled = true }: UseMatchReconne
         const opponentId = isPlayer1 ? match.player2_id : match.player1_id;
 
         // Get opponent profile
-        const { data: opponent } = await boundedRequest(supabase
+        const opponent = opponentId ? (await boundedRequest(supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', opponentId ?? '')
-          .single());
+          .single())).data : { username: '人机 2', avatar_url: null };
 
         // Count answered questions
         const { count } = await boundedRequest(supabase

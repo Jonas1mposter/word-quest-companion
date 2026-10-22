@@ -1,4 +1,5 @@
 // 分区（年级）相关的展示与判断工具
+export { leaderboardGrades } from "../../supabase/functions/_shared/leaderboardScope";
 
 export const PRIMARY_GRADES = [1, 2, 3, 4, 5, 6] as const;
 export const ALL_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;

@@ -1,4 +1,5 @@
 import { getLeaderboardExcludedIds, excludedInFilter } from "@/lib/leaderboardExclusions";
+import { leaderboardGrades } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +64,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
       const { data: rankData } = await supabase
         .from("profiles")
         .select("id, username, rank_tier, rank_stars, rank_points")
-        .eq("grade", grade)
+        .in("grade", leaderboardGrades(grade))
         .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)");
 
       if (rankData) {
@@ -88,7 +89,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
       const { data: winsData } = await supabase
         .from("profiles")
         .select("id, username, wins, rank_tier, rank_stars")
-        .eq("grade", grade)
+        .in("grade", leaderboardGrades(grade))
         .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)")
         .order("wins", { ascending: false })
         .limit(10);
@@ -105,11 +106,12 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
       }
 
       // 经验值排行榜 - 使用累计经验值
+      const xpNotIn = excludedInFilter(await getLeaderboardExcludedIds("xp"));
       const { data: xpData } = await supabase
         .from("profiles")
         .select("id, username, total_xp, level, rank_tier, rank_stars")
-        .eq("grade", grade)
-        .not("id", "in", notIn ?? "(00000000-0000-0000-0000-000000000000)")
+        .in("grade", leaderboardGrades(grade))
+        .not("id", "in", xpNotIn ?? "(00000000-0000-0000-0000-000000000000)")
         .order("total_xp", { ascending: false })
         .limit(10);
 
@@ -126,7 +128,10 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
 
     };
 
-    fetchLeaderboards();
+    fetchLeaderboards().catch((error) => {
+      console.error("Error fetching leaderboards:", error);
+      setXpLeaderboard([]);
+    });
   }, [grade]);
 
   const getRankIcon = (rank: number) => {
@@ -205,7 +210,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
 
         {/* 每周前十奖励说明 */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1 font-semibold text-gold"><Coins className="h-3 w-3" />每周结算名片，每月发放奖励（按年级分区各发前十）</span>
+          <span className="flex items-center gap-1 font-semibold text-gold"><Coins className="h-3 w-3" />每周结算名片，每月发放奖励（高中合榜，其他年级各发前十）</span>
           <span>🥇 第1名 5000豆+1000经验+3 Merits+2水吧券</span>
           <span>🥈 第2名 3000豆+800经验+2 Merits+1水吧券</span>
           <span>🥉 第3名 2000豆+700经验+1 Merit+1水吧券</span>
@@ -374,6 +379,7 @@ const LeaderboardTabs = ({ grade, currentUser, currentProfileId }: LeaderboardTa
           <CardTitle className="flex items-center gap-3">
             <Trophy className="w-6 h-6 text-accent" />
             <span className="text-glow-gold">荣耀排行榜</span>
+            {leaderboardGrades(grade).length > 1 && <Badge variant="outline">高中总榜</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4">

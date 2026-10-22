@@ -1,5 +1,7 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "高中总榜": "High School Leaderboard",
+  "每周结算名片，每月发放奖励（高中合榜，其他年级各发前十）": "Weekly name cards, monthly rewards (one high-school board; top 10 per grade elsewhere)",
   "每日人机首胜 +50豆 · 满分完赛 +20豆": "Daily first bot win +50 Beans · Perfect finish +20 Beans",
   "至少完成10题；首胜北京时间每日重置，周末所有豆子双倍": "Finish at least 10 questions; first-win rewards reset at Beijing midnight. All Beans double on weekends.",
   "完整作答且至少答对1题才有豆子；未完成或违规退出不发奖励": "Finish every question with at least one correct answer to earn Beans. Incomplete or forfeited matches earn no rewards.",

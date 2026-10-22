@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldAlert, RefreshCw, Loader2, Swords, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import DacRiskPanel from "./DacRiskPanel";
 
 interface DacFlag {
   id: string;
@@ -54,6 +55,7 @@ const REASON_LABELS: Record<string, string> = {
   suspected_answer_lookup: "疑似查答案（比平时慢却几乎全对）",
   impossible_level_speed: "过关速度异常（闯关）",
   fixed_answer_timing: "答题节奏固定（疑似脚本）",
+  accuracy_spike: "正确率突然暴涨（平时<60%，本局≥95%）",
   extension_injection: "浏览器插件注入对局页面",
   native_tamper: "网页原生函数被插件改写",
   synthetic_input: "脚本合成键盘/输入（插件自动作答）",
@@ -197,6 +199,7 @@ export function DacTab() {
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
+        <DacRiskPanel />
         <p className="text-sm text-muted-foreground">
           Dipont Anti-Cheat 自动检测答题/闯关速度异常。标记仅作记录，不影响玩家正常结算。
         </p>

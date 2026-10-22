@@ -3638,6 +3638,30 @@ export type Database = {
         Args: { p_profile_id: string; p_xp: number }
         Returns: undefined
       }
+      admin_dac_risk: {
+        Args: { p_days?: number }
+        Returns: {
+          flags: number
+          high_flags: number
+          last_at: string
+          profile_id: string
+          score: number
+          server_flags: number
+          top_reason: string
+          username: string
+        }[]
+      }
+      admin_dac_timing_twins: {
+        Args: { p_days?: number }
+        Returns: {
+          mean_ms: number
+          name_a: string
+          name_b: string
+          player_a: string
+          player_b: string
+          shared_buckets: number
+        }[]
+      }
       admin_grant_coins: {
         Args: { p_amount: number; p_profile_id: string }
         Returns: Json

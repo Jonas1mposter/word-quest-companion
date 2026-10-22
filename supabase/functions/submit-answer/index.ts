@@ -74,6 +74,16 @@ Deno.serve(async (req) => {
         const byMatch = new Map<string, any[]>();
         for (const r of past ?? []) { const a = byMatch.get(r.match_id) ?? []; a.push(r); byMatch.set(r.match_id, a); }
         const lookup = analyzeLookup((mine ?? []) as any, [...byMatch.values()]);
+        // DAC：正确率突然暴涨（平时 <60%，本局 ≥95%）→ 记录复核
+        const { data: pastAcc } = await admin.from("match_answers").select("is_correct")
+          .eq("player_id", profile.id).neq("match_id", matchId).gte("answered_at", since).limit(500);
+        const pn = pastAcc?.length ?? 0;
+        const pastRate = pn ? pastAcc!.filter((r: any) => r.is_correct).length / pn : 1;
+        const curRate = (mine ?? []).filter((r: any) => r.is_correct).length / Math.max(1, mine?.length ?? 0);
+        if (pn >= 30 && pastRate < 0.6 && curRate >= 0.95) {
+          await admin.rpc("dac_flag", { p_profile_id: profile.id, p_source: "submit-answer", p_reason: "accuracy_spike",
+            p_severity: "medium", p_meta: { matchId, pastRate: Math.round(pastRate * 100) / 100, curRate: Math.round(curRate * 100) / 100, pastSamples: pn } });
+        }
         if (lookup.suspicious) {
           await admin.rpc("dac_flag", {
             p_profile_id: profile.id, p_source: "submit-answer", p_reason: "suspected_answer_lookup",

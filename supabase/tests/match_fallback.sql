@@ -71,6 +71,7 @@ BEGIN
    PERFORM tick_match_bots(mid,pid,true,true);
    SELECT jsonb_agg(to_jsonb(p) ORDER BY id) INTO after_state FROM profiles p WHERE id=ANY(ids);
    IF before_state<>after_state OR EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND winner_id IS NOT NULL) THEN RAISE EXCEPTION 'Bot rank settlement'; END IF;
+   UPDATE match_search_requests SET cancelled=true WHERE profile_id=ANY(ids);
   END LOOP;
   RAISE EXCEPTION 'ROLLBACK_MATCH_FALLBACK_OK';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'ROLLBACK_MATCH_FALLBACK_OK' THEN RAISE; END IF;

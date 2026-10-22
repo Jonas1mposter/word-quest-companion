@@ -129,7 +129,7 @@ export default function HalloweenBattle() {
     } catch { toast.error("网络异常，请再点一次同一个答案"); } finally { setBusy(false); }
   };
 
-  const useItem = async (item: string, target = -1) => {
+  const applyItem = async (item: string, target = -1) => {
     if (!matchId) return;
     try {
       const r = await rpc<{ ok: boolean; error?: string; message?: string }>("hw_use_item", { p_match: matchId, p_item: item, p_target: target });
@@ -253,10 +253,10 @@ export default function HalloweenBattle() {
                     return attack && opponents.length > 1 ? (
                       <div key={i} className="flex items-center gap-1 border border-border p-1">
                         <span className="px-1">{info.emoji} {info.name} →</span>
-                        {opponents.map(o => <Button key={o.slot} size="sm" variant="outline" onClick={() => useItem(it, o.slot)}>{o.name}</Button>)}
+                        {opponents.map(o => <Button key={o.slot} size="sm" variant="outline" onClick={() => applyItem(it, o.slot)}>{o.name}</Button>)}
                       </div>
                     ) : (
-                      <Button key={i} variant="outline" title={info?.desc} onClick={() => useItem(it, opponents[0]?.slot ?? -1)}>{info?.emoji} {info?.name}</Button>
+                      <Button key={i} variant="outline" title={info?.desc} onClick={() => applyItem(it, opponents[0]?.slot ?? -1)}>{info?.emoji} {info?.name}</Button>
                     );
                   })}
                 </div>

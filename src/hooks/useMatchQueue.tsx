@@ -1,4 +1,3 @@
-import { contentGrade } from "@/lib/zones";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { boundedRequest } from "@/lib/boundedRequest";
@@ -11,6 +10,8 @@ interface UseMatchQueueOptions {
   eloRating: number;
   enabled: boolean;
   subject?: string;
+  mode?: '1v1' | '2v2';
+  partyId?: string | null;
   onMatchFound: (matchId: string, opponentId: string) => void;
 }
 
@@ -23,6 +24,8 @@ export const useMatchQueue = ({
   eloRating,
   enabled,
   subject = 'mixed',
+  mode = '1v1',
+  partyId = null,
   onMatchFound,
 }: UseMatchQueueOptions) => {
   const [isQueued, setIsQueued] = useState(false);
@@ -52,9 +55,9 @@ export const useMatchQueue = ({
     return () => {
       generationRef.current++; cleanup();
       const id = requestIdRef.current;
-      if (id) void cancelSearch(id, '1v1').catch(() => {});
+      if (id) void cancelSearch(id, mode, partyId).catch(() => {});
     };
-  }, [cleanup]);
+  }, [cleanup, mode, partyId]);
 
   const handleMatchResolved = useCallback(async (matchId: string) => {
     if (matchFoundRef.current) return; // prevent double-fire
@@ -109,7 +112,7 @@ export const useMatchQueue = ({
       let rpcError: any = null;
       for (let attempt = 0; attempt < 4; attempt++) {
         try {
-          data = await searchMatch({ requestId, mode: '1v1', matchType, subject });
+          data = await searchMatch({ requestId, mode, matchType, subject, partyId });
           rpcError = null;
         } catch (e) {
           rpcError = e;
@@ -144,7 +147,7 @@ export const useMatchQueue = ({
         }, async (payload) => {
           if (generation !== generationRef.current) return;
           const entry = payload.new as any;
-          if (entry.mode === '1v1' && entry.status === 'matched' && entry.match_id) {
+          if (entry.mode === mode && entry.status === 'matched' && entry.match_id) {
             await handleMatchResolved(entry.match_id);
           }
         })
@@ -166,7 +169,7 @@ export const useMatchQueue = ({
             .from('match_queue')
             .select('status, match_id, created_at')
             .eq('profile_id', profileId)
-            .eq('mode', '1v1')
+            .eq('mode', mode)
             .eq('status', 'matched')
             .order('created_at', { ascending: false })
             .limit(1));
@@ -180,7 +183,7 @@ export const useMatchQueue = ({
           }
 
           // Server checks elapsed time and human-match races in one transaction.
-          const pollData = await searchMatch({ requestId, mode: '1v1', matchType, subject });
+          const pollData = await searchMatch({ requestId, mode, matchType, subject, partyId });
           if (generation !== generationRef.current) return;
           setError(null);
 
@@ -204,7 +207,7 @@ export const useMatchQueue = ({
       setIsQueued(false);
       return null;
     }
-  }, [profileId, grade, matchType, eloRating, enabled, subject, handleMatchResolved, cleanup]);
+  }, [profileId, grade, matchType, eloRating, enabled, subject, mode, partyId, handleMatchResolved, cleanup]);
 
   const leaveQueue = useCallback(async () => {
     generationRef.current++;
@@ -215,7 +218,7 @@ export const useMatchQueue = ({
     const requestId = requestIdRef.current;
     if (profileId && requestId) {
       try {
-        const mid = await cancelSearch(requestId, '1v1');
+        const mid = await cancelSearch(requestId, mode, partyId);
         requestIdRef.current = null;
         if (mid) { onMatchFoundRef.current(mid, 'recovered'); return false; }
       } catch { setError('取消匹配未能确认，请检查网络'); return false; }
@@ -224,7 +227,7 @@ export const useMatchQueue = ({
     setIsQueued(false);
     setIsSearching(false);
     return true;
-  }, [profileId, cleanup]);
+  }, [profileId, cleanup, mode, partyId]);
 
   return {
     isQueued,

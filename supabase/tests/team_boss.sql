@@ -18,7 +18,7 @@ BEGIN
   IF NOT caught THEN RAISE EXCEPTION 'Unready players started'; END IF;
   FOR j IN 1..n LOOP
    PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[j],'role','authenticated')::text,true);
-   PERFORM public.team_boss_action('ready',rid);
+   PERFORM public.team_boss_action('ready',rid,NULL,'true');
   END LOOP;
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[2],'role','authenticated')::text,true);
   caught:=false; BEGIN PERFORM public.team_boss_action('start',rid); EXCEPTION WHEN OTHERS THEN caught:=true; END;
@@ -31,13 +31,13 @@ BEGIN
  END LOOP;
  -- Too few players must be rejected even if both are ready.
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[1],'role','authenticated')::text,true);
- s:=public.team_boss_action('create'); rid:=(s->'state'->>'id')::uuid; PERFORM public.team_boss_action('ready',rid);
+ s:=public.team_boss_action('create'); rid:=(s->'state'->>'id')::uuid; PERFORM public.team_boss_action('ready',rid,NULL,'true');
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[2],'role','authenticated')::text,true);
- PERFORM public.team_boss_action('join'); PERFORM public.team_boss_action('ready',rid);
+ PERFORM public.team_boss_action('join'); PERFORM public.team_boss_action('ready',rid,NULL,'true');
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[1],'role','authenticated')::text,true);
  caught:=false; BEGIN PERFORM public.team_boss_action('start',rid); EXCEPTION WHEN OTHERS THEN caught:=true; END;
  IF NOT caught THEN RAISE EXCEPTION 'Two players started'; END IF;
- PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[3],'role','authenticated')::text,true); PERFORM public.team_boss_action('join'); PERFORM public.team_boss_action('ready',rid);
+ PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[3],'role','authenticated')::text,true); PERFORM public.team_boss_action('join'); PERFORM public.team_boss_action('ready',rid,NULL,'true');
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[1],'role','authenticated')::text,true); PERFORM public.team_boss_action('start',rid);
  UPDATE public.team_boss_questions SET created_at=now()-interval '2 seconds' WHERE run_id=rid;
  caught:=false; BEGIN PERFORM public.team_boss_action('act',rid,1,'attack'); EXCEPTION WHEN OTHERS THEN caught:=true; END;
@@ -49,6 +49,7 @@ BEGIN
  caught:=false; BEGIN PERFORM public.team_boss_action('answer',rid,1,'changed'); EXCEPTION WHEN OTHERS THEN caught:=true; END;
  IF NOT caught THEN RAISE EXCEPTION 'Changed answer accepted'; END IF;
  UPDATE public.team_boss_players SET role='healer' WHERE run_id=rid AND profile_id=ids[1];
+ UPDATE public.team_boss_players SET role='guardian' WHERE run_id=rid AND profile_id=ids[2];
  UPDATE public.team_boss_players SET hp=0 WHERE run_id=rid AND profile_id=ids[3];
  PERFORM public.team_boss_action('act',rid,1,'heal',ids[3]);
  PERFORM public.team_boss_action('act',rid,1,'heal',ids[3]);
@@ -79,7 +80,7 @@ BEGIN
   FOR j IN 1..3 LOOP
    PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[j],'role','authenticated')::text,true);
    IF j>1 THEN PERFORM public.team_boss_action('join'); END IF;
-   PERFORM public.team_boss_action('ready',rid);
+   PERFORM public.team_boss_action('ready',rid,NULL,'true');
   END LOOP;
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[1],'role','authenticated')::text,true); PERFORM public.team_boss_action('start',rid);
   UPDATE public.team_boss_runs SET started_at=now()-interval '61 seconds' WHERE id=rid;

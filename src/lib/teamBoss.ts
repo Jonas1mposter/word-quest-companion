@@ -3,9 +3,9 @@ import { boundedRequest } from "@/lib/boundedRequest";
 
 export type BossRole = "damage" | "guardian" | "healer";
 export const BOSS_ROLES = {
-  damage: { name: "输出", detail: "攻击 18 · 治疗 18" },
-  guardian: { name: "守护", detail: "攻击 10 · 治疗 18" },
-  healer: { name: "治疗", detail: "攻击 10 · 治疗 32" },
+  damage: { name: "输出", detail: "攻击 18 · 守护减伤 40% · 治疗 18" },
+  guardian: { name: "守护", detail: "攻击 10 · 守护减伤 65% · 治疗 18" },
+  healer: { name: "治疗", detail: "攻击 10 · 守护减伤 40% · 治疗 32" },
 };
 export interface BossPlayer {
   id: string; name: string; avatar: string | null; role: BossRole; ready: boolean;

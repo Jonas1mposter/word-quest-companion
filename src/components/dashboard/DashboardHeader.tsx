@@ -75,6 +75,10 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
                   className="rounded-none val-cut-sm font-tactical font-semibold" title="抽奖大厅">
                   <Ticket className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">抽奖</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate("/events")}
+                  className="rounded-none val-cut-sm border-primary/60 text-primary font-tactical font-semibold" title="活动中心">
+                  <Sparkles className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">活动</span>
+                </Button>
                 {isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/admin')}
                     className="rounded-none val-cut-sm border-accent text-accent hover:bg-accent hover:text-accent-foreground font-tactical font-semibold">

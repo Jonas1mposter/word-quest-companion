@@ -54,14 +54,6 @@ export default function EventCenter() {
       </header>
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-8">
         <h1 className="font-gaming text-4xl">活动中心</h1>
-        <article className="flex flex-col gap-4 border border-gold/50 bg-card p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div className="space-y-2">
-            <span className="border border-gold/50 px-3 py-1 text-xs font-semibold text-gold">限时 · 10月22日 – 11月22日</span>
-            <h2 className="font-gaming text-3xl">🎃 万圣节道具赛</h2>
-            <p className="text-sm text-muted-foreground">1v1 或 2v2，每人 30 题，8 种道具。赢 50 豆 / 输 15 豆，每天最多 250 豆，不影响段位。</p>
-          </div>
-          <Button variant="gold" size="lg" onClick={() => navigate("/halloween")}>进入道具赛</Button>
-        </article>
         <article className="grid gap-6 border border-border bg-card p-6 sm:grid-cols-[220px_1fr] sm:p-8">
           <div className="flex flex-col items-center gap-3">
             <img src={reaver6.url} alt="掠影" className="h-48 w-48 object-contain" />

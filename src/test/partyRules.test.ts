@@ -4,7 +4,7 @@ import { canTeamUp2v2, canSelectPartyMode, canHostStartParty } from "@/lib/party
 describe("2v2 组队年级规则", () => {
   it("组队后仅可选择2v2，不可选择单人模式", () => {
     expect(canSelectPartyMode("2v2", true)).toBe(true);
-    for (const mode of ["ranked", "levels", "free", "bot", "friends"] as const) {
+    for (const mode of ["ranked", "levels", "free", "bot", "friends", "entertainment"] as const) {
       expect(canSelectPartyMode(mode, true)).toBe(false);
       expect(canSelectPartyMode(mode, false)).toBe(true);
     }

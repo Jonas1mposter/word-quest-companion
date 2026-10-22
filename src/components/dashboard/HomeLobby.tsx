@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Swords, ChevronRight, Plus, ImagePlus, Trash2, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +35,11 @@ const HomeLobby = ({
   const [showFriends, setShowFriends] = useState(false);
   const { party, teammate, isHost, canStart } = partyState;
   const [showModes, setShowModes] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("modes") === "1") { setShowModes(true); setSearchParams({}, { replace: true }); }
+  }, [searchParams, setSearchParams]);
   const [customImage, setCustomImage] = useState<string | null>(profile?.lobby_card_image ?? null);
   const [uploading, setUploading] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
@@ -211,6 +217,7 @@ const HomeLobby = ({
           onBot={() => onNavigate("bot")}
           onFriends={() => onNavigate("friends")}
           onLevels={() => onNavigate("learn")}
+          onEntertainment={() => navigate("/entertainment")}
         />
       )}
     </>

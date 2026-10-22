@@ -56,6 +56,7 @@ const App = () => {
               <Route path="/shop" element={<Shop />} />
               <Route path="/backpack" element={<Backpack />} />
               <Route path="/lottery" element={<LotteryHall />} />
+              <Route path="/events" element={<EventCenter />} />
               <Route path="/lottery/champions-2024" element={<Lottery />} />
               <Route path="/lottery/glory-crown" element={<GloryCrownLottery />} />
               <Route path="/season-manual" element={<SeasonManual />} />

@@ -22,3 +22,4 @@
 - Resolve ticket purchases, per-pool quotas and promotional pity inside transactional SQL using profile-first locks; UI reads server policy and progress so alternate draw entry points cannot bypass limits.
 - Grant coins only server-side with Beijing weekend doubling; clients display returned amounts. Lock profiles for check-in to prevent concurrent duplicate claims.
 - Learning rewards require single-use, server-timed level_sessions (start-level → complete-level); client durations and counts alone never unlock payouts.
+- Run Halloween item battles entirely through hw_* SECURITY DEFINER RPCs over RLS-locked halloween_* tables (no client table access); serialize matchmaking with one advisory lock and settle once per match with a per-match reward ledger, so items, answers and capped bean payouts stay server-authoritative and never touch rank.

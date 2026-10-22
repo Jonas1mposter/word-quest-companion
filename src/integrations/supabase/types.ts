@@ -803,6 +803,220 @@ export type Database = {
           },
         ]
       }
+      halloween_matches: {
+        Row: {
+          created_at: string
+          ends_at: string
+          grade_key: number
+          id: string
+          mode: string
+          started_at: string
+          status: string
+          winner_team: number | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string
+          grade_key: number
+          id?: string
+          mode: string
+          started_at?: string
+          status?: string
+          winner_team?: number | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          grade_key?: number
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          winner_team?: number | null
+        }
+        Relationships: []
+      }
+      halloween_players: {
+        Row: {
+          answered: number
+          avatar_url: string | null
+          boosts: string[]
+          correct: number
+          display_name: string
+          effects: string[]
+          is_bot: boolean
+          items: string[]
+          match_id: string
+          profile_id: string | null
+          reward: number | null
+          score: number
+          shield: boolean
+          slot: number
+          streak: number
+          team: number
+        }
+        Insert: {
+          answered?: number
+          avatar_url?: string | null
+          boosts?: string[]
+          correct?: number
+          display_name: string
+          effects?: string[]
+          is_bot?: boolean
+          items?: string[]
+          match_id: string
+          profile_id?: string | null
+          reward?: number | null
+          score?: number
+          shield?: boolean
+          slot: number
+          streak?: number
+          team: number
+        }
+        Update: {
+          answered?: number
+          avatar_url?: string | null
+          boosts?: string[]
+          correct?: number
+          display_name?: string
+          effects?: string[]
+          is_bot?: boolean
+          items?: string[]
+          match_id?: string
+          profile_id?: string | null
+          reward?: number | null
+          score?: number
+          shield?: boolean
+          slot?: number
+          streak?: number
+          team?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halloween_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "halloween_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "halloween_players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halloween_questions: {
+        Row: {
+          answer: string
+          flags: string[]
+          idx: number
+          match_id: string
+          options: Json
+          prompt: string
+          removed: Json
+          slot: number
+        }
+        Insert: {
+          answer: string
+          flags?: string[]
+          idx: number
+          match_id: string
+          options: Json
+          prompt: string
+          removed?: Json
+          slot: number
+        }
+        Update: {
+          answer?: string
+          flags?: string[]
+          idx?: number
+          match_id?: string
+          options?: Json
+          prompt?: string
+          removed?: Json
+          slot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halloween_questions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "halloween_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halloween_queue: {
+        Row: {
+          created_at: string
+          grade_key: number
+          mode: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade_key: number
+          mode: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          grade_key?: number
+          mode?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halloween_queue_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halloween_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          day: string
+          match_id: string
+          profile_id: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          day: string
+          match_id: string
+          profile_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          day?: string
+          match_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halloween_rewards_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "halloween_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "halloween_rewards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hs_learning_progress: {
         Row: {
           correct_count: number
@@ -3193,6 +3407,37 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      hw_active: { Args: never; Returns: boolean }
+      hw_answer: {
+        Args: { p_answer: string; p_index: number; p_match: string }
+        Returns: Json
+      }
+      hw_cancel: { Args: never; Returns: Json }
+      hw_create_match: {
+        Args: { p_grade: number; p_humans: string[]; p_mode: string }
+        Returns: string
+      }
+      hw_issue: {
+        Args: {
+          p_grade: number
+          p_idx: number
+          p_match: string
+          p_slot: number
+        }
+        Returns: undefined
+      }
+      hw_items: { Args: never; Returns: string[] }
+      hw_join: { Args: { p_mode: string }; Returns: Json }
+      hw_me: { Args: never; Returns: string }
+      hw_my_match: { Args: { p_pid: string }; Returns: string }
+      hw_poll: { Args: never; Returns: Json }
+      hw_state: { Args: { p_match: string }; Returns: Json }
+      hw_tick: { Args: { p_match: string }; Returns: undefined }
+      hw_try_match: { Args: { p_pid: string }; Returns: string }
+      hw_use_item: {
+        Args: { p_item: string; p_match: string; p_target: number }
+        Returns: Json
       }
       increment_team_challenge_score_for_profile: {
         Args: { p_profile_id: string }

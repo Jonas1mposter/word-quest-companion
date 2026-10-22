@@ -1,5 +1,6 @@
 import { DacCheaterNotice } from "@/components/battle/DacCheaterNotice";
-import { contentGrade } from "@/lib/zones";
+import { useMatchQueue } from "@/hooks/useMatchQueue";
+import { matchBots, tickMatchBots, botPlayer } from "@/lib/matchmaking";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const sounds = useMatchSounds();
 
   const [phase, setPhase] = useState<Phase>(initialMatchId ? "found" : "searching");
+  const [isBotMatch, setIsBotMatch] = useState(false);
+  const botMatchRef = useRef(false);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [matchLoadError, setMatchLoadError] = useState<string | null>(null);
   const loadingMatchIdRef = useRef<string | null>(initialMatchId ?? null);
@@ -57,7 +60,6 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(300);
   const [searchTime, setSearchTime] = useState(0);
-  const [queueError, setQueueError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<{ coins: number; xp: number } | null>(null);
 
   const matchEndedRef = useRef(false);
@@ -69,8 +71,6 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
   const channelRef = useRef<any>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const queueBusyRef = useRef(false);
   // DAC：记录当前题目展示时间，用于答题速度检测
   const questionShownAtRef = useRef(Date.now());
 
@@ -80,6 +80,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     try {
     const { data: match } = await boundedRequest(supabase.from('ranked_matches').select('*').eq('id', matchId).single());
     if (!match || !profile || match.mode !== '2v2') throw new Error("对局加载失败，请重试");
+    const bots = await matchBots(matchId);
+    setIsBotMatch(!!bots); botMatchRef.current = !!bots;
     const team1Ids = [match.player1_id, match.player3_id].filter(Boolean) as string[];
     const team2Ids = [match.player2_id, match.player4_id].filter(Boolean) as string[];
     onTeam1Ref.current = team1Ids.includes(profile.id);
@@ -89,8 +91,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     setTeam2Score(match.team2_score ?? 0);
 
     const { data: profs } = await boundedRequest(supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]));
-    setTeam1Profiles(team1Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
-    setTeam2Profiles(team2Ids.map(id => profs?.find(p => p.id === id)).filter(Boolean));
+    setTeam1Profiles([profs?.find(p => p.id === match.player1_id), match.player3_id ? profs?.find(p => p.id === match.player3_id) : bots?.bot_slots.includes(3) ? botPlayer(3) : null].filter(Boolean));
+    setTeam2Profiles([match.player2_id ? profs?.find(p => p.id === match.player2_id) : bots?.bot_slots.includes(2) ? botPlayer(2) : null, match.player4_id ? profs?.find(p => p.id === match.player4_id) : bots?.bot_slots.includes(4) ? botPlayer(4) : null].filter(Boolean));
 
 
     const channel = supabase.channel(`match2v2-${matchId}`)
@@ -109,6 +111,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     // Fallback polling
     pollRef.current = window.setInterval(async () => {
       if (matchEndedRef.current) return;
+      if (botMatchRef.current) await tickMatchBots(matchId).catch(() => {});
       const { data: m } = await supabase.from('ranked_matches')
         .select('team1_score, team2_score, status, winner_team').eq('id', matchId).single();
       if (!m) return;
@@ -124,82 +127,23 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     } catch { setMatchLoadError("对局加载失败，请重试"); setPhase("found"); }
   }, [profile]);
 
-  const tryFindMatch = useCallback(async () => {
-    if (!profile) return null;
-    const args: any = {
-      _profile_id: profile.id,
-      _grade: contentGrade(profile.grade),
-      _elo_rating: (profile as any).elo_rating ?? 1000,
-      _subject: subject,
-    };
-    if (partyId) args._party_id = partyId;
-    const { data, error } = await boundedRequest(supabase.rpc('find_match_2v2', args));
-    if (error) { setQueueError(error.message); return null; }
-    return data as string | null;
-  }, [profile, subject, partyId]);
-
+  const handleMatchFound = useCallback((mid: string) => {
+    sounds.playMatchFound(); setPhase("found"); void loadMatch(mid);
+  }, [loadMatch, sounds]);
+  const { joinQueue, leaveQueue, isSearching, error: queueError } = useMatchQueue({
+    profileId: profile?.id ?? null, grade: profile?.grade ?? 7, matchType: 'ranked',
+    eloRating: profile?.elo_rating ?? 1000, enabled: !!profile, mode: '2v2', partyId,
+    subject, onMatchFound: handleMatchFound,
+  });
   useEffect(() => {
     if (!profile) return;
-    if (initialMatchId) { loadMatch(initialMatchId); return; }
-
-    let mounted = true;
-    const startedAt = Date.now();
-    (async () => {
-      try {
-      const mid = await tryFindMatch();
-      if (!mounted) return;
-      if (mid) { sounds.playMatchFound(); setPhase("found"); setTimeout(() => { if (mounted) void loadMatch(mid); }, 800); return; }
-      } catch { if (mounted) setQueueError("网络连接不稳定，请检查网络后重试"); }
-      if (!mounted) return;
-
-      // Poll queue for match
-      queuePollRef.current = window.setInterval(async () => {
-        if (!mounted || matchEndedRef.current || queueBusyRef.current) return;
-        queueBusyRef.current = true;
-        try {
-        const { data: q, error } = await boundedRequest(supabase.from('match_queue')
-          .select('status, match_id')
-          .eq('profile_id', profile.id).eq('mode', '2v2')
-          .eq('status', 'matched').order('created_at', { ascending: false }).limit(1));
-        if (!mounted) return;
-        if (error) throw error;
-        if (q && q[0]?.match_id) {
-          if (queuePollRef.current) clearInterval(queuePollRef.current);
-          sounds.playMatchFound(); setPhase("found");
-          const matchId = q[0].match_id;
-          setTimeout(() => { if (mounted) void loadMatch(matchId); }, 800);
-          return;
-        }
-        if (Date.now() - startedAt >= 60000) {
-          if (queuePollRef.current) clearInterval(queuePollRef.current);
-          setQueueError("匹配超时，请返回大厅后重试");
-          await boundedRequest(supabase.from('match_queue').delete().eq('profile_id', profile.id).eq('mode', '2v2').eq('status', 'searching'));
-          return;
-        }
-        const mid = await tryFindMatch();
-        if (!mounted) return;
-        if (mid) {
-          if (queuePollRef.current) clearInterval(queuePollRef.current);
-          sounds.playMatchFound(); setPhase("found"); void loadMatch(mid);
-        }
-        } catch {
-          if (mounted) {
-            setQueueError("网络连接不稳定，请检查网络后重试");
-            if (Date.now() - startedAt >= 60000 && queuePollRef.current) clearInterval(queuePollRef.current);
-          }
-        } finally { queueBusyRef.current = false; }
-      }, 3000);
-    })();
-
+    if (initialMatchId) void loadMatch(initialMatchId);
+    else void joinQueue();
     return () => {
-      mounted = false;
-      if (queuePollRef.current) clearInterval(queuePollRef.current);
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      void leaveQueue();
+      if (channelRef.current) void supabase.removeChannel(channelRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
-      // Leave queue if abandoning
-      supabase.from('match_queue').delete()
-        .eq('profile_id', profile.id).eq('mode', '2v2').eq('status', 'searching');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
@@ -220,6 +164,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
       const { data, error } = await supabase.functions.invoke('process-match', { body: forfeit ? { matchId: matchData.id, forfeit } : { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
       else if (data) {
+        if (data.pending) { matchEndedRef.current = false; return; }
         winnerTeamRef.current = data.winnerTeam ?? null;
         if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
           setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
@@ -316,10 +261,9 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           </p>
           <p className="text-sm text-muted-foreground mb-2">{partyId ? "双排组队 · " : "单排 · "}搜索时间: {searchTime}秒</p>
           {queueError && <p className="text-sm text-destructive mb-2">{queueError}</p>}
+          {queueError && !isSearching && <Button onClick={() => { setSearchTime(0); void joinQueue(); }}>重新匹配</Button>}
           <Button variant="outline" onClick={async () => {
-            await supabase.from('match_queue').delete()
-              .eq('profile_id', profile.id).eq('mode', '2v2').eq('status', 'searching');
-            onBack();
+            const left = await leaveQueue(); if (left !== false) onBack();
           }}>
             <XCircle className="w-4 h-4 mr-2" />取消匹配
           </Button>
@@ -336,6 +280,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <Swords className="w-20 h-20 mx-auto mb-4 animate-bounce text-primary" />
           <h2 className="text-3xl font-gaming mb-2 text-primary">4 人已就位！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           {matchLoadError && <div role="alert" className="mt-4 space-y-3">
             <p className="text-destructive">{matchLoadError}</p>
             <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id); }}>重试</Button>
@@ -366,6 +311,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
               {team2Profiles.map(p => <PlayerBattleCard key={p.id} profile={mkPlayerProfile(p)} variant="right" className="max-w-[180px]" />)}
             </div>
           </div>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className="text-8xl font-gaming animate-bounce text-primary">
             {countdown > 0 ? countdown : question ? 'GO!' : '…'}
           </div>
@@ -392,6 +338,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
+          {isBotMatch && <Badge variant="secondary" className="mb-2">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="flex flex-col gap-0.5 truncate">
@@ -450,6 +397,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <h2 className="text-3xl font-gaming mb-2">
             {isDraw ? '平局！' : isWinner ? '团队胜利！' : '团队失败'}
           </h2>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">我方</p>

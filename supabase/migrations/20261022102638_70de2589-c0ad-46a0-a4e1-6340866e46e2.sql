@@ -1,0 +1,1 @@
+DO $$ DECLARE d text; BEGIN SELECT pg_get_functiondef('public.tick_match_bots(uuid,uuid,boolean,boolean)'::regprocedure) INTO d; d=replace(d,'winner_id=CASE WHEN done AND mode=''1v1'' AND wt=1 THEN player1_id ELSE winner_id END','winner_id=NULL'); EXECUTE d; END $$;

@@ -178,6 +178,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
           </span>
         </div>
       </div>
+      {extWarn && !kicked && (
+        <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[105] max-w-md border border-destructive/60 bg-card px-4 py-3 flex items-center gap-2">
+          <img src={dacLogo} alt="DAC" className="w-6 h-6 object-contain" />
+          <span className="text-sm">DAC 检测到浏览器插件注入对局页面，已记录待复核。请关闭翻译、答题等插件；若插件自动作答将直接判负。</span>
+        </div>
+      )}
       {warn && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur p-6">
           <div className="max-w-sm w-full border border-destructive/60 bg-card p-6 text-center space-y-3">

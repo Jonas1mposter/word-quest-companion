@@ -2,6 +2,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const report = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: report } }));
+const tabCalls = () => report.mock.calls.filter((c: any[]) => c[0] === "report_tab_switch").length;
 import DacBadge from "@/components/battle/DacBadge";
 
 const visibility = (hidden: boolean) => {
@@ -15,14 +16,14 @@ describe("DAC只检测可作答期间的真实页面离开", () => {
     const forfeit = vi.fn();
     render(<DacBadge onForfeit={forfeit} />);
     act(() => { for (let i = 0; i < 3; i++) { window.dispatchEvent(new Event("blur")); window.dispatchEvent(new Event("focus")); } });
-    expect(report).not.toHaveBeenCalled();
+    expect(tabCalls()).toBe(0);
     expect(forfeit).not.toHaveBeenCalled();
   });
   it("断网期间切屏和后台60秒不判作弊", () => {
     const forfeit = vi.fn();
     render(<DacBadge onForfeit={forfeit} />);
     act(() => { window.dispatchEvent(new Event("offline")); visibility(true); vi.advanceTimersByTime(60000); visibility(false); });
-    expect(report).not.toHaveBeenCalled();
+    expect(tabCalls()).toBe(0);
     expect(forfeit).not.toHaveBeenCalled();
   });
   it("加载暂停解除后不沿用故障前的后台计时", () => {
@@ -35,7 +36,7 @@ describe("DAC只检测可作答期间的真实页面离开", () => {
     rerender(<DacBadge onForfeit={forfeit} />);
     act(() => vi.advanceTimersByTime(1000));
     expect(forfeit).not.toHaveBeenCalled();
-    expect(report).toHaveBeenCalledTimes(1);
+    expect(tabCalls()).toBe(1);
   });
   it("健康对局真实切屏第三次仍判负", () => {
     const forfeit = vi.fn();

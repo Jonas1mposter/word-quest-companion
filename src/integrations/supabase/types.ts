@@ -3904,6 +3904,10 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
+      report_dac_evidence: {
+        Args: { p_kind: string; p_meta: Json }
+        Returns: undefined
+      }
       report_tab_switch: {
         Args: { p_count: number; p_mode: string }
         Returns: undefined

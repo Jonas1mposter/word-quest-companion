@@ -3,6 +3,7 @@ import dacLogo from "@/assets/dac-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
+import { findExtensionResource, isSyntheticInputViolation, tamperedNatives } from "@/lib/dacExtension";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。
@@ -122,7 +123,45 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     };
   }, [monitoring, !!onForfeit]);
 
-  const kickMsg = "DAC 检测到违规（疑似 AI/脚本操控或长时间离开对局），本局判负并已记录";
+  // 浏览器插件检测：扩展注入、原生函数被改写、脚本合成键盘/输入
+  const [extWarn, setExtWarn] = useState(false);
+  useEffect(() => {
+    if (!monitoring) return;
+    const reported = new Set<string>();
+    let extSeen = false, synthetic = 0;
+    const report = (kind: string, detail: Record<string, unknown>) => {
+      if (reported.has(kind)) return;
+      reported.add(kind);
+      supabase.rpc("report_dac_evidence" as any, { p_kind: kind, p_meta: { ...detail, mode: location.hash.slice(0, 40) } }).then(() => {});
+    };
+    const onExt = (url: string) => {
+      extSeen = true; setExtWarn(true);
+      report("extension_injection", { url });
+    };
+    const initial = findExtensionResource(document);
+    if (initial) onExt(initial);
+    const tampered = tamperedNatives();
+    if (tampered.length) report("native_tamper", { fns: tampered });
+    const mo = new MutationObserver((muts) => {
+      for (const m of muts) for (const n of Array.from(m.addedNodes)) {
+        if (n instanceof Element) { const u = findExtensionResource(n); if (u) return onExt(u); }
+      }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+    const onInput = (e: Event) => {
+      if (e.isTrusted) return;
+      synthetic++;
+      report("synthetic_input", { type: e.type, extension: extSeen });
+      if (isSyntheticInputViolation(synthetic)) kick("synthetic_input", { synthetic, extension: extSeen ? 1 : 0 });
+    };
+    for (const t of ["keydown", "input", "beforeinput"]) window.addEventListener(t, onInput, true);
+    return () => {
+      mo.disconnect();
+      for (const t of ["keydown", "input", "beforeinput"]) window.removeEventListener(t, onInput, true);
+    };
+  }, [monitoring]);
+
+  const kickMsg = "DAC 检测到违规（疑似 AI/脚本/浏览器插件操控或长时间离开对局），本局判负并已记录";
   return (
     <>
       {kicked && (
@@ -139,6 +178,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
           </span>
         </div>
       </div>
+      {extWarn && !kicked && (
+        <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[105] max-w-md border border-destructive/60 bg-card px-4 py-3 flex items-center gap-2">
+          <img src={dacLogo} alt="DAC" className="w-6 h-6 object-contain" />
+          <span className="text-sm">DAC 检测到浏览器插件注入对局页面，已记录待复核。请关闭翻译、答题等插件；若插件自动作答将直接判负。</span>
+        </div>
+      )}
       {warn && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur p-6">
           <div className="max-w-sm w-full border border-destructive/60 bg-card p-6 text-center space-y-3">

@@ -17,9 +17,9 @@ export async function searchMatch(options: SearchOptions): Promise<string | null
   return typeof data?.matchId === "string" ? data.matchId : null;
 }
 
-export async function cancelSearch(requestId: string, mode: "1v1" | "2v2"): Promise<string | null> {
+export async function cancelSearch(requestId: string, mode: "1v1" | "2v2", partyId: string | null = null): Promise<string | null> {
   const { data, error } = await boundedRequest(supabase.functions.invoke("matchmaking", {
-    body: { action: "cancel", requestId, mode },
+    body: { action: "cancel", requestId, mode, partyId },
   }));
   if (error || data?.error) throw new Error("取消匹配未能确认，请检查网络");
   return typeof data?.matchId === "string" ? data.matchId : null;

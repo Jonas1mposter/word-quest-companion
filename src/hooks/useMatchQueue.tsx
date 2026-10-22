@@ -2,6 +2,7 @@ import { contentGrade } from "@/lib/zones";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { boundedRequest } from "@/lib/boundedRequest";
+import { searchMatch, cancelSearch } from "@/lib/matchmaking";
 
 interface UseMatchQueueOptions {
   profileId: string | null;
@@ -13,7 +14,6 @@ interface UseMatchQueueOptions {
   onMatchFound: (matchId: string, opponentId: string) => void;
 }
 
-const MAX_SEARCH_TIME_SECONDS = 60;
 const POLL_INTERVAL_MS = 3000;
 
 export const useMatchQueue = ({
@@ -33,6 +33,7 @@ export const useMatchQueue = ({
   const matchFoundRef = useRef(false);
   const generationRef = useRef(0);
   const pollBusyRef = useRef(false);
+  const requestIdRef = useRef<string | null>(null);
   const onMatchFoundRef = useRef(onMatchFound);
   onMatchFoundRef.current = onMatchFound;
 
@@ -48,7 +49,11 @@ export const useMatchQueue = ({
   }, []);
 
   useEffect(() => {
-    return () => { generationRef.current++; cleanup(); };
+    return () => {
+      generationRef.current++; cleanup();
+      const id = requestIdRef.current;
+      if (id) void cancelSearch(id, '1v1').catch(() => {});
+    };
   }, [cleanup]);
 
   const handleMatchResolved = useCallback(async (matchId: string) => {
@@ -65,7 +70,7 @@ export const useMatchQueue = ({
     if (generation !== generationRef.current) return;
 
     if (match && profileId) {
-      const opponentId = match.player1_id === profileId ? match.player2_id : match.player1_id;
+      const opponentId = (match.player1_id === profileId ? match.player2_id : match.player1_id) ?? 'bot-2';
       setIsSearching(false);
       setIsQueued(false);
       if (!opponentId) { matchFoundRef.current = false; setError('对局加载失败，请重试'); return; }
@@ -90,6 +95,8 @@ export const useMatchQueue = ({
     if (!profileId || !enabled) return null;
     cleanup();
     const generation = ++generationRef.current;
+    const requestId = crypto.randomUUID();
+    requestIdRef.current = requestId;
     pollBusyRef.current = false;
     setError(null);
     setIsSearching(true);
@@ -102,15 +109,8 @@ export const useMatchQueue = ({
       let rpcError: any = null;
       for (let attempt = 0; attempt < 4; attempt++) {
         try {
-          const res = await boundedRequest(supabase.rpc('find_match', {
-            _profile_id: profileId,
-            _grade: contentGrade(grade),
-            _match_type: matchType,
-            _elo_rating: eloRating,
-            _subject: subject,
-          }));
-          data = res.data;
-          rpcError = res.error;
+          data = await searchMatch({ requestId, mode: '1v1', matchType, subject });
+          rpcError = null;
         } catch (e) {
           rpcError = e;
         }
@@ -153,7 +153,6 @@ export const useMatchQueue = ({
       channelRef.current = channel;
 
       // Poll with the SAME elo (don't inflate), let the server-side function handle range
-      const searchStartedAt = Date.now();
       pollingRef.current = setInterval(async () => {
         if (generation !== generationRef.current || pollBusyRef.current) return;
         pollBusyRef.current = true;
@@ -180,27 +179,9 @@ export const useMatchQueue = ({
             return;
           }
 
-          // Check matched rows first: a match arriving at the timeout boundary
-          // must be recovered, not treated as a failed search.
-          if (Date.now() - searchStartedAt >= MAX_SEARCH_TIME_SECONDS * 1000) {
-            cleanup(); setIsSearching(false); setIsQueued(false);
-            setError('匹配超时，请重试');
-            const { error: deleteError } = await boundedRequest(supabase.from('match_queue').delete()
-              .eq('profile_id', profileId).eq('mode', '1v1').eq('status', 'searching'));
-            if (generation === generationRef.current && deleteError) setError('取消匹配未能确认，请检查网络');
-            return;
-          }
-
-          // Then try to find a new match
-          const { data: pollData, error: pollError } = await boundedRequest(supabase.rpc('find_match', {
-            _profile_id: profileId,
-            _grade: contentGrade(grade),
-            _match_type: matchType,
-            _elo_rating: eloRating,
-            _subject: subject,
-          }));
+          // Server checks elapsed time and human-match races in one transaction.
+          const pollData = await searchMatch({ requestId, mode: '1v1', matchType, subject });
           if (generation !== generationRef.current) return;
-          if (pollError) throw pollError;
           setError(null);
 
           if (pollData && !matchFoundRef.current) {
@@ -209,9 +190,6 @@ export const useMatchQueue = ({
         } catch {
           if (generation === generationRef.current) {
             setError('网络连接不稳定，请检查网络后重试');
-            if (Date.now() - searchStartedAt >= MAX_SEARCH_TIME_SECONDS * 1000) {
-              cleanup(); setIsSearching(false); setIsQueued(false);
-            }
           }
         }
         } finally { if (generation === generationRef.current) pollBusyRef.current = false; }
@@ -234,20 +212,18 @@ export const useMatchQueue = ({
     setIsQueued(false);
     setIsSearching(false);
 
-    if (profileId) {
+    const requestId = requestIdRef.current;
+    if (profileId && requestId) {
       try {
-      const { error: deleteError } = await boundedRequest(supabase
-        .from('match_queue')
-        .delete()
-        .eq('profile_id', profileId)
-        .eq('mode', '1v1')
-        .eq('status', 'searching'));
-      if (deleteError) setError('取消匹配未能确认，请检查网络');
-      } catch { setError('取消匹配未能确认，请检查网络'); }
+        const mid = await cancelSearch(requestId, '1v1');
+        requestIdRef.current = null;
+        if (mid) { onMatchFoundRef.current(mid, 'recovered'); return false; }
+      } catch { setError('取消匹配未能确认，请检查网络'); return false; }
     }
 
     setIsQueued(false);
     setIsSearching(false);
+    return true;
   }, [profileId, cleanup]);
 
   return {

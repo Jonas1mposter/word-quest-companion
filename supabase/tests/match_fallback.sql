@@ -6,6 +6,8 @@ BEGIN
   SELECT array_agg(id) INTO ids FROM (SELECT id FROM profiles WHERE grade=7 AND (banned_until IS NULL OR banned_until<=now()) AND NOT EXISTS(SELECT 1 FROM ranked_matches WHERE status='in_progress' AND profiles.id=ANY(ARRAY[player1_id,player2_id,player3_id,player4_id])) ORDER BY id LIMIT 2) t;
   IF cardinality(ids)<>2 THEN RAISE EXCEPTION 'Two idle G7 profiles required'; END IF;
   pid=ids[1];
+  UPDATE match_search_requests SET cancelled=true WHERE profile_id=ANY(ids);
+  DELETE FROM match_queue WHERE profile_id=ANY(ids) AND status='searching';
   IF has_function_privilege('authenticated','public.matchmaking_action(uuid,uuid,text,text,text,uuid,boolean)','EXECUTE') OR has_table_privilege('authenticated','public.match_bot_state','SELECT') THEN RAISE EXCEPTION 'Browser bypass'; END IF;
   FOREACH kind IN ARRAY ARRAY['ranked','free'] LOOP
    rid=gen_random_uuid();
@@ -36,6 +38,7 @@ BEGIN
    SELECT to_jsonb(p) INTO after_state FROM profiles p WHERE id=pid;
    IF before_state<>after_state OR (out->>'coinsEarned')::integer<>0 OR (out->>'xpEarned')::integer<>0 THEN RAISE EXCEPTION 'Bot competitive benefits'; END IF;
    IF EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND (winner_id IS NOT NULL OR winner_team IS NOT NULL)) THEN RAISE EXCEPTION 'Empty bot winner'; END IF;
+   UPDATE match_search_requests SET cancelled=true WHERE profile_id=ANY(ids);
   END LOOP;
   -- Cancel wins before a delayed search: the request stays cancelled.
   rid=gen_random_uuid(); PERFORM matchmaking_action(pid,rid,'1v1','ranked','fallback-test',NULL,true);

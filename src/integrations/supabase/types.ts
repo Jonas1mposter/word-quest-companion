@@ -1183,6 +1183,38 @@ export type Database = {
         }
         Relationships: []
       }
+      match_bot_state: {
+        Row: {
+          bot_slots: number[]
+          created_at: string
+          match_id: string
+          schedule: Json
+          updated_at: string
+        }
+        Insert: {
+          bot_slots: number[]
+          created_at?: string
+          match_id: string
+          schedule: Json
+          updated_at?: string
+        }
+        Update: {
+          bot_slots?: number[]
+          created_at?: string
+          match_id?: string
+          schedule?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_bot_state_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_parties: {
         Row: {
           created_at: string
@@ -1361,6 +1393,36 @@ export type Database = {
           profile_id?: string
           status?: string
           subject?: string | null
+        }
+        Relationships: []
+      }
+      match_search_requests: {
+        Row: {
+          cancelled: boolean
+          created_at: string
+          mode: string
+          party_id: string | null
+          profile_id: string
+          request_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled?: boolean
+          created_at?: string
+          mode: string
+          party_id?: string | null
+          profile_id: string
+          request_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled?: boolean
+          created_at?: string
+          mode?: string
+          party_id?: string | null
+          profile_id?: string
+          request_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3031,6 +3093,26 @@ export type Database = {
         }
         Returns: string
       }
+      find_match_2v2_human_legacy: {
+        Args: {
+          _elo_rating: number
+          _grade: number
+          _party_id?: string
+          _profile_id: string
+          _subject?: string
+        }
+        Returns: string
+      }
+      find_match_human_legacy: {
+        Args: {
+          _elo_rating: number
+          _grade: number
+          _match_type: string
+          _profile_id: string
+          _subject?: string
+        }
+        Returns: string
+      }
       gacha_draw: { Args: { p_count: number }; Returns: Json }
       get_hs_grade_challenge: {
         Args: never
@@ -3111,6 +3193,18 @@ export type Database = {
         }
         Returns: Json
       }
+      matchmaking_action: {
+        Args: {
+          p_cancel?: boolean
+          p_mode: string
+          p_party_id: string
+          p_profile_id: string
+          p_request_id: string
+          p_subject: string
+          p_type: string
+        }
+        Returns: Json
+      }
       purchase_lottery_ticket: {
         Args: { p_discounted: boolean; p_pool_id: string }
         Returns: Json
@@ -3129,6 +3223,15 @@ export type Database = {
       request_username_change: { Args: { p_new: string }; Returns: Json }
       review_username_request: {
         Args: { p_approve: boolean; p_request_id: string }
+        Returns: Json
+      }
+      tick_match_bots: {
+        Args: {
+          p_finish?: boolean
+          p_forfeit?: boolean
+          p_match_id: string
+          p_profile_id: string
+        }
         Returns: Json
       }
       use_backpack_item: { Args: { p_item_id: string }; Returns: Json }

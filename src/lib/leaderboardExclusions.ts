@@ -3,7 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 let cache: string[] | null = null;
 
 /** Profile ids (admins) that never appear on any leaderboard. Only successful non-empty results are cached. */
-export async function getLeaderboardExcludedIds(): Promise<string[]> {
+export async function getLeaderboardExcludedIds(category?: "xp"): Promise<string[]> {
+  if (category === "xp") {
+    const [general, result] = await Promise.all([
+      getLeaderboardExcludedIds(),
+      supabase.rpc("leaderboard_xp_excluded_ids"),
+    ]);
+    if (result.error) throw result.error;
+    return [...new Set([...general, ...(result.data ?? [])])];
+  }
   if (cache) return cache;
   try {
     const { data, error } = await supabase.rpc("leaderboard_excluded_ids" as any);

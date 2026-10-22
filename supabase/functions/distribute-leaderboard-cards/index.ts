@@ -2,6 +2,7 @@
 // Every zone (grade 1-9) gets its own top-10 per board; cards, coins and XP
 // are awarded per zone. Runs weekly via pg_cron. Idempotent — safe to re-run.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { leaderboardZone, eligibleForLeaderboard } from "../_shared/leaderboardScope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,8 +76,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
   const summary: Record<string, unknown> = {};
@@ -89,14 +90,19 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("id, grade, rank_tier, rank_stars, rank_points, wins, total_xp");
     if (profilesErr) throw profilesErr;
-    const { data: excludedRows } = await supabase.rpc("leaderboard_excluded_ids");
+    const { data: excludedRows, error: excludedError } = await supabase.rpc("leaderboard_excluded_ids");
+    if (excludedError) throw excludedError;
+    const { data: xpExcludedRows, error: xpExcludedError } = await supabase.rpc("leaderboard_xp_excluded_ids");
+    if (xpExcludedError) throw xpExcludedError;
+    const xpExcluded = new Set<string>((xpExcludedRows ?? []) as string[]);
     const excluded = new Set(((excludedRows as any[]) ?? []).map((r: any) => typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id));
     const profiles = ((allProfiles ?? []) as ProfileLite[]).filter((p) => !excluded.has(p.id));
     const byZone = new Map<number, ProfileLite[]>();
     for (const p of profiles) {
-      const g = p.grade ?? 7;
-      if (!byZone.has(g)) byZone.set(g, []);
-      byZone.get(g)!.push(p);
+      const g = leaderboardZone(p.grade ?? 7);
+      const members = byZone.get(g) ?? [];
+      members.push(p);
+      byZone.set(g, members);
     }
     const zones = [...byZone.keys()].sort((a, b) => a - b);
 
@@ -107,14 +113,14 @@ Deno.serve(async (req) => {
       if (!card) { summary[category] = "card_missing"; continue; }
 
       // Global top-3 (for GOAT), computed across all profiles
-      globalTop3PerBoard.push(sortProfiles(profiles, category).slice(0, 3).map((p) => p.id));
+      globalTop3PerBoard.push(sortProfiles(eligibleForLeaderboard(profiles, category, xpExcluded), category).slice(0, 3).map((p) => p.id));
 
       // Zone top-10 lists
       const zoneTops: { zone: number; ids: string[] }[] = [];
       const positionById = new Map<string, number>(); // first (best) position wins
       const gradeById = new Map(profiles.map((p) => [p.id, p.grade ?? 7]));
       for (const zone of zones) {
-        const top = sortProfiles(byZone.get(zone)!, category).slice(0, cfg.limit);
+        const top = sortProfiles(eligibleForLeaderboard(byZone.get(zone) ?? [], category, xpExcluded), category).slice(0, cfg.limit);
         const ids = top.map((p) => p.id);
         zoneTops.push({ zone, ids });
         ids.forEach((id, i) => {
@@ -159,7 +165,8 @@ Deno.serve(async (req) => {
       const weekStart = currentMonthStart();
       let rewarded = 0;
       for (const pid of topIds) {
-        const pos = positionById.get(pid)!;
+        const pos = positionById.get(pid);
+        if (pos === undefined) continue;
         const rw = monthlyReward(pos, (gradeById.get(pid) ?? 7) >= 9);
         const { data: existing } = await supabase
           .from("weekly_leaderboard_rewards")

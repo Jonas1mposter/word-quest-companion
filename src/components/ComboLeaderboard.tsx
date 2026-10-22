@@ -1,4 +1,5 @@
 import { getLeaderboardExcludedIds, excludedInFilter } from "@/lib/leaderboardExclusions";
+import { leaderboardGrades } from "@/lib/zones";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,7 @@ const ComboLeaderboard = ({ grade, currentProfileId }: ComboLeaderboardProps) =>
             profile_id,
             profiles!inner(id, username, grade)
           `)
-          .eq("profiles.grade", grade)
+          .in("profiles.grade", leaderboardGrades(grade))
           .not("profile_id", "in", excludedInFilter(await getLeaderboardExcludedIds()) ?? "(00000000-0000-0000-0000-000000000000)")
           .order("combo_count", { ascending: false })
           .limit(20);

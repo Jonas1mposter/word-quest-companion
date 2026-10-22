@@ -3081,6 +3081,7 @@ export type Database = {
         Returns: undefined
       }
       leaderboard_excluded_ids: { Args: never; Returns: string[] }
+      leaderboard_xp_excluded_ids: { Args: never; Returns: string[] }
       lottery_ticket_quote: {
         Args: { p_coins: number; p_discounted: boolean; p_used: number }
         Returns: Json

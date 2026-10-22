@@ -16,3 +16,6 @@ verify_jwt = false
 
 [functions.rogue-audio]
 verify_jwt = false
+
+[functions.team-boss]
+verify_jwt = false

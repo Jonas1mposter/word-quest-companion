@@ -1363,6 +1363,7 @@ export type Database = {
           party_id: string | null
           party_size: number
           profile_id: string
+          search_request_id: string | null
           status: string
           subject: string | null
         }
@@ -1377,6 +1378,7 @@ export type Database = {
           party_id?: string | null
           party_size?: number
           profile_id: string
+          search_request_id?: string | null
           status?: string
           subject?: string | null
         }
@@ -1391,6 +1393,7 @@ export type Database = {
           party_id?: string | null
           party_size?: number
           profile_id?: string
+          search_request_id?: string | null
           status?: string
           subject?: string | null
         }
@@ -1400,28 +1403,34 @@ export type Database = {
         Row: {
           cancelled: boolean
           created_at: string
+          match_type: string | null
           mode: string
           party_id: string | null
           profile_id: string
           request_id: string
+          subject: string | null
           updated_at: string
         }
         Insert: {
           cancelled?: boolean
           created_at?: string
+          match_type?: string | null
           mode: string
           party_id?: string | null
           profile_id: string
           request_id: string
+          subject?: string | null
           updated_at?: string
         }
         Update: {
           cancelled?: boolean
           created_at?: string
+          match_type?: string | null
           mode?: string
           party_id?: string | null
           profile_id?: string
           request_id?: string
+          subject?: string | null
           updated_at?: string
         }
         Relationships: []

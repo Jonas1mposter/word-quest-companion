@@ -14,6 +14,7 @@ export async function searchMatch(options: SearchOptions): Promise<string | null
     body: { action: "search", ...options },
   }));
   if (error || data?.error) throw new Error("匹配请求未能确认，请检查网络后重试");
+  if (data?.cancelled) throw new Error("匹配请求已取消，请重新匹配");
   return typeof data?.matchId === "string" ? data.matchId : null;
 }
 
@@ -39,6 +40,7 @@ export async function tickMatchBots(matchId: string) {
 }
 
 export const botPlayer = (slot: number) => ({
+  isAI: true,
   id: `bot-${slot}`, username: `人机 ${slot}`, level: 1, rank_tier: "bronze",
   rank_stars: 0, wins: 0, losses: 0, avatar_url: null,
 });

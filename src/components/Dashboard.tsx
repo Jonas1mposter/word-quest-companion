@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -51,12 +51,13 @@ interface DashboardProps { grade: number; }
 
 const Dashboard = ({ grade }: DashboardProps) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { isAdmin } = useAdminRole();
   const { checkAndAwardBadges } = useBadgeChecker(profile);
   const checkNameCards = useNameCardChecker(profile);
 
-  const [activeView, setActiveView] = useState<DashboardView>("home");
+  const [activeView, setActiveView] = useState<DashboardView>(() => searchParams.get("view") === "team" ? "team" : "home");
   const [selectedLevel, setSelectedLevel] = useState<{ id: string; name: string } | null>(null);
   const [selectedMathLevel, setSelectedMathLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);
   const [selectedScienceLevel, setSelectedScienceLevel] = useState<{ id: string; name: string; words: any[] } | null>(null);

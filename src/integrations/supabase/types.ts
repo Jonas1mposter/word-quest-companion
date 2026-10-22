@@ -3943,6 +3943,17 @@ export type Database = {
         }
         Returns: Json
       }
+      team_boss_dispatch: {
+        Args: {
+          p_action?: string
+          p_choice?: string
+          p_profile: string
+          p_round?: number
+          p_run?: string
+          p_target?: string
+        }
+        Returns: Json
+      }
       team_boss_issue: { Args: { p_run: string }; Returns: undefined }
       team_boss_settle: {
         Args: { p_phase: string; p_run: string }

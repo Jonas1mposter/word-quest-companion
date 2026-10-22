@@ -589,6 +589,32 @@ export type Database = {
         }
         Relationships: []
       }
+      event_claims: {
+        Row: {
+          claimed_at: string
+          event_code: string
+          profile_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          event_code: string
+          profile_id: string
+        }
+        Update: {
+          claimed_at?: string
+          event_code?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_claims_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friend_battle_invites: {
         Row: {
           created_at: string
@@ -3063,6 +3089,7 @@ export type Database = {
         Returns: Json
       }
       claim_priority_weekly: { Args: never; Returns: Json }
+      claim_reaver_event: { Args: never; Returns: Json }
       claim_review_reward: {
         Args: { p_correct: number; p_total: number }
         Returns: Json
@@ -3220,6 +3247,7 @@ export type Database = {
       }
       purchase_priority: { Args: never; Returns: Json }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
+      reaver_event_status: { Args: never; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
       redeem_code: {
         Args: { p_code: string; p_user_id: string }

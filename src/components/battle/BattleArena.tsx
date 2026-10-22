@@ -23,6 +23,7 @@ import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-c
 import { BadgeIcon } from "@/components/ui/badge-icon";
 import { remainingBattleSeconds } from "@/lib/battleClock";
 import { boundedRequest } from "@/lib/boundedRequest";
+import { matchBots, tickMatchBots, botPlayer } from "@/lib/matchmaking";
 
 interface MatchData {
   id: string;
@@ -35,6 +36,7 @@ interface MatchData {
   grade: number;
   started_at: string;
   winner_id: string | null;
+  winner_team?: number | null;
 }
 
 type BattlePhase = "searching" | "found" | "loading" | "countdown" | "battle" | "result";
@@ -80,6 +82,9 @@ const BattleArena = ({
 
   const [phase, setPhase] = useState<BattlePhase>(initialMatchId ? "found" : "searching");
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const [isBotMatch, setIsBotMatch] = useState(false);
+  const botMatchRef = useRef(false);
+  const [botOutcome, setBotOutcome] = useState<number | null>(null);
   const [matchLoadError, setMatchLoadError] = useState<string | null>(null);
   const loadingMatchIdRef = useRef<string | null>(initialMatchId ?? null);
   const { question, questionError, questionLoading, loadQuestion } = useServerBattleQuestion(matchData?.id);
@@ -115,14 +120,17 @@ const BattleArena = ({
     const { data: match } = await boundedRequest(supabase.from('ranked_matches').select('*').eq('id', matchId).single());
     if (!match || !profile) throw new Error("对局加载失败，请重试");
     isPlayer1Ref.current = match.player1_id === profile.id;
-    if (!match.player1_id || !match.player2_id) return;
-    setMatchData({ ...match, player1_id: match.player1_id, player2_id: match.player2_id });
+    const bots = await matchBots(matchId);
+    botMatchRef.current = !!bots;
+    setIsBotMatch(!!bots);
+    if (!match.player1_id || (!match.player2_id && !bots)) throw new Error("对局加载失败，请重试");
+    setMatchData({ ...match, player1_id: match.player1_id, player2_id: match.player2_id ?? 'bot-2' });
     myScoreRef.current = isPlayer1Ref.current ? match.player1_score : match.player2_score;
     setMyScoreDisplay(myScoreRef.current);
     setOpponentScore(isPlayer1Ref.current ? match.player2_score : match.player1_score);
     setTimeLeft(remainingBattleSeconds(match.started_at));
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
-    const { data: opp } = await boundedRequest(supabase.from('profiles').select('*').eq('id', opponentId ?? '').single());
+    const opp = bots ? botPlayer(2) : (await boundedRequest(supabase.from('profiles').select('*').eq('id', opponentId ?? '').single())).data;
     setOpponentProfile(opp);
 
     // 预讯过场：拉取对手佩戴的名片
@@ -144,6 +152,7 @@ const BattleArena = ({
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ranked_matches', filter: `id=eq.${matchId}` }, (payload) => {
         const u = payload.new as any;
         if (u.winner_id) winnerIdRef.current = u.winner_id;
+        if (botMatchRef.current && u.status === 'completed') setBotOutcome(u.winner_team);
         if (u.status === 'completed' && !matchEndedRef.current) {
           matchEndedRef.current = true;
           setPhase("result");
@@ -156,15 +165,17 @@ const BattleArena = ({
     // 兜底：实时事件可能丢失，定期回拉对方分数与比赛状态
     const pollId = window.setInterval(async () => {
       if (matchEndedRef.current) return;
+      if (botMatchRef.current) await tickMatchBots(matchId).catch(() => {});
       const { data: m } = await supabase
         .from('ranked_matches')
-        .select('player1_score, player2_score, status, winner_id')
+        .select('player1_score, player2_score, status, winner_id, winner_team')
         .eq('id', matchId)
         .single();
       if (!m) return;
       const oppScore = isPlayer1Ref.current ? m.player2_score : m.player1_score;
       setOpponentScore(oppScore);
       if (m.winner_id) winnerIdRef.current = m.winner_id;
+      if (botMatchRef.current && m.status === 'completed') setBotOutcome(m.winner_team);
       if (m.status === 'completed' && !matchEndedRef.current) {
         matchEndedRef.current = true;
         setPhase("result");
@@ -228,6 +239,8 @@ const BattleArena = ({
       const { data, error } = await supabase.functions.invoke('process-match', { body: forfeit ? { matchId: matchData.id, forfeit } : { matchId: matchData.id } });
       if (error || (data && data.error)) console.error('process-match failed', error || data?.error);
       else if (data) {
+        if (data.pending) { matchEndedRef.current = false; return; }
+        if (botMatchRef.current) setBotOutcome(data.winnerTeam);
         winnerIdRef.current = data.winnerId ?? null;
         if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
           setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
@@ -334,7 +347,7 @@ const BattleArena = ({
           <p className="text-sm text-muted-foreground mb-2">搜索时间: {searchTime}秒</p>
           {queueError && <p className="text-sm text-destructive mb-2">{queueError}</p>}
           {queueError && !isSearching && <Button className="mr-2" onClick={() => { setSearchTime(0); void joinQueue(); }}>重新匹配</Button>}
-          <Button variant="outline" onClick={async () => { await leaveQueue(); onBack(); }}>
+          <Button variant="outline" onClick={async () => { const left = await leaveQueue(); if (left !== false) onBack(); }}>
             <XCircle className="w-4 h-4 mr-2" />取消匹配
           </Button>
         </div>
@@ -350,6 +363,7 @@ const BattleArena = ({
           <Icon className={cn("w-20 h-20 mx-auto mb-4 animate-bounce", theme.accentText)} />
           <h2 className={cn("text-3xl font-gaming mb-2", theme.accentText)}>对手已找到！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           {matchLoadError && <div role="alert" className="mt-4 space-y-3">
             <p className="text-destructive">{matchLoadError}</p>
             <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id, false); }}>重试</Button>
@@ -438,6 +452,7 @@ const BattleArena = ({
             <div className={cn("text-6xl font-gaming animate-pulse", theme.accentText)}>VS</div>
             <PlayerBattleCard profile={mkPlayerProfile(opponentProfile)} variant="right" />
           </div>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className={cn("text-8xl font-gaming animate-bounce", theme.accentText)}>
             {countdown > 0 ? countdown : question ? 'GO!' : '…'}
           </div>
@@ -460,6 +475,7 @@ const BattleArena = ({
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
+          {isBotMatch && <Badge variant="secondary" className="mb-2">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Badge variant="default">{profile.username}</Badge>
@@ -524,8 +540,8 @@ const BattleArena = ({
   if (phase === "result") {
     const finalScore = myScoreRef.current;
     const winnerId = winnerIdRef.current;
-    const isWinner = winnerId === profile.id;
-    const isDraw = winnerId === null;
+    const isWinner = isBotMatch ? botOutcome === 1 : winnerId === profile.id;
+    const isDraw = isBotMatch ? botOutcome === null : winnerId === null;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card variant="glow" className="max-w-md w-full p-8 text-center">
@@ -535,6 +551,7 @@ const BattleArena = ({
           <h2 className="text-3xl font-gaming mb-2">
             {isDraw ? '平局！' : isWinner ? '胜利！' : '失败'}
           </h2>
+          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">{profile.username}</p>

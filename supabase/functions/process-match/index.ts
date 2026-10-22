@@ -67,6 +67,18 @@ Deno.serve(async (req) => {
       : [match.player1_id, match.player2_id];
     if (!memberIds.includes(profile.id)) return json({ error: "Not in match" }, 403);
 
+    // Bot fallback never runs the competitive payout or rank branch.
+    const { data: botState, error: botError } = await admin.from('match_bot_state')
+      .select('match_id').eq('match_id', matchId).maybeSingle();
+    if (botError) throw new Error('Unable to verify match type');
+    if (botState) {
+      const { data, error } = await admin.rpc('tick_match_bots', {
+        p_match_id: matchId, p_profile_id: profile.id, p_finish: true, p_forfeit: isForfeit,
+      });
+      if (error) throw error;
+      return json({ ...data, botMatch: true });
+    }
+
     // 获胜方查询：对方是否因 DAC 作弊（脚本/异常程序）被判负
     const opponentIds = is2v2
       ? ([match.player1_id, match.player3_id].includes(profile.id)

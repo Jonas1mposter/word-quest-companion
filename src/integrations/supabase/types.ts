@@ -2714,6 +2714,234 @@ export type Database = {
           },
         ]
       }
+      team_boss_players: {
+        Row: {
+          answered: number
+          coins: number
+          correct: number
+          created_at: string
+          grade: number
+          hp: number
+          profile_id: string
+          ready: boolean
+          role: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          answered?: number
+          coins?: number
+          correct?: number
+          created_at?: string
+          grade: number
+          hp?: number
+          profile_id: string
+          ready?: boolean
+          role?: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          answered?: number
+          coins?: number
+          correct?: number
+          created_at?: string
+          grade?: number
+          hp?: number
+          profile_id?: string
+          ready?: boolean
+          role?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_boss_players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_boss_players_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "team_boss_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_boss_questions: {
+        Row: {
+          action: string | null
+          answer: string | null
+          created_at: string
+          is_correct: boolean | null
+          kind: string
+          meaning: string
+          options: Json
+          profile_id: string
+          round: number
+          run_id: string
+          target_id: string | null
+          updated_at: string
+          word: string
+        }
+        Insert: {
+          action?: string | null
+          answer?: string | null
+          created_at?: string
+          is_correct?: boolean | null
+          kind: string
+          meaning: string
+          options?: Json
+          profile_id: string
+          round: number
+          run_id: string
+          target_id?: string | null
+          updated_at?: string
+          word: string
+        }
+        Update: {
+          action?: string | null
+          answer?: string | null
+          created_at?: string
+          is_correct?: boolean | null
+          kind?: string
+          meaning?: string
+          options?: Json
+          profile_id?: string
+          round?: number
+          run_id?: string
+          target_id?: string | null
+          updated_at?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_boss_questions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_boss_questions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "team_boss_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_boss_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          day: string
+          profile_id: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          day: string
+          profile_id: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          day?: string
+          profile_id?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_boss_rewards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_boss_rewards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "team_boss_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_boss_runs: {
+        Row: {
+          boss_hp: number
+          boss_max: number
+          created_at: string
+          deadline: string
+          ends_at: string | null
+          host_id: string
+          id: string
+          log: Json
+          party_size: number
+          phase: string
+          round: number
+          started_at: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          boss_hp?: number
+          boss_max?: number
+          created_at?: string
+          deadline?: string
+          ends_at?: string | null
+          host_id: string
+          id?: string
+          log?: Json
+          party_size?: number
+          phase?: string
+          round?: number
+          started_at?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          boss_hp?: number
+          boss_max?: number
+          created_at?: string
+          deadline?: string
+          ends_at?: string | null
+          host_id?: string
+          id?: string
+          log?: Json
+          party_size?: number
+          phase?: string
+          round?: number
+          started_at?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_boss_runs_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_boss_runs_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_challenge_rewards: {
         Row: {
           coins: number
@@ -3705,6 +3933,26 @@ export type Database = {
         Returns: undefined
       }
       rogue_view: { Args: { p_run: string }; Returns: Json }
+      team_boss_action: {
+        Args: {
+          p_action?: string
+          p_choice?: string
+          p_round?: number
+          p_run?: string
+          p_target?: string
+        }
+        Returns: Json
+      }
+      team_boss_issue: { Args: { p_run: string }; Returns: undefined }
+      team_boss_settle: {
+        Args: { p_phase: string; p_run: string }
+        Returns: undefined
+      }
+      team_boss_tick: { Args: { p_run: string }; Returns: undefined }
+      team_boss_view: {
+        Args: { p_profile: string; p_run: string }
+        Returns: Json
+      }
       tick_match_bots: {
         Args: {
           p_finish?: boolean

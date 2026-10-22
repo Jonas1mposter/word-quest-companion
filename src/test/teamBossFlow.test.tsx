@@ -12,7 +12,7 @@ it("先答题后治疗倒地队友", async () => {
  action.mockResolvedValueOnce({ state, team: { id: "t", name: "Team" } }).mockResolvedValueOnce({ state: { ...state, question: { ...state.question, submitted: true, correct: true, feedback: { word: "apple", meaning: "苹果" } } } }).mockResolvedValueOnce({ state: { ...state, question: { ...state.question, submitted: true, correct: true, acted: true } } });
  render(<MemoryRouter><TeamBoss /></MemoryRouter>);
  fireEvent.click(await screen.findByRole("button", { name: "A 苹果" }));
- const heal = await screen.findByRole("button", { name: "治疗", exact: true });
+ const heal = await screen.findByRole("button", { name: "治疗" });
  expect(heal).toBeDisabled();
  fireEvent.click(screen.getByRole("button", { name: "Ally · 0" }));
  fireEvent.click(heal);

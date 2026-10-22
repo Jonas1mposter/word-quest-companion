@@ -1,0 +1,1 @@
+REVOKE ALL ON public.team_boss_runs,public.team_boss_players,public.team_boss_questions,public.team_boss_rewards FROM anon,authenticated;

@@ -44,8 +44,8 @@ describe("真人对战首题就绪门禁", () => {
     mocks.fetch.mockResolvedValue({questionIndex:0,total:15,quizType:'meaning',prompt:'apple',options:['苹果','梨','香蕉','葡萄']});
     await act(async () => {
       render(mode === '2v2' ? <Battle2v2Arena initialMatchId="match" onBack={vi.fn()} /> : <BattleArena initialMatchId="match" onBack={vi.fn()} matchType="ranked" eloField="elo_rating" theme={{Icon:Swords,accentText:'text-primary',accentSpinner:'border-primary',searchingTitle:'匹配',searchingSubtitle:()=>'',winsField:'wins',lossesField:'losses'}} />);
-      await vi.advanceTimersByTimeAsync(4000);
     });
+    for (let i=0;i<4;i++) await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(screen.getByRole('article')).toHaveTextContent('apple');
   });
 });

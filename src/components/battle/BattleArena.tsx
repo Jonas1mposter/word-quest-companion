@@ -16,7 +16,6 @@ import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
 import DacBadge from "./DacBadge";
-import { cancelPlayerStaleMatches } from "@/hooks/useMatchCleanup";
 import NameCardFx, { nameCardFxClass, nameCardFxStyle } from "@/components/NameCardFx";
 import { getNameCardGradientStyle } from "@/components/profile-card/utils";
 import { rarityColors, rarityLabels, NameCardData } from "@/components/profile-card/constants";
@@ -212,7 +211,7 @@ const BattleArena = ({
     if (!profile) return;
     let mounted = true;
     if (initialMatchId) loadMatch(initialMatchId, false);
-    else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => { if (mounted) void joinQueue(); });
+    else void joinQueue();
     return () => {
       mounted = false;
       if (channelRef.current) supabase.removeChannel(channelRef.current);

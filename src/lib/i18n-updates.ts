@@ -1,6 +1,7 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
   "人机补位 · 不计排位分": "Bot Fill · No Ranked Points",
+  "匹配请求已取消，请重新匹配": "Search cancelled. Please search again.",
   "匹配请求未能确认，请检查网络后重试": "Search could not be confirmed. Check your connection and retry.",
   "高中总榜": "High School Leaderboard",
   "每周结算名片，每月发放奖励（高中合榜，其他年级各发前十）": "Weekly name cards, monthly rewards (one high-school board; top 10 per grade elsewhere)",

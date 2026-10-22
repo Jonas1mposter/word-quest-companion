@@ -1400,28 +1400,34 @@ export type Database = {
         Row: {
           cancelled: boolean
           created_at: string
+          match_type: string | null
           mode: string
           party_id: string | null
           profile_id: string
           request_id: string
+          subject: string | null
           updated_at: string
         }
         Insert: {
           cancelled?: boolean
           created_at?: string
+          match_type?: string | null
           mode: string
           party_id?: string | null
           profile_id: string
           request_id: string
+          subject?: string | null
           updated_at?: string
         }
         Update: {
           cancelled?: boolean
           created_at?: string
+          match_type?: string | null
           mode?: string
           party_id?: string | null
           profile_id?: string
           request_id?: string
+          subject?: string | null
           updated_at?: string
         }
         Relationships: []

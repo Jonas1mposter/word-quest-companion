@@ -1363,6 +1363,7 @@ export type Database = {
           party_id: string | null
           party_size: number
           profile_id: string
+          search_request_id: string | null
           status: string
           subject: string | null
         }
@@ -1377,6 +1378,7 @@ export type Database = {
           party_id?: string | null
           party_size?: number
           profile_id: string
+          search_request_id?: string | null
           status?: string
           subject?: string | null
         }
@@ -1391,6 +1393,7 @@ export type Database = {
           party_id?: string | null
           party_size?: number
           profile_id?: string
+          search_request_id?: string | null
           status?: string
           subject?: string | null
         }

@@ -53,11 +53,27 @@ const REASON_LABELS: Record<string, string> = {
   impossible_answer_speed: "答题速度异常（对局）",
   suspected_answer_lookup: "疑似查答案（比平时慢却几乎全对）",
   impossible_level_speed: "过关速度异常（闯关）",
+  fixed_answer_timing: "答题节奏固定（疑似脚本）",
+  extension_injection: "浏览器插件注入对局页面",
+  native_tamper: "网页原生函数被插件改写",
+  synthetic_input: "脚本合成键盘/输入（插件自动作答）",
+  question_copy: "复制/选中题目（疑似拿去查答案或翻译）",
+  multi_tab: "同一对局在多个标签页打开",
+  devtools_open: "对局中打开开发者工具",
+  tab_switch: "对局中切屏",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   "submit-answer": "对战答题",
   "complete-level": "闯关结算",
+  "bot-battle": "人机结算",
+  tab_switch: "切屏监控",
+  client_extension_injection: "插件检测",
+  client_native_tamper: "插件检测",
+  client_synthetic_input: "插件检测",
+  client_question_copy: "复制检测",
+  client_multi_tab: "多开检测",
+  client_devtools_open: "开发者工具检测",
 };
 
 const MODE_LABELS: Record<string, string> = {

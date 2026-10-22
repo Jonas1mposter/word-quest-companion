@@ -1,6 +1,6 @@
 BEGIN;
 DO $$
-DECLARE ids uuid[]; users uuid[]; tid uuid; rid uuid; s jsonb; q public.team_boss_questions; n integer; j integer; k integer; attempt integer; round_no integer; caught boolean; before_coins integer; used integer; expected integer; claims text;
+DECLARE ids uuid[]; users uuid[]; tid uuid; rid uuid; s jsonb; q public.team_boss_questions; n integer; j integer; k integer; attempt integer; round_no integer; caught boolean; before_coins integer; used integer; initial_used integer; expected integer; claims text;
 BEGIN
  SELECT t.id INTO STRICT tid FROM public.teams t JOIN public.team_members m ON m.team_id=t.id JOIN public.profiles p ON p.id=m.profile_id WHERE coalesce(p.grade,0)>=1 AND (p.banned_until IS NULL OR p.banned_until<now()) AND NOT EXISTS(SELECT 1 FROM public.team_boss_runs b WHERE b.team_id=t.id AND b.phase IN ('lobby','combat')) GROUP BY t.id HAVING count(*)>=5 LIMIT 1;
  SELECT array_agg(p.id ORDER BY p.id),array_agg(p.user_id ORDER BY p.id) INTO ids,users FROM public.team_members m JOIN public.profiles p ON p.id=m.profile_id WHERE m.team_id=tid AND (p.banned_until IS NULL OR p.banned_until<now());
@@ -72,6 +72,7 @@ BEGIN
  -- Four complete runs, actual issued answers/actions, reward cap and idempotency.
  SELECT coins INTO before_coins FROM public.profiles WHERE id=ids[1];
  SELECT coalesce(sum(coins),0) INTO used FROM public.team_boss_rewards WHERE profile_id=ids[1] AND day=(now() AT TIME ZONE 'Asia/Shanghai')::date;
+ initial_used:=used;
  FOR attempt IN 1..4 LOOP
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',users[1],'role','authenticated')::text,true);
   s:=public.team_boss_action('create'); rid:=(s->'state'->>'id')::uuid;
@@ -97,7 +98,7 @@ BEGIN
   PERFORM public.team_boss_action('state',rid); PERFORM public.team_boss_settle(rid,'won');
   IF (SELECT count(*) FROM public.team_boss_rewards WHERE run_id=rid)<>3 THEN RAISE EXCEPTION 'Reward deduplication failed'; END IF;
  END LOOP;
- IF (SELECT coins-before_coins FROM public.profiles WHERE id=ids[1])<>least(180,used) THEN RAISE EXCEPTION 'Payout did not read back'; END IF;
+ IF (SELECT coins-before_coins FROM public.profiles WHERE id=ids[1])<>used-initial_used THEN RAISE EXCEPTION 'Payout did not read back'; END IF;
  -- Unauthorized profile / guest rejected.
  PERFORM set_config('request.jwt.claims','{}',true);
  caught:=false; BEGIN PERFORM public.team_boss_action('state',rid); EXCEPTION WHEN OTHERS THEN caught:=true; END;

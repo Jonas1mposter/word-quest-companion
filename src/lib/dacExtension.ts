@@ -25,7 +25,7 @@ const isNative = (fn: unknown): boolean => {
 };
 
 /** 被插件改写（用于偷看/篡改对局请求）的原生函数名单。 */
-export function tamperedNatives(w: Window = window): string[] {
+export function tamperedNatives(w: Window & typeof globalThis = window): string[] {
   const list: [string, unknown][] = [
     ["fetch", w.fetch],
     ["XMLHttpRequest.open", w.XMLHttpRequest?.prototype?.open],

@@ -23,6 +23,7 @@ import EventCenter from "./pages/EventCenter";
 import HalloweenBattle from "./pages/HalloweenBattle";
 import Entertainment from "./pages/Entertainment";
 import Roguelike from "./pages/Roguelike";
+import TeamBoss from "./pages/TeamBoss";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
@@ -64,6 +65,7 @@ const App = () => {
               <Route path="/halloween" element={<HalloweenBattle />} />
               <Route path="/entertainment" element={<Entertainment />} />
               <Route path="/roguelike" element={<Roguelike />} />
+              <Route path="/team-boss" element={<TeamBoss />} />
               <Route path="/lottery/champions-2024" element={<Lottery />} />
               <Route path="/lottery/glory-crown" element={<GloryCrownLottery />} />
               <Route path="/season-manual" element={<SeasonManual />} />

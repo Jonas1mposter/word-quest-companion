@@ -215,7 +215,6 @@ const BattleArena = ({
     else cancelPlayerStaleMatches(profile.id, profile.grade).then(() => { if (mounted) void joinQueue(); });
     return () => {
       mounted = false;
-      leaveQueue();
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);

@@ -155,7 +155,29 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       if (isSyntheticInputViolation(synthetic)) kick("synthetic_input", { synthetic, extension: extSeen ? 1 : 0 });
     };
     for (const t of ["keydown", "input", "beforeinput"]) window.addEventListener(t, onInput, true);
+    // 复制/右键题目（拿去搜索、翻译或丢给 AI）：阻止并记录
+    const onCopy = (e: Event) => {
+      const tgt = e.target as HTMLElement | null;
+      if (tgt?.closest?.("input,textarea")) return;
+      e.preventDefault();
+      report("question_copy", { type: e.type });
+    };
+    for (const t of ["copy", "cut", "contextmenu", "dragstart"]) document.addEventListener(t, onCopy, true);
+    // 同一账号多标签页同时对局（一边答题一边开小号/查词）
+    let bc: BroadcastChannel | null = null;
+    const tabId = Math.random().toString(36).slice(2);
+    try {
+      bc = new BroadcastChannel("dac-battle");
+      bc.onmessage = (ev) => { if (ev.data?.id !== tabId) report("multi_tab", {}); };
+      bc.postMessage({ id: tabId });
+    } catch { /* 旧浏览器不支持 */ }
+    // 开发者工具/侧边栏（窗口内外尺寸差异过大）：仅记录
+    const dev = window.setInterval(() => {
+      if (window.outerWidth - window.innerWidth > 260 || window.outerHeight - window.innerHeight > 260) report("devtools_open", { dw: window.outerWidth - window.innerWidth, dh: window.outerHeight - window.innerHeight });
+    }, 3000);
     return () => {
+      for (const t of ["copy", "cut", "contextmenu", "dragstart"]) document.removeEventListener(t, onCopy, true);
+      bc?.close(); window.clearInterval(dev);
       mo.disconnect();
       for (const t of ["keydown", "input", "beforeinput"]) window.removeEventListener(t, onInput, true);
     };

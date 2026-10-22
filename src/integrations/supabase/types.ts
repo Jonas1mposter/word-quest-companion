@@ -2216,6 +2216,184 @@ export type Database = {
           },
         ]
       }
+      roguelike_questions: {
+        Row: {
+          answer: string
+          created_at: string
+          damage: number | null
+          healing: number | null
+          idx: number
+          is_correct: boolean | null
+          kind: string
+          options: Json
+          prompt: string
+          response: string | null
+          run_id: string
+          target: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          damage?: number | null
+          healing?: number | null
+          idx: number
+          is_correct?: boolean | null
+          kind: string
+          options: Json
+          prompt: string
+          response?: string | null
+          run_id: string
+          target: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          damage?: number | null
+          healing?: number | null
+          idx?: number
+          is_correct?: boolean | null
+          kind?: string
+          options?: Json
+          prompt?: string
+          response?: string | null
+          run_id?: string
+          target?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roguelike_questions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "roguelike_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roguelike_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          day: string
+          profile_id: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          day: string
+          profile_id: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          day?: string
+          profile_id?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roguelike_rewards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: true
+            referencedRelation: "roguelike_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roguelike_runs: {
+        Row: {
+          answered: number
+          coins: number
+          correct: number
+          created_at: string
+          elite_wins: number
+          encounter_answered: number
+          ends_at: string
+          enemy_hp: number
+          enemy_max: number
+          event: string | null
+          floor: number
+          grade: number
+          hp: number
+          id: string
+          max_hp: number
+          node: string
+          offers: Json
+          phase: string
+          profile_id: string
+          routes: Json
+          skills: Json
+          started_at: string
+          streak: number
+          updated_at: string
+          version: number
+          ward_used: boolean
+        }
+        Insert: {
+          answered?: number
+          coins?: number
+          correct?: number
+          created_at?: string
+          elite_wins?: number
+          encounter_answered?: number
+          ends_at?: string
+          enemy_hp?: number
+          enemy_max?: number
+          event?: string | null
+          floor?: number
+          grade: number
+          hp?: number
+          id?: string
+          max_hp?: number
+          node?: string
+          offers?: Json
+          phase?: string
+          profile_id: string
+          routes?: Json
+          skills?: Json
+          started_at?: string
+          streak?: number
+          updated_at?: string
+          version?: number
+          ward_used?: boolean
+        }
+        Update: {
+          answered?: number
+          coins?: number
+          correct?: number
+          created_at?: string
+          elite_wins?: number
+          encounter_answered?: number
+          ends_at?: string
+          enemy_hp?: number
+          enemy_max?: number
+          event?: string | null
+          floor?: number
+          grade?: number
+          hp?: number
+          id?: string
+          max_hp?: number
+          node?: string
+          offers?: Json
+          phase?: string
+          profile_id?: string
+          routes?: Json
+          skills?: Json
+          started_at?: string
+          streak?: number
+          updated_at?: string
+          version?: number
+          ward_used?: boolean
+        }
+        Relationships: []
+      }
       science_learning_progress: {
         Row: {
           correct_count: number
@@ -3507,6 +3685,26 @@ export type Database = {
         Args: { p_approve: boolean; p_request_id: string }
         Returns: Json
       }
+      rogue_action: {
+        Args: {
+          p_action: string
+          p_choice?: string
+          p_index?: number
+          p_run?: string
+          p_version?: number
+        }
+        Returns: Json
+      }
+      rogue_audio_target: {
+        Args: { p_index: number; p_profile: string; p_run: string }
+        Returns: string
+      }
+      rogue_issue: { Args: { p_run: string }; Returns: undefined }
+      rogue_settle: {
+        Args: { p_phase: string; p_run: string }
+        Returns: undefined
+      }
+      rogue_view: { Args: { p_run: string }; Returns: Json }
       tick_match_bots: {
         Args: {
           p_finish?: boolean

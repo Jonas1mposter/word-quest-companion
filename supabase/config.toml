@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.seed-hs-words]
 verify_jwt = false
+
+[functions.rogue-audio]
+verify_jwt = false

@@ -146,7 +146,7 @@ export default function HalloweenBattle() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/events")}><ArrowLeft className="mr-2 h-4 w-4" />活动中心</Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/entertainment")}><ArrowLeft className="mr-2 h-4 w-4" />娱乐模式</Button>
           <span className="text-xs font-semibold text-gold">HALLOWEEN · 10.22–11.22</span>
         </div>
       </header>
@@ -220,7 +220,7 @@ export default function HalloweenBattle() {
                 <h2 className="text-center font-gaming text-4xl" data-no-translate>{state.question.prompt}</h2>
                 <div className="grid gap-3 sm:grid-cols-2" data-no-translate>
                   {options.map(o => {
-                    const removed = state.question!.removed.includes(o);
+                    const removed = state.question?.removed.includes(o);
                     const mark = feedback && (o === feedback.answer ? "border-success bg-success/20" : o === feedback.picked ? "border-destructive bg-destructive/20" : "");
                     return (
                       <Button key={o} variant="outline" className={`h-auto min-h-14 whitespace-normal py-3 ${mark || ""}`}

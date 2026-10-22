@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HomeLobby from "@/components/dashboard/HomeLobby";
+import { MemoryRouter } from "react-router-dom";
 import type { useLobbyParty } from "@/hooks/useLobbyParty";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
@@ -20,8 +21,8 @@ function state(overrides: Partial<ReturnType<typeof useLobbyParty>> = {}): Retur
     loadFriends: vi.fn(), invite: vi.fn().mockResolvedValue(true), leave: vi.fn().mockResolvedValue(true), prepare: vi.fn().mockResolvedValue(true), ...overrides };
 }
 function show(partyState: ReturnType<typeof useLobbyParty>, profile = host, onNavigate = vi.fn()) {
-  return render(<HomeLobby profile={profile} partyState={partyState} grade={7} playerData={{ username: profile.username, level: 3 }}
-    refreshKey={0} onEnergyPurchased={vi.fn()} onNavigate={onNavigate} onStartMatch={vi.fn()} onFreeMatch={vi.fn()} />);
+  return render(<MemoryRouter><HomeLobby profile={profile} partyState={partyState} grade={7} playerData={{ username: profile.username, level: 3 }}
+    refreshKey={0} onEnergyPurchased={vi.fn()} onNavigate={onNavigate} onStartMatch={vi.fn()} onFreeMatch={vi.fn()} /></MemoryRouter>);
 }
 afterEach(cleanup);
 describe("主大厅好友组队", () => {
@@ -41,7 +42,7 @@ describe("主大厅好友组队", () => {
     const navigate = vi.fn();
     show(state({ party, teammate: friend }), host, navigate);
     fireEvent.click(screen.getByRole("button", { name: "开始游戏" }));
-    for (const mode of ["排位赛", "闯关模式", "自由服", "人机对战", "好友对战"]) {
+    for (const mode of ["排位赛", "闯关模式", "自由服", "人机对战", "好友对战", "娱乐模式"]) {
       expect(screen.getByRole("button", { name: new RegExp(mode) })).toBeDisabled();
     }
     fireEvent.click(screen.getByRole("button", { name: /2v2 组队/ }));

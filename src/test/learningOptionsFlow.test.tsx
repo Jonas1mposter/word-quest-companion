@@ -2,10 +2,11 @@ import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn(async (name: string) => ({ data: name === "start-level" ? { sessionId: "session" } : { coinsGained: 3, xpGained: 10 }, error: null })));
+const pool = vi.hoisted(() => [{ word: "pear", meaning: "梨" }, { word: "peach", meaning: "桃" }, { word: "grape", meaning: "葡萄" }]);
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke }, from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }), insert: async () => ({}) }) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { id: "p", grade: 9 }, refreshProfile: vi.fn() }) }));
 vi.mock("@/hooks/useSpeech", () => ({ useSpeech: () => ({ speak: vi.fn() }) }));
-vi.mock("@/hooks/useLearningOptionPool", () => ({ useLearningOptionPool: () => ({ data: [{ word: "pear", meaning: "梨" }, { word: "peach", meaning: "桃" }, { word: "grape", meaning: "葡萄" }], isPending: false, isFetching: false }) }));
+vi.mock("@/hooks/useLearningOptionPool", () => ({ useLearningOptionPool: () => ({ data: pool, isPending: false, isFetching: false }) }));
 import HSWordLearning from "@/components/HSWordLearning";
 afterEach(cleanup);
 it("one-word quiz offers distractors, submits the actual count and displays returned coins", async () => {

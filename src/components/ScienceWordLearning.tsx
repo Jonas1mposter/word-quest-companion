@@ -1,3 +1,6 @@
+import { learningOptions } from "@/lib/learningOptions";
+import { useLearningOptionPool } from "@/hooks/useLearningOptionPool";
+import { LearningOptionsStatus } from "@/components/LearningOptionsStatus";
 import SyllableWord from "@/components/SyllableWord";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -56,21 +59,9 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   const progress = ((currentIndex + 1) / words.length) * 100;
 
   // Generate quiz options
-  const generateOptions = useCallback((correctWord: ScienceWord) => {
-    const options = [correctWord.meaning];
-    const otherWords = words.filter(w => w.id !== correctWord.id);
-    
-    while (options.length < 4 && otherWords.length > 0) {
-      const randomIndex = Math.floor(Math.random() * otherWords.length);
-      const randomWord = otherWords.splice(randomIndex, 1)[0];
-      if (!options.includes(randomWord.meaning)) {
-        options.push(randomWord.meaning);
-      }
-    }
-    
-    // Shuffle options
-    return options.sort(() => Math.random() - 0.5);
-  }, [words]);
+  const optionPool = useLearningOptionPool("science_words", undefined, words[0]?.subject);
+  const generateOptions = useCallback((correctWord: ScienceWord) =>
+    learningOptions(correctWord, [...words, ...(optionPool.data ?? [])]), [words, optionPool.data]);
 
   // DAC：记录测验开始时间，用于过关速度检测
   const quizStartRef = useRef(Date.now());
@@ -117,9 +108,8 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   const finishLevel = async (finalCorrect: number) => {
     const accuracy = words.length > 0 ? finalCorrect / words.length : 0;
     const baseXp = 5;
-    const baseCoins = 2;
     setXpEarned(baseXp + Math.floor(accuracy * 5));
-    setCoinsEarned(baseCoins + (accuracy === 1 ? 3 : Math.floor(accuracy * 2)));
+    setCoinsEarned(0);
     setPhase("result");
 
     if (profile) {
@@ -249,6 +239,10 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   };
 
   // Learning Phase
+  if (phase === "quiz" && quizOptions.length !== 4) {
+    return <LearningOptionsStatus loading={optionPool.isPending || optionPool.isFetching} onRetry={() => { void optionPool.refetch(); }} onBack={onBack} />;
+  }
+
   if (phase === "learn") {
     return (
       <div className="min-h-screen bg-background bg-grid-pattern p-4">
@@ -411,7 +405,7 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
                   key={idx}
                   variant="outline"
                   className={cn(
-                    "h-auto py-3 px-4 text-left justify-start",
+                    "h-auto py-3 px-4 text-left justify-start whitespace-normal gap-2",
                     isAnswered && isCorrect && "bg-success/20 border-success text-success-foreground",
                     isAnswered && isSelected && !isCorrect && "bg-destructive/20 border-destructive text-destructive-foreground",
                     !isAnswered && "hover:bg-green-500/10 hover:border-green-500 hover:text-foreground"
@@ -419,10 +413,10 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
                   onClick={() => handleQuizAnswer(option)}
                   disabled={isAnswered}
                 >
-                  <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs mr-3">
+                  <span className="w-6 h-6 shrink-0 rounded-full bg-secondary flex items-center justify-center text-xs mr-3">
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span data-no-translate>{option}</span>
+                  <span data-no-translate className="min-w-0 break-words [overflow-wrap:anywhere]">{option}</span>
                   {isAnswered && isCorrect && <Check className="w-4 h-4 ml-auto text-success" />}
                   {isAnswered && isSelected && !isCorrect && <X className="w-4 h-4 ml-auto text-destructive" />}
                 </Button>

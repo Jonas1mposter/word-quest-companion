@@ -1,3 +1,6 @@
+import { learningOptions } from "@/lib/learningOptions";
+import { useLearningOptionPool } from "@/hooks/useLearningOptionPool";
+import { LearningOptionsStatus } from "@/components/LearningOptionsStatus";
 import SyllableWord from "@/components/SyllableWord";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,16 +50,9 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
   const currentWord = words[currentIndex];
   const progress = ((currentIndex + 1) / words.length) * 100;
 
-  const generateOptions = useCallback((correctWord: HSWord) => {
-    const options = [correctWord.meaning];
-    const others = words.filter(w => w.id !== correctWord.id);
-    while (options.length < 4 && others.length > 0) {
-      const idx = Math.floor(Math.random() * others.length);
-      const w = others.splice(idx, 1)[0];
-      if (!options.includes(w.meaning)) options.push(w.meaning);
-    }
-    return options.sort(() => Math.random() - 0.5);
-  }, [words]);
+  const optionPool = useLearningOptionPool("hs_words", profile?.grade, words[0]?.subject);
+  const generateOptions = useCallback((correctWord: HSWord) =>
+    learningOptions(correctWord, [...words, ...(optionPool.data ?? [])]), [words, optionPool.data]);
 
   // DAC：记录测验开始时间，用于过关速度检测
   const quizStartRef = useRef(Date.now());
@@ -101,7 +97,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
   const finishLevel = async (finalCorrect: number) => {
     const accuracy = words.length > 0 ? finalCorrect / words.length : 0;
     setXpEarned(5 + Math.floor(accuracy * 5));
-    setCoinsEarned(2 + (accuracy === 1 ? 3 : Math.floor(accuracy * 2)));
+    setCoinsEarned(0);
     setPhase("result");
 
     if (profile) {
@@ -223,6 +219,10 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
     if (ratio >= 0.5) return 1;
     return 0;
   };
+
+  if (phase === "quiz" && quizOptions.length !== 4) {
+    return <LearningOptionsStatus loading={optionPool.isPending || optionPool.isFetching} onRetry={() => { void optionPool.refetch(); }} onBack={onBack} />;
+  }
 
   if (phase === "learn") {
     return (
@@ -355,7 +355,7 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
                   key={idx}
                   variant="outline"
                   className={cn(
-                    "h-auto py-3 px-4 text-left justify-start",
+                    "h-auto py-3 px-4 text-left justify-start whitespace-normal gap-2",
                     isAnswered && isCorrect && "bg-success/20 border-success text-success-foreground",
                     isAnswered && isSelected && !isCorrect && "bg-destructive/20 border-destructive text-destructive-foreground",
                     !isAnswered && "hover:bg-amber-500/10 hover:border-amber-500 hover:text-foreground"
@@ -363,10 +363,10 @@ const HSWordLearning = ({ levelId, levelName, words, startPhase = "learn", onBac
                   onClick={() => handleQuizAnswer(option)}
                   disabled={isAnswered}
                 >
-                  <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs mr-3">
+                  <span className="w-6 h-6 shrink-0 rounded-full bg-secondary flex items-center justify-center text-xs mr-3">
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span data-no-translate>{option}</span>
+                  <span data-no-translate className="min-w-0 break-words [overflow-wrap:anywhere]">{option}</span>
                   {isAnswered && isCorrect && <Check className="w-4 h-4 ml-auto text-success" />}
                   {isAnswered && isSelected && !isCorrect && <X className="w-4 h-4 ml-auto text-destructive" />}
                 </Button>

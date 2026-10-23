@@ -1,3 +1,6 @@
+import { learningOptions } from "@/lib/learningOptions";
+import { useLearningOptionPool } from "@/hooks/useLearningOptionPool";
+import { LearningOptionsStatus } from "@/components/LearningOptionsStatus";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,25 +176,11 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
       : 50 + ((currentIndex + 1) / words.length) * 50 // Quiz is 50-100%
     : 0;
 
-  // Get options for meaning quiz (Chinese meanings)
-  const getMeaningOptions = useMemo(() => {
-    if (!currentWord) return [];
-    const meanings = words.map(w => w.meaning);
-    const correctMeaning = currentWord.meaning;
-    const otherMeanings = meanings.filter(m => m !== correctMeaning);
-    const shuffled = otherMeanings.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctMeaning].sort(() => Math.random() - 0.5);
-  }, [currentWord, words]);
-
-  // Get options for reverse quiz (English words)
-  const getWordOptions = useMemo(() => {
-    if (!currentWord) return [];
-    const wordsList = words.map(w => w.word);
-    const correctWord = currentWord.word;
-    const otherWords = wordsList.filter(w => w !== correctWord);
-    const shuffled = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctWord].sort(() => Math.random() - 0.5);
-  }, [currentWord, words]);
+  const optionPool = useLearningOptionPool("words", profile?.grade);
+  const getMeaningOptions = useMemo(() => currentWord
+    ? learningOptions(currentWord, [...words, ...(optionPool.data ?? [])]) : [], [currentWord, words, optionPool.data]);
+  const getWordOptions = useMemo(() => currentWord
+    ? learningOptions(currentWord, [...words, ...(optionPool.data ?? [])], "word") : [], [currentWord, words, optionPool.data]);
 
   // Get random quiz type for each question
   const getCurrentQuizType = useMemo(() => {
@@ -390,10 +379,8 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
     // 占位显示（最终值以服务端返回为准）
     const baseXp = 5;
     const bonusXp = Math.floor(accuracy * 5);
-    const baseCoins = 2;
-    const bonusCoins = accuracy === 1 ? 3 : Math.floor(accuracy * 2);
     setXpEarned(baseXp + bonusXp);
-    setCoinsEarned(baseCoins + bonusCoins);
+    setCoinsEarned(0);
     setShowResult(true);
 
     if (profile) {
@@ -416,7 +403,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
           console.error("complete-level failed", error || data?.error);
         } else if (data) {
           setXpEarned(data.xpGained ?? baseXp + bonusXp);
-          setCoinsEarned(data.coinsGained ?? baseCoins + bonusCoins);
+          setCoinsEarned(data.coinsGained ?? 0);
           setWeekendBonus(!!data.weekendBonus);
           setPerfectBonus(data.perfectBonus ?? 0);
           if (data.leveledUp) {
@@ -662,7 +649,10 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
         )}
 
         {/* Quiz Phase - Random question types */}
-        {currentWord && phase === "quiz" && (
+        {currentWord && phase === "quiz" && (getCurrentQuizType === "meaning" || getCurrentQuizType === "reverse") && getMeaningOptions.length !== 4 && (
+          <LearningOptionsStatus loading={optionPool.isPending || optionPool.isFetching} onRetry={() => { void optionPool.refetch(); }} onBack={onBack} />
+        )}
+        {currentWord && phase === "quiz" && (!(getCurrentQuizType === "meaning" || getCurrentQuizType === "reverse") || getMeaningOptions.length === 4) && (
           <QuizCard
             key={`${currentWord.id}-${getCurrentQuizType}`}
             word={currentWord}

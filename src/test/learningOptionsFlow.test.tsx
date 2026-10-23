@@ -1,0 +1,22 @@
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, expect, it, vi } from "vitest";
+const invoke = vi.hoisted(() => vi.fn(async (name: string) => ({ data: name === "start-level" ? { sessionId: "session" } : { coinsGained: 3, xpGained: 10 }, error: null })));
+const pool = vi.hoisted(() => [{ word: "pear", meaning: "梨" }, { word: "peach", meaning: "桃" }, { word: "grape", meaning: "葡萄" }]);
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke }, from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }), insert: async () => ({}) }) } }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { id: "p", grade: 9 }, refreshProfile: vi.fn() }) }));
+vi.mock("@/hooks/useSpeech", () => ({ useSpeech: () => ({ speak: vi.fn() }) }));
+vi.mock("@/components/SyllableWord", () => ({ default: ({ word }: { word: string }) => <span>{word}</span> }));
+vi.mock("@/hooks/useLearningOptionPool", () => ({ useLearningOptionPool: () => ({ data: pool, isPending: false, isFetching: false }) }));
+import HSWordLearning from "@/components/HSWordLearning";
+afterEach(cleanup);
+it("one-word quiz offers distractors, submits the actual count and displays returned coins", async () => {
+  render(<QueryClientProvider client={new QueryClient()}><HSWordLearning levelId="one" levelName="One" startPhase="quiz" words={[{ id: "w", word: "apple", meaning: "苹果", subject: "sat", unit: 1, unit_name: null, definition: null, example: null, phonetic: null }]} onBack={vi.fn()} onComplete={vi.fn()} /></QueryClientProvider>);
+  await screen.findByRole("button", { name: /苹果/ });
+  expect(screen.getByRole("button", { name: /梨/ })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /桃/ })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /葡萄/ })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: /苹果/ }));
+  await waitFor(() => expect(invoke).toHaveBeenCalledWith("complete-level", { body: expect.objectContaining({ totalWords: 1, correctCount: 1, sessionId: "session" }) }), { timeout: 3000 });
+  expect(await screen.findByText("+3 金币")).toBeInTheDocument();
+});

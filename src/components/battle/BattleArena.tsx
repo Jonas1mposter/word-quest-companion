@@ -75,7 +75,7 @@ const BattleArena = ({
   eloField,
   theme,
 }: BattleArenaProps) => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const sounds = useMatchSounds();
   const Icon = theme.Icon;
 
@@ -242,6 +242,7 @@ const BattleArena = ({
         winnerIdRef.current = data.winnerId ?? null;
         if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
           setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
+          await refreshProfile();
         }
       }
     } catch (e) {
@@ -264,7 +265,7 @@ const BattleArena = ({
     if (winnerId === profile.id) sounds.playVictory();
     else if (winnerId !== null) sounds.playDefeat();
     setPhase("result");
-  }, [matchData, profile, sounds]);
+  }, [matchData, profile, sounds, refreshProfile]);
 
   useEffect(() => {
     if (phase !== "countdown") return;

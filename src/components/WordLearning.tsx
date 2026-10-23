@@ -1,4 +1,5 @@
 import { learningOptions } from "@/lib/learningOptions";
+import { learningEnergyCost } from "../../supabase/functions/_shared/learningReward";
 import { useLearningOptionPool } from "@/hooks/useLearningOptionPool";
 import { LearningOptionsStatus } from "@/components/LearningOptionsStatus";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -93,7 +94,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
   const [existingProgress, setExistingProgress] = useState<Map<string, any>>(new Map());
 
   // 检查能量是否足够
-  const hasEnoughEnergy = profile ? profile.energy >= 1 : false;
+  const hasEnoughEnergy = profile ? profile.energy >= learningEnergyCost(words.length) : false;
 
   useEffect(() => {
     const fetchWords = async () => {
@@ -218,7 +219,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
   const ensureEnergy = (): boolean => {
     if (!profile) return false;
     if (energyDeducted) return true;
-    if (profile.energy < 1) {
+    if (!hasEnoughEnergy) {
       setShowEnergyDialog(true);
       return false;
     }

@@ -1,6 +1,6 @@
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
 import { coinMultiplier } from "../_shared/weekend.ts";
-import { learningCoinReward } from "../_shared/learningReward.ts";
+import { learningCoinReward, learningEnergyCost, MAX_LEARNING_WORDS } from "../_shared/learningReward.ts";
 
 // Atomically award XP/coins/energy-cost for completing a learning level.
 // First-wave hardening: server computes XP/coins from accuracy, deducts energy,
@@ -23,12 +23,13 @@ Deno.serve(async (req) => {
 
     if (
       typeof levelId !== "string" ||
-      !Number.isInteger(totalWords) || totalWords <= 0 || totalWords > 50 ||
+      !Number.isInteger(totalWords) || totalWords <= 0 || totalWords > MAX_LEARNING_WORDS ||
       !Number.isInteger(correctCount) || correctCount < 0 || correctCount > totalWords
     ) {
       return json({ error: "Bad request" }, 400);
     }
-    if (profile.energy < 1) return json({ error: "Not enough energy" }, 400);
+    const energyCost = learningEnergyCost(totalWords);
+    if (profile.energy < energyCost) return json({ error: "Not enough energy" }, 400);
 
     // ===== 服务端计时会话：必须先 start-level，且每个会话只能结算一次 =====
     const { sessionId } = body ?? {};
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
       xp_to_next_level: newXpToNext,
       total_xp: (profile.total_xp ?? 0) + xpGained,
       coins: profile.coins + coinsGained,
-      energy: profile.energy - 1,
+      energy: profile.energy - energyCost,
     };
     if (maxCombo > (profile.max_combo ?? 0)) patch.max_combo = maxCombo;
 
@@ -170,6 +171,7 @@ Deno.serve(async (req) => {
       ok: true,
       xpGained,
       coinsGained,
+      energyCost,
       perfectBonus,
       weekendBonus: coinFactor === 2,
       stars,

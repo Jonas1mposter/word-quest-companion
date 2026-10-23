@@ -1,8 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { learningCoinReward } from "../../supabase/functions/_shared/learningReward";
+import { learningCoinReward, learningEnergyCost } from "../../supabase/functions/_shared/learningReward";
 import { learningOptions } from "@/lib/learningOptions";
 
 describe("learning rewards scale with workload", () => {
+  it("sixty perfect answers earn six times the ten-question coins", () => {
+    expect(learningCoinReward(60, 60, 1).coinsGained).toBe(222);
+    expect(learningCoinReward(10, 10, 1).coinsGained).toBe(37);
+    expect(learningCoinReward(60, 60, 2).coinsGained).toBe(444);
+  });
+  it("levels below ten words do not require energy", () => {
+    expect(learningEnergyCost(1)).toBe(0);
+    expect(learningEnergyCost(9)).toBe(0);
+    expect(learningEnergyCost(10)).toBe(1);
+    expect(learningEnergyCost(60)).toBe(1);
+  });
   it("one correct question earns less than ten correct questions", () => {
     expect(learningCoinReward(1, 1, 1).coinsGained).toBe(3);
     expect(learningCoinReward(10, 10, 1).coinsGained).toBe(37);

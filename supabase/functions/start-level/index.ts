@@ -1,4 +1,5 @@
 import { corsHeaders, requireProfile, json } from "../_shared/auth.ts";
+import { learningEnergyCost, MAX_LEARNING_WORDS } from "../_shared/learningReward.ts";
 
 // Opens a server-timed learning-level session. complete-level only pays out
 // against an unused session that has existed long enough to be played.
@@ -11,11 +12,11 @@ Deno.serve(async (req) => {
     if (
       typeof levelId !== "string" || levelId.length > 100 ||
       typeof totalWords !== "number" || !Number.isInteger(totalWords) ||
-      totalWords <= 0 || totalWords > 50
+      totalWords <= 0 || totalWords > MAX_LEARNING_WORDS
     ) {
       return json({ error: "Bad request" }, 400);
     }
-    if (profile.energy < 1) return json({ error: "Not enough energy" }, 400);
+    if (profile.energy < learningEnergyCost(totalWords)) return json({ error: "Not enough energy" }, 400);
 
     // Limit open sessions to curb session farming.
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();

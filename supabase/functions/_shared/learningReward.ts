@@ -1,6 +1,11 @@
 // Preserve the ten-word payout; scale every coin component with workload.
+export const MAX_LEARNING_WORDS = 1000;
+export function learningEnergyCost(totalWords: number) {
+  return totalWords < 10 ? 0 : 1;
+}
+
 export function learningCoinReward(totalWords: number, correctCount: number, factor: number) {
-  if (!Number.isInteger(totalWords) || totalWords < 1 || totalWords > 50 ||
+  if (!Number.isInteger(totalWords) || totalWords < 1 || totalWords > MAX_LEARNING_WORDS ||
       !Number.isInteger(correctCount) || correctCount < 0 || correctCount > totalWords ||
       (factor !== 1 && factor !== 2)) throw new Error("Invalid learning reward input");
   const accuracy = correctCount / totalWords;

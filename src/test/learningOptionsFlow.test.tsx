@@ -6,6 +6,7 @@ const pool = vi.hoisted(() => [{ word: "pear", meaning: "梨" }, { word: "peach"
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke }, from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }), insert: async () => ({}) }) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { id: "p", grade: 9 }, refreshProfile: vi.fn() }) }));
 vi.mock("@/hooks/useSpeech", () => ({ useSpeech: () => ({ speak: vi.fn() }) }));
+vi.mock("@/components/SyllableWord", () => ({ default: ({ word }: { word: string }) => <span>{word}</span> }));
 vi.mock("@/hooks/useLearningOptionPool", () => ({ useLearningOptionPool: () => ({ data: pool, isPending: false, isFetching: false }) }));
 import HSWordLearning from "@/components/HSWordLearning";
 afterEach(cleanup);

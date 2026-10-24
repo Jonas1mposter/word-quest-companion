@@ -1127,6 +1127,7 @@ export type Database = {
           price: number
           rarity: string
           sound_urls: Json
+          variant_urls: Json | null
         }
         Insert: {
           code: string
@@ -1141,6 +1142,7 @@ export type Database = {
           price?: number
           rarity?: string
           sound_urls: Json
+          variant_urls?: Json | null
         }
         Update: {
           code?: string
@@ -1155,6 +1157,7 @@ export type Database = {
           price?: number
           rarity?: string
           sound_urls?: Json
+          variant_urls?: Json | null
         }
         Relationships: []
       }
@@ -3915,6 +3918,18 @@ export type Database = {
           p_type: string
         }
         Returns: Json
+      }
+      orax_beats_draw: { Args: { p_item_id: string }; Returns: Json }
+      orax_beats_policy: { Args: never; Returns: Json }
+      orax_beats_tier: {
+        Args: {
+          p_main_left: boolean
+          p_roll: number
+          p_since_main: number
+          p_since_sub: number
+          p_sub_left: boolean
+        }
+        Returns: string
       }
       purchase_lottery_ticket: {
         Args: { p_discounted: boolean; p_pool_id: string }

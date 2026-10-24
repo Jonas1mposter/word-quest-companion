@@ -4,7 +4,7 @@ import { Swords } from "lucide-react";
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), invoke: vi.fn(), removeChannel: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { id: "p1", username: "Player", grade: 7 } }) }));
-vi.mock("@/hooks/useMatchSounds", () => ({ useMatchSounds: () => ({ playMatchFound: vi.fn(), playVictory: vi.fn(), playDefeat: vi.fn() }) }));
+vi.mock("@/hooks/useMatchSounds", () => ({ useMatchSounds: () => ({ playMatchFound: vi.fn(), playVictory: vi.fn(), playDefeat: vi.fn() }), useSoundVariants: () => ({ variants: null, selected: null, icons: null }), setSoundVariant: vi.fn() }));
 vi.mock("@/hooks/useMatchQueue", () => ({ useMatchQueue: () => ({ joinQueue: vi.fn(), leaveQueue: vi.fn() }) }));
 vi.mock("@/lib/serverBattle", () => ({ fetchBattleQuestion: mocks.fetch, submitBattleAnswer: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {

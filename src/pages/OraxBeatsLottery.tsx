@@ -182,7 +182,7 @@ export default function OraxBeatsLottery() {
           {state ? oraxTiers(state).map((t) => (
             <div key={t.label} className="flex justify-between gap-3"><span className="text-muted-foreground">{t.label}</span><span className="font-mono">{t.pct}%</span></div>
           )) : <p className="text-muted-foreground">概率加载中…</p>}
-          <p className="text-xs text-muted-foreground pt-2">保底：15 抽必得副套音效、50 抽必得主套音效；获得对应奖励后该保底重新计数。同时触发时按 主套 → 副套 顺序，其余保底顺延到下一抽。</p>
+          <p className="text-xs text-muted-foreground pt-2">保底：{state?.pity_sub_limit ?? 20} 抽必得副套音效、{state?.pity_main_limit ?? 50} 抽必得主套音效；获得对应奖励后该保底重新计数。同时触发时按 主套 → 副套 顺序，其余保底顺延到下一抽。</p>
           <p className="text-xs text-muted-foreground">已拥有的音效不会重复，优先发放未拥有的；全部拥有时改发 200 狄邦豆。</p>
         </CardContent></Card>
       </div>

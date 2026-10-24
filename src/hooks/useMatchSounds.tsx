@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { audioManager } from '@/lib/audioManager';
 import { supabase } from '@/integrations/supabase/client';
 import kill1 from '@/assets/kill-sounds/kill_1.mp3.asset.json';
@@ -8,11 +8,28 @@ import kill4 from '@/assets/kill-sounds/kill_4.mp3.asset.json';
 import kill5 from '@/assets/kill-sounds/kill_5.mp3.asset.json';
 
 const DEFAULT_URLS = [kill1.url, kill2.url, kill3.url, kill4.url, kill5.url];
+const VARIANT_STORAGE_KEY = 'kill-sound-variant';
+
 let activeUrls: string[] = [...DEFAULT_URLS];
+let activeVariants: Record<string, string[]> | null = null;
+let activeVariantKey: string | null = null;
 let activeLoaded = false;
 let activeLoadingPromise: Promise<void> | null = null;
 
 const killAudioCache: Record<number, HTMLAudioElement> = {};
+const clearKillCache = () => Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
+
+const storedVariantKey = (): string | null => {
+  try { return localStorage.getItem(VARIANT_STORAGE_KEY); } catch { return null; }
+};
+
+const pickVariantUrls = (variants: Record<string, string[]>): string[] => {
+  const keys = Object.keys(variants);
+  const wanted = storedVariantKey();
+  const key = wanted && variants[wanted]?.length ? wanted : keys[0];
+  activeVariantKey = key;
+  return variants[key];
+};
 
 const loadActivePack = (): Promise<void> => {
   if (activeLoaded) return Promise.resolve();
@@ -29,16 +46,23 @@ const loadActivePack = (): Promise<void> => {
       if (!prof?.active_kill_sound_pack_id) return;
       const { data: pack } = await supabase
         .from('kill_sound_packs')
-        .select('sound_urls')
+        .select('sound_urls, variant_urls')
         .eq('id', prof.active_kill_sound_pack_id)
         .maybeSingle();
+      const variants = pack?.variant_urls as unknown as Record<string, string[]> | null;
       const urls = pack?.sound_urls as unknown as string[] | undefined;
-      if (Array.isArray(urls) && urls.length >= 5) {
+      if (variants && typeof variants === 'object' && !Array.isArray(variants) && Object.keys(variants).length > 1) {
+        activeVariants = variants;
+        activeUrls = pickVariantUrls(variants);
+        clearKillCache();
+      } else if (Array.isArray(urls) && urls.length >= 5) {
+        activeVariants = null;
+        activeVariantKey = null;
         activeUrls = urls;
-        Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
+        clearKillCache();
       }
     } catch (e) { /* fallback */ }
-    finally { activeLoaded = true; }
+    finally { activeLoaded = true; notifyVariantListeners(); }
   })();
   return activeLoadingPromise;
 };
@@ -46,9 +70,34 @@ const loadActivePack = (): Promise<void> => {
 export const reloadActiveSoundPack = () => {
   activeLoaded = false;
   activeLoadingPromise = null;
-  Object.keys(killAudioCache).forEach((k) => delete killAudioCache[Number(k)]);
+  clearKillCache();
   return loadActivePack();
 };
+
+// ---- 局内变体切换（如 ORA X 颗秒的 5 套音效） ----
+const variantListeners = new Set<() => void>();
+const notifyVariantListeners = () => variantListeners.forEach((l) => l());
+
+export const getSoundVariantState = () => ({
+  variants: activeVariants,
+  selected: activeVariantKey,
+});
+
+export const setSoundVariant = (key: string) => {
+  if (!activeVariants?.[key]?.length) return;
+  activeVariantKey = key;
+  activeUrls = activeVariants[key];
+  clearKillCache();
+  try { localStorage.setItem(VARIANT_STORAGE_KEY, key); } catch { /* ignore */ }
+  notifyVariantListeners();
+};
+
+export const useSoundVariants = () =>
+  useSyncExternalStore(
+    (cb) => { variantListeners.add(cb); return () => { variantListeners.delete(cb); }; },
+    getSoundVariantState,
+    getSoundVariantState,
+  );
 
 const getKillAudio = (n: number) => {
   const max = activeUrls.length;

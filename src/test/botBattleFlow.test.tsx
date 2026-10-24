@@ -4,7 +4,7 @@ const action = vi.hoisted(() => vi.fn());
 const question = vi.hoisted(() => vi.fn());
 const answer = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ profile: { id: 'p', username: 'Player', grade: 7 }, refreshProfile: vi.fn() }) }));
-vi.mock('@/hooks/useMatchSounds', () => ({ useMatchSounds: () => ({ playVictory: vi.fn(), playDefeat: vi.fn() }) }));
+vi.mock('@/hooks/useMatchSounds', () => ({ useMatchSounds: () => ({ playVictory: vi.fn(), playDefeat: vi.fn() }), useSoundVariants: () => ({ variants: null, selected: null }), setSoundVariant: vi.fn() }));
 vi.mock('@/lib/serverBotBattle', () => ({ botAction: action, botQuestion: question, botAnswer: answer, botAudio: vi.fn() }));
 vi.mock('@/components/battle/DacBadge', () => ({ default: ({ onForfeit }: { onForfeit?: (reason: string, meta: Record<string, number>) => void }) => onForfeit ? <button onClick={() => onForfeit('synthetic_click', { untrusted: 2 })}>检测脚本</button> : null }));
 vi.mock('@/components/battle/KillStreakBanner', () => ({ default: () => null }));

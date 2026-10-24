@@ -78,10 +78,14 @@ export const reloadActiveSoundPack = () => {
 const variantListeners = new Set<() => void>();
 const notifyVariantListeners = () => variantListeners.forEach((l) => l());
 
-export const getSoundVariantState = () => ({
-  variants: activeVariants,
-  selected: activeVariantKey,
-});
+// 必须返回稳定引用，否则 useSyncExternalStore 会无限重渲染导致黑屏
+let variantSnapshot: { variants: typeof activeVariants; selected: string | null } = { variants: null, selected: null };
+export const getSoundVariantState = () => {
+  if (variantSnapshot.variants !== activeVariants || variantSnapshot.selected !== activeVariantKey) {
+    variantSnapshot = { variants: activeVariants, selected: activeVariantKey };
+  }
+  return variantSnapshot;
+};
 
 export const setSoundVariant = (key: string) => {
   if (!activeVariants?.[key]?.length) return;

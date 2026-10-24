@@ -13,6 +13,7 @@ const VARIANT_STORAGE_KEY = 'kill-sound-variant';
 let activeUrls: string[] = [...DEFAULT_URLS];
 let activeVariants: Record<string, string[]> | null = null;
 let activeVariantKey: string | null = null;
+let activeVariantIcons: Record<string, string[]> | null = null;
 let activeLoaded = false;
 let activeLoadingPromise: Promise<void> | null = null;
 
@@ -46,13 +47,14 @@ const loadActivePack = (): Promise<void> => {
       if (!prof?.active_kill_sound_pack_id) return;
       const { data: pack } = await supabase
         .from('kill_sound_packs')
-        .select('sound_urls, variant_urls')
+        .select('sound_urls, variant_urls, variant_icon_urls')
         .eq('id', prof.active_kill_sound_pack_id)
         .maybeSingle();
       const variants = pack?.variant_urls as unknown as Record<string, string[]> | null;
       const urls = pack?.sound_urls as unknown as string[] | undefined;
       if (variants && typeof variants === 'object' && !Array.isArray(variants) && Object.keys(variants).length > 1) {
         activeVariants = variants;
+        activeVariantIcons = ((pack as any)?.variant_icon_urls as Record<string, string[]> | null) ?? null;
         activeUrls = pickVariantUrls(variants);
         clearKillCache();
       } else if (Array.isArray(urls) && urls.length >= 5) {
@@ -69,6 +71,7 @@ const loadActivePack = (): Promise<void> => {
 
 export const reloadActiveSoundPack = () => {
   activeLoaded = false;
+  activeVariantIcons = null;
   activeLoadingPromise = null;
   clearKillCache();
   return loadActivePack();
@@ -79,10 +82,10 @@ const variantListeners = new Set<() => void>();
 const notifyVariantListeners = () => variantListeners.forEach((l) => l());
 
 // 必须返回稳定引用，否则 useSyncExternalStore 会无限重渲染导致黑屏
-let variantSnapshot: { variants: typeof activeVariants; selected: string | null } = { variants: null, selected: null };
+let variantSnapshot: { variants: typeof activeVariants; selected: string | null; icons: Record<string, string[]> | null } = { variants: null, selected: null, icons: null };
 export const getSoundVariantState = () => {
-  if (variantSnapshot.variants !== activeVariants || variantSnapshot.selected !== activeVariantKey) {
-    variantSnapshot = { variants: activeVariants, selected: activeVariantKey };
+  if (variantSnapshot.variants !== activeVariants || variantSnapshot.selected !== activeVariantKey || variantSnapshot.icons !== activeVariantIcons) {
+    variantSnapshot = { variants: activeVariants, selected: activeVariantKey, icons: activeVariantIcons };
   }
   return variantSnapshot;
 };

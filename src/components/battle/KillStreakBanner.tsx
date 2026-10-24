@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useSoundVariants } from "@/hooks/useMatchSounds";
 
 import c1 from "@/assets/kill-sounds/tier-icons/classic_1.png.asset.json";
 import c2 from "@/assets/kill-sounds/tier-icons/classic_2.png.asset.json";
@@ -63,7 +64,9 @@ export const reloadKillStreakIcons = () => {
 export const KillStreakBanner = ({ combo }: Props) => {
   const [shown, setShown] = useState<number>(0);
   const [key, setKey] = useState(0);
-  const [icons, setIcons] = useState<string[]>(cachedIcons ?? DEFAULT_ICONS);
+  const [packIcons, setIcons] = useState<string[]>(cachedIcons ?? DEFAULT_ICONS);
+  const { icons: variantIcons, selected } = useSoundVariants();
+  const icons = (selected && variantIcons?.[selected]?.length ? variantIcons[selected] : null) ?? packIcons;
 
   useEffect(() => {
     loadIcons().then((urls) => setIcons(urls));

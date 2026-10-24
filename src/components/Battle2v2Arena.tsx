@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, Trophy, XCircle, Timer, Zap, Swords } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
+import SoundVariantSwitcher from "./battle/SoundVariantSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";

@@ -8,6 +8,7 @@ import { ChevronLeft, Trophy, XCircle, Timer, Zap, LucideIcon } from "lucide-rea
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchQueue } from "@/hooks/useMatchQueue";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
+import SoundVariantSwitcher from "./SoundVariantSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";

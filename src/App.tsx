@@ -19,6 +19,7 @@ import Backpack from "./pages/Backpack";
 import Lottery from "./pages/Lottery";
 import LotteryHall from "./pages/LotteryHall";
 import GloryCrownLottery from "./pages/GloryCrownLottery";
+import OraxBeatsLottery from "./pages/OraxBeatsLottery";
 import EventCenter from "./pages/EventCenter";
 import HalloweenBattle from "./pages/HalloweenBattle";
 import Entertainment from "./pages/Entertainment";
@@ -68,6 +69,7 @@ const App = () => {
               <Route path="/team-boss" element={<TeamBoss />} />
               <Route path="/lottery/champions-2024" element={<Lottery />} />
               <Route path="/lottery/glory-crown" element={<GloryCrownLottery />} />
+              <Route path="/lottery/orax-beats" element={<OraxBeatsLottery />} />
               <Route path="/season-manual" element={<SeasonManual />} />
               <Route path="/season-pass-manual" element={<SeasonPassManual />} />
               <Route path="*" element={<NotFound />} />

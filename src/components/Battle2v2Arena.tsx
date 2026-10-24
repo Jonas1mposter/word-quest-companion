@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, Trophy, XCircle, Timer, Zap, Swords } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
+import SoundVariantSwitcher from "./battle/SoundVariantSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
@@ -379,6 +380,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         {questionLoading && <p className="text-center mt-4 text-muted-foreground">题目加载中...</p>}
         <div className="text-center mt-4"><Button variant="outline" onClick={onBack}>返回大厅（保留对局）</Button></div>
         <DacBadge status={questionLoading || questionError || !answerHealthy ? "启动中" : "监控中"} onForfeit={(reason, meta) => endMatch({ reason, meta })} />
+        <SoundVariantSwitcher />
       </div>
     );
   }

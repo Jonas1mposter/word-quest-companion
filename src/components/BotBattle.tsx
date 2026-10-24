@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Bot, ChevronLeft, Trophy, XCircle, Timer, Zap, Brain, Flame, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
+import SoundVariantSwitcher from "./battle/SoundVariantSwitcher";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "./battle/ServerBattleQuizCard";
 import { botAction, botQuestion, botAnswer, botAudio, type BotResult } from "@/lib/serverBotBattle";
@@ -281,6 +282,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
           {error ? <><p role="alert" className="text-destructive mb-3">{error}</p><Button onClick={() => void loadQuestion()}>重试</Button></> : <Bot className="w-12 h-12 mx-auto text-primary animate-pulse" />}
         </div>}
         <DacBadge onForfeit={forfeit} />
+        <SoundVariantSwitcher />
       </div>
     );
   }

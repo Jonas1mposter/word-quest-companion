@@ -1127,6 +1127,7 @@ export type Database = {
           price: number
           rarity: string
           sound_urls: Json
+          variant_icon_urls: Json | null
           variant_urls: Json | null
         }
         Insert: {
@@ -1142,6 +1143,7 @@ export type Database = {
           price?: number
           rarity?: string
           sound_urls: Json
+          variant_icon_urls?: Json | null
           variant_urls?: Json | null
         }
         Update: {
@@ -1157,6 +1159,7 @@ export type Database = {
           price?: number
           rarity?: string
           sound_urls?: Json
+          variant_icon_urls?: Json | null
           variant_urls?: Json | null
         }
         Relationships: []

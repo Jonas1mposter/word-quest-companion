@@ -282,6 +282,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
           {error ? <><p role="alert" className="text-destructive mb-3">{error}</p><Button onClick={() => void loadQuestion()}>重试</Button></> : <Bot className="w-12 h-12 mx-auto text-primary animate-pulse" />}
         </div>}
         <DacBadge onForfeit={forfeit} />
+        <SoundVariantSwitcher />
       </div>
     );
   }

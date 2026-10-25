@@ -235,6 +235,7 @@ Deno.serve(async (req) => {
         }
 
         await Promise.all(updates);
+        await consumeShields();
 
         // 双子星：完赛领先 15 分
         if (winnerTeam !== null) {
@@ -260,8 +261,9 @@ Deno.serve(async (req) => {
       const finalWinnerTeam = match.status === "completed" ? match.winner_team : winnerTeam;
       const callerScore: 1 | 0 | 0.5 = finalWinnerTeam === null ? 0.5
         : (finalWinnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
-      const coinsEarned = coinReward(callerScore, false, coinMultiplier());
-      const xpEarned = xpReward(callerScore, false);
+      const callerBs = boostSet(boosts, profile.id);
+      const coinsEarned = coinReward(callerScore, false, coinMultiplier() * callerBs.coins);
+      const xpEarned = xpReward(callerScore, false) * callerBs.xp;
 
       await admin.from("match_queue").delete().in("profile_id", memberIds);
 
@@ -272,6 +274,8 @@ Deno.serve(async (req) => {
         team2_score: match.status === "completed" ? match.team2_score : t2,
         coinsEarned, xpEarned,
         weekendBonus: coinMultiplier() === 2,
+        shielded: shieldConsumed.includes(profile.id),
+        boosts: { xp: callerBs.xp, coins: callerBs.coins, elo: callerBs.elo },
       });
     }
 

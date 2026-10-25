@@ -169,13 +169,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check daily energy restore
       const today = new Date().toISOString().split('T')[0];
       if (!data.last_energy_restore || data.last_energy_restore < today) {
-        const { data: updated } = await supabase
-          .from("profiles")
-          .update({ energy: data.max_energy, last_energy_restore: today })
-          .eq("id", data.id)
-          .select()
-          .single();
-        return updated as Profile | null;
+        const { data: updated, error: restoreError } = await supabase.rpc("restore_daily_energy");
+        if (restoreError) {
+          console.error("Error restoring daily energy:", restoreError);
+          return data as Profile;
+        }
+        return (updated ?? data) as Profile;
       }
     }
 

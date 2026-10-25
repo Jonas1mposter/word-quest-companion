@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
           }
         }
         await Promise.all(updates);
-
+        await consumeShields();
 
         // 降维打击：排位领先对手至少 8 分
         if (!isFree && winnerId) {
@@ -385,12 +385,18 @@ Deno.serve(async (req) => {
     }
 
     const callerScore: 1 | 0 | 0.5 = winnerId === null ? 0.5 : winnerId === profile.id ? 1 : 0;
-    const coinsEarned = coinReward(callerScore, isFree, coinMultiplier());
-    const xpEarned = xpReward(callerScore, isFree);
+    const callerBs = boostSet(boosts, profile.id);
+    const coinsEarned = coinReward(callerScore, isFree, coinMultiplier() * callerBs.coins);
+    const xpEarned = xpReward(callerScore, isFree) * callerBs.xp;
 
     await admin.from("match_queue").delete().in("profile_id", [match.player1_id, match.player2_id]);
 
-    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned, weekendBonus: coinMultiplier() === 2 });
+    return json({
+      ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned,
+      weekendBonus: coinMultiplier() === 2,
+      shielded: shieldConsumed.includes(profile.id),
+      boosts: { xp: callerBs.xp, coins: callerBs.coins, elo: callerBs.elo },
+    });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

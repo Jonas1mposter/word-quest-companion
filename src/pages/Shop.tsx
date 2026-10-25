@@ -252,6 +252,69 @@ export default function Shop() {
 
         <PriorityAccountCard />
 
+        {/* 增益卡 */}
+        <Card className="overflow-hidden border-emerald-400/40 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Shield className="w-7 h-7 text-emerald-400" />
+              <div>
+                <h2 className="text-xl font-gaming">增益卡</h2>
+                <p className="text-sm text-muted-foreground">
+                  购买后立即生效；同类卡生效期间不能重复购买。
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {BOOSTERS.map((b) => {
+                const active = activeBoost(b.type);
+                const Icon = b.icon;
+                return (
+                  <Card
+                    key={b.type}
+                    className={cn(
+                      "border-2 transition-colors",
+                      active ? "border-emerald-400 bg-emerald-500/10" : "border-border/60 hover:border-emerald-400/60",
+                    )}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-6 h-6 text-emerald-400" />
+                          <div className="font-gaming text-base">{b.name}</div>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">{b.unit}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{b.desc}</p>
+                      {active ? (
+                        <div className="flex items-center gap-1 text-xs text-emerald-400">
+                          <Clock className="w-3 h-3" />
+                          {active.boost_type === "rank_shield"
+                            ? `生效中 · 剩余 ${active.uses_remaining} 场`
+                            : `生效中 · ${new Date(active.expires_at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 到期`}
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+                          disabled={boostBusy === b.type || (profile?.coins ?? 0) < b.price}
+                          onClick={() => buyBooster(b.type, b.price, b.name)}
+                        >
+                          {boostBusy === b.type ? (
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          ) : (
+                            <Coins className="w-3 h-3 mr-1" />
+                          )}
+                          {b.price} 狄邦豆
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent">
           <CardContent className="p-6 space-y-3">
             <div className="flex items-center gap-3">

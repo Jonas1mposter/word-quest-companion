@@ -1843,6 +1843,41 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_boosts: {
+        Row: {
+          boost_type: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          profile_id: string
+          uses_remaining: number | null
+        }
+        Insert: {
+          boost_type: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          profile_id: string
+          uses_remaining?: number | null
+        }
+        Update: {
+          boost_type?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          profile_id?: string
+          uses_remaining?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_boosts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           ace_reach_count: number
@@ -3934,6 +3969,7 @@ export type Database = {
         }
         Returns: string
       }
+      purchase_booster: { Args: { p_type: string }; Returns: Json }
       purchase_lottery_ticket: {
         Args: { p_discounted: boolean; p_pool_id: string }
         Returns: Json

@@ -67,6 +67,8 @@ export default function Shop() {
   const [soundPacks, setSoundPacks] = useState<any[]>([]);
   const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
   const [packBusy, setPackBusy] = useState<string | null>(null);
+  const [boosts, setBoosts] = useState<any[]>([]);
+  const [boostBusy, setBoostBusy] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [revealKey, setRevealKey] = useState(0);
@@ -75,6 +77,42 @@ export default function Shop() {
     if (!results) return;
     results.forEach((_, i) => setTimeout(() => flip(i), i * 120));
   };
+
+  const loadBoosts = async () => {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from("profile_boosts" as any)
+      .select("*")
+      .eq("profile_id", profile.id);
+    const now = new Date();
+    setBoosts(((data ?? []) as any[]).filter((b) =>
+      (!b.expires_at || new Date(b.expires_at) > now) &&
+      (b.uses_remaining == null || b.uses_remaining > 0)));
+  };
+
+  useEffect(() => { loadBoosts(); /* eslint-disable-next-line */ }, [profile?.id]);
+
+  const buyBooster = async (type: string, price: number, name: string) => {
+    if (!profile) return;
+    if ((profile.coins ?? 0) < price) { toast.error(`狄邦豆不足，需要 ${price}`); return; }
+    setBoostBusy(type);
+    try {
+      const { data, error } = await supabase.rpc("purchase_booster" as any, { p_type: type });
+      if (error) throw error;
+      const payload = data as any;
+      if (payload?.error === "not_enough_coins") { toast.error("狄邦豆不足"); return; }
+      if (payload?.error === "already_active") { toast.info("同类增益卡正在生效中，结束后再购买"); return; }
+      if (payload?.error) throw new Error(String(payload.error));
+      toast.success(`已激活「${name}」`);
+      await Promise.all([refreshProfile(), loadBoosts()]);
+    } catch (e: any) {
+      toast.error(e?.message || "购买失败，请稍后再试");
+    } finally {
+      setBoostBusy(null);
+    }
+  };
+
+  const activeBoost = (type: string) => boosts.find((b) => b.boost_type === type);
 
   const loadPacks = async () => {
     const { data: packs } = await supabase

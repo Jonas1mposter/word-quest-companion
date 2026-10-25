@@ -1,6 +1,6 @@
 import championsArtwork from "@/assets/lottery-champions.jpg";
 import gloryArtwork from "@/assets/lottery-glory-crown.jpg";
-import oraxIcon from "@/assets/kill-sounds/orax/orax.png.asset.json";
+import oraxArtwork from "@/assets/lottery-orax.jpg";
 
 // Each event has its own detail route; the hall never executes a draw.
 export const lotteryEvents = [
@@ -9,7 +9,7 @@ export const lotteryEvents = [
     name: "颗秒音浪",
     subtitle: "常驻奖池 · 新",
     description: "主套 ORA X 颗秒（局内切换 5 套音效）· 4 套副套连杀音效",
-    image: oraxIcon.url,
+    image: oraxArtwork,
     path: "/lottery/orax-beats",
     cost: "150 豆优惠兑券 / 200 豆不限兑券",
     featuredPrize: "ORA X 颗秒 · 5 套可切换连杀音效",

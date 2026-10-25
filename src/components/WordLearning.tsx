@@ -7,6 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
+import KillStreakBanner from "@/components/battle/KillStreakBanner";
+import SoundVariantSwitcher from "@/components/battle/SoundVariantSwitcher";
 import { haptics } from "@/lib/haptics";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -261,6 +263,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
     // 更新连击
     const newCombo = comboCount + 1;
     setComboCount(newCombo);
+    void sounds.playCombo(newCombo);
     if (newCombo > maxCombo) {
       setMaxCombo(newCombo);
     }
@@ -649,6 +652,7 @@ const WordLearning = ({ levelId, levelName, onBack, onComplete }: WordLearningPr
           />
         )}
 
+        {phase === "quiz" && <><KillStreakBanner combo={comboCount} /><SoundVariantSwitcher /></>}
         {/* Quiz Phase - Random question types */}
         {currentWord && phase === "quiz" && (getCurrentQuizType === "meaning" || getCurrentQuizType === "reverse") && getMeaningOptions.length !== 4 && (
           <LearningOptionsStatus loading={optionPool.isPending || optionPool.isFetching} onRetry={() => { void optionPool.refetch(); }} onBack={onBack} />

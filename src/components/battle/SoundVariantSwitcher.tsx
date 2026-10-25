@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Music4 } from "lucide-react";
 import { setSoundVariant, useSoundVariants } from "@/hooks/useMatchSounds";
 import { cn } from "@/lib/utils";
+import { ORAX_TONES, setOraxTone, useApplyOraxTone } from "@/lib/oraxTheme";
 
 const VARIANT_LABELS: Record<string, { name: string; sub: string }> = {
   ignition: { name: "Ignition", sub: "点火" },

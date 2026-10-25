@@ -327,21 +327,27 @@ Deno.serve(async (req) => {
         const d2 = Math.round(K * (s2 - expected(e2, e1)));
 
         const updates: Promise<unknown>[] = [];
-        for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
-          const xpGain = xpReward(score, isFree);
+        for (const [pp, rawDelta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
+          const bs = boostSet(boosts, pp.id);
+          const eloBoost = isFree
+            ? { delta: rawDelta, shielded: false }
+            : applyEloBoost(rawDelta, score, bs);
+          const delta = eloBoost.delta;
+          if (eloBoost.shielded) shieldConsumed.push(pp.id);
+          const xpGain = xpReward(score, isFree) * bs.xp;
           let newXp = (pp.xp ?? 0) + xpGain;
           let newLevel = pp.level ?? 1;
           let newXpToNext = pp.xp_to_next_level ?? 100;
           while (newXp >= newXpToNext) { newXp -= newXpToNext; newLevel++; newXpToNext = 100 * newLevel; }
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, isFree, coinMultiplier()),
+            coins: (pp.coins ?? 0) + coinReward(score, isFree, coinMultiplier() * bs.coins),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          if (!isFree) {
+          if (!isFree && !eloBoost.shielded) {
             const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
             patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
           }

@@ -3955,6 +3955,62 @@ export type Database = {
         Returns: undefined
       }
       request_username_change: { Args: { p_new: string }; Returns: Json }
+      restore_daily_energy: {
+        Args: never
+        Returns: {
+          ace_reach_count: number
+          active_kill_sound_pack_id: string | null
+          avatar_url: string | null
+          background_type: string | null
+          background_value: string | null
+          ban_reason: string | null
+          banned_until: string | null
+          bot_wins: number
+          class: string | null
+          coins: number
+          created_at: string
+          elo_free: number
+          elo_rating: number
+          energy: number
+          free_match_losses: number
+          free_match_wins: number
+          grade: number
+          grade_selected_at: string | null
+          id: string
+          is_priority: boolean
+          last_energy_restore: string | null
+          last_login_date: string | null
+          leaderboard_appearances: number
+          level: number
+          lifetime_coins_earned: number
+          lobby_card_image: string | null
+          losses: number
+          max_combo: number
+          max_energy: number
+          perfect_clears: number
+          priority_last_claim: string | null
+          priority_since: string | null
+          rank_points: number
+          rank_stars: number
+          rank_tier: string
+          ranked_wins: number
+          streak: number
+          total_login_days: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+          username: string
+          wins: number
+          xp: number
+          xp_to_next_level: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_username_request: {
         Args: { p_approve: boolean; p_request_id: string }
         Returns: Json

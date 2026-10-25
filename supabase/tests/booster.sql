@@ -3,7 +3,7 @@ BEGIN;
 DO $$
 DECLARE pid uuid; uid uuid; opp uuid; mid uuid; r jsonb; before_elo int; shield_uses int;
 BEGIN
- SET LOCAL ROLE authenticated;
+ SET LOCAL ROLE service_role;
  SELECT id,user_id INTO pid,uid FROM public.profiles WHERE banned_until IS NULL ORDER BY id LIMIT 1;
  IF pid IS NULL THEN RAISE EXCEPTION 'Fixture missing'; END IF;
  SELECT id INTO opp FROM public.profiles WHERE id<>pid ORDER BY id LIMIT 1;

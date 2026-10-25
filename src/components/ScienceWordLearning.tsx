@@ -14,6 +14,9 @@ import { ChevronLeft, Volume2, Check, X, Star, RotateCcw, FlaskConical } from "l
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSpeech } from "@/hooks/useSpeech";
+import { useComboFx } from "@/hooks/useComboFx";
+import KillStreakBanner from "@/components/battle/KillStreakBanner";
+import SoundVariantSwitcher from "@/components/battle/SoundVariantSwitcher";
 
 interface ScienceWord {
   id: string;
@@ -38,6 +41,7 @@ type Phase = "learn" | "quiz" | "result";
 const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: ScienceWordLearningProps) => {
   const { profile, refreshProfile } = useAuth();
   const { speak } = useSpeech();
+  const comboFx = useComboFx();
   const queryClient = useQueryClient();
   const [speaking, setSpeaking] = useState(false);
   
@@ -156,6 +160,7 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
     setIsAnswered(true);
     
     const isCorrect = answer === currentWord.meaning;
+    comboFx.register(isCorrect);
     let nextCorrect = correctCount;
     
     if (isCorrect) {
@@ -349,6 +354,8 @@ const ScienceWordLearning = ({ levelId, levelName, words, onBack, onComplete }: 
   if (phase === "quiz") {
     return (
       <div className="min-h-screen bg-background bg-grid-pattern p-4">
+        <KillStreakBanner combo={comboFx.combo} />
+        <SoundVariantSwitcher />
         <div className="max-w-lg mx-auto space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">

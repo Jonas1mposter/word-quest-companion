@@ -2,6 +2,7 @@ import { showBanScreen, type BanInfo } from "@/components/BanScreen";
 import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveBan } from "@/hooks/useLiveBan";
+import { boundedRequest } from "@/lib/boundedRequest";
 
 interface Profile {
   id: string;
@@ -48,6 +49,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  loadingError: string | null;
+  retryLoading: () => Promise<void>;
   gradeAutoDetected: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -62,9 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [gradeAutoDetected, setGradeAutoDetected] = useState(true);
   const blockedUser = useRef<string | null>(null);
+  const loadGeneration = useRef(0);
+  const activeUser = useRef<string | null>(null);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const enforceBan = (info: BanInfo, userId: string) => {
     if (blockedUser.current === userId) return;
     blockedUser.current = userId;
+    loadGeneration.current++;
+    activeUser.current = null;
+    setLoadingError(null);
     showBanScreen(info);
     setUser(null);
     setSession(null);
@@ -87,18 +96,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Fetch basic profile info
-      const meRes = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName', {
+      const meRes = await boundedRequest(fetch('https://graph.microsoft.com/v1.0/me?$select=displayName', {
         headers: { 'Authorization': `Bearer ${providerToken}` }
-      });
+      }), 5000);
       if (meRes.ok) {
         const meData = await meRes.json();
         displayName = meData.displayName || null;
       }
 
       // Fetch group memberships for grade detection
-      const groupsRes = await fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
+      const groupsRes = await boundedRequest(fetch('https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName', {
         headers: { 'Authorization': `Bearer ${providerToken}` }
-      });
+      }), 5000);
       if (groupsRes.ok) {
         const groupsData = await groupsRes.json();
         if (groupsData.value) {
@@ -120,9 +129,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchGraphAvatar = async (providerToken: string): Promise<string | null> => {
     try {
-      const photoRes = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+      const photoRes = await boundedRequest(fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
         headers: { 'Authorization': `Bearer ${providerToken}` }
-      });
+      }), 5000);
       if (!photoRes.ok) return null;
 
       const blob = await photoRes.blob();
@@ -130,9 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Upload to Supabase storage
       const fileName = `microsoft_${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await boundedRequest(supabase.storage
         .from('avatars')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true }), 5000);
 
       if (uploadError) {
         console.warn('Avatar upload failed:', uploadError);
@@ -148,16 +157,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await boundedRequest(supabase
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .single(), 10000);
 
     if (error) {
       console.error("Error fetching profile:", error);
-      return null;
+      throw new Error("账号资料加载失败，请重试");
     }
+    if (!data) throw new Error("账号资料加载失败，请重试");
 
     const bu = data?.banned_until;
     if (data && bu && new Date(bu) > new Date()) {
@@ -169,12 +179,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check daily energy restore
       const today = new Date().toISOString().split('T')[0];
       if (!data.last_energy_restore || data.last_energy_restore < today) {
-        const { data: updated, error: restoreError } = await supabase.rpc("restore_daily_energy");
-        if (restoreError) {
-          console.error("Error restoring daily energy:", restoreError);
+        try {
+          const { data: updated, error: restoreError } = await boundedRequest(supabase.rpc("restore_daily_energy"), 5000);
+          if (restoreError) throw restoreError;
+          return (updated ?? data) as Profile;
+        } catch (error) {
+          console.error("Error restoring daily energy:", error);
           return data as Profile;
         }
-        return (updated ?? data) as Profile;
       }
     }
 
@@ -182,26 +194,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      const profileData = await fetchProfile(user.id);
-      if (blockedUser.current !== user.id) setProfile(profileData);
-    }
+    const userId = activeUser.current;
+    const generation = loadGeneration.current;
+    if (!userId) return;
+    try {
+      const p = await fetchProfile(userId);
+      if (activeUser.current === userId && generation === loadGeneration.current && blockedUser.current !== userId) {
+        setProfile(p);
+        setLoadingError(null);
+      }
+    } catch (error) { console.error("Error refreshing profile:", error); }
   };
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
-        const isSignIn = event === 'SIGNED_IN';
-        if (session?.user && blockedUser.current === session.user.id) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to avoid potential deadlock with Supabase auth
-          setTimeout(async () => {
-            const p = await fetchProfile(session.user.id);
-            if (blockedUser.current === session.user.id) return;
-            if (p) {
+  const enrichProfile = async (p: Profile, session: any, isCurrent: () => boolean) => {
+    const isSignIn = true;
+    try {
               const updates: Record<string, any> = {};
 
               const userPicked = !!(p as any).grade_selected_at;
@@ -251,57 +258,114 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // On non-SIGNED_IN events (token refresh etc.), keep gradeAutoDetected as-is
 
               // Apply all updates in one query
-              if (blockedUser.current === session.user.id) return;
+              if (!isCurrent()) return;
               if (Object.keys(updates).length > 0) {
-                const { data: updated } = await supabase
+                const { data: updated } = await boundedRequest(supabase
                   .from("profiles")
                   .update(updates)
                   .eq("id", p.id)
                   .select()
-                  .single();
+                  .single(), 5000);
                 if (updated) {
-                  if (blockedUser.current === session.user.id) return;
+                  if (!isCurrent()) return;
                   setProfile(updated as Profile);
-                  setLoading(false);
                   return;
                 }
               }
-            }
-            setProfile(p);
-            setLoading(false);
-          }, 0);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
+    } catch (error) { console.warn("Optional Microsoft sync failed:", error); }
+  };
 
-    supabase.auth.getSession().then(async ({ data: { session } }: any) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        if (blockedUser.current !== session.user.id) setProfile(p);
-      }
+  const loadSessionProfile = async (nextSession: any, event = "INITIAL_SESSION") => {
+    const generation = ++loadGeneration.current;
+    const userId = nextSession?.user?.id ?? null;
+    activeUser.current = userId;
+    if (userId && blockedUser.current === userId) return;
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setLoadingError(null);
+    if (!userId) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const isCurrent = () => generation === loadGeneration.current && activeUser.current === userId && blockedUser.current !== userId;
+    try {
+      const p = await fetchProfile(userId);
+      if (!isCurrent()) return;
+      setProfile(p);
+      setLoading(false);
+      if (p && event === "SIGNED_IN") void enrichProfile(p, nextSession, isCurrent);
+    } catch (error) {
+      if (!isCurrent()) return;
+      console.error("Profile startup failed:", error);
+      setLoadingError("账号资料加载失败，请重试");
+      setLoading(false);
+    }
+  };
+
+  const retryLoading = async () => {
+    setLoading(true);
+    setLoadingError(null);
+    const generation = loadGeneration.current;
+    try {
+      const { data, error } = await boundedRequest(supabase.auth.getSession(), 10000);
+      if (generation !== loadGeneration.current) return;
+      if (error) throw error;
+      await loadSessionProfile(data.session);
+    } catch (error) {
+      if (generation !== loadGeneration.current) return;
+      console.error("Session startup failed:", error);
+      setLoadingError("登录状态加载失败，请重试");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let disposed = false;
+    let receivedAuthEvent = false;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      receivedAuthEvent = true;
+      // Never await Supabase operations while its auth callback holds the lock.
+      const timer = setTimeout(() => {
+        timers.delete(timer);
+        if (!disposed) void loadSessionProfile(nextSession, event);
+      }, 0);
+      timers.add(timer);
+    });
+    const generation = loadGeneration.current;
+    void boundedRequest(supabase.auth.getSession(), 10000).then(({ data, error }) => {
+      if (disposed || receivedAuthEvent || generation !== loadGeneration.current) return;
+      if (error) throw error;
+      return loadSessionProfile(data.session);
+    }).catch(error => {
+      if (disposed || receivedAuthEvent || generation !== loadGeneration.current) return;
+      console.error("Session startup failed:", error);
+      setLoadingError("登录状态加载失败，请重试");
       setLoading(false);
     });
-
     return () => {
+      disposed = true;
+      loadGeneration.current++;
+      timers.forEach(clearTimeout);
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    loadGeneration.current++;
+    activeUser.current = null;
+    setLoadingError(null);
+    setLoading(false);
     setUser(null);
     setSession(null);
     setProfile(null);
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, gradeAutoDetected, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, loadingError, retryLoading, gradeAutoDetected, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

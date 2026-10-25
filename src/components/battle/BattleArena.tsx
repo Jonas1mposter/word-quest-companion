@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchQueue } from "@/hooks/useMatchQueue";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import SoundVariantSwitcher from "./SoundVariantSwitcher";
+import EliminatedByOrax from "./EliminatedByOrax";
+import { isOraxPlayer } from "@/lib/oraxTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
@@ -552,6 +554,7 @@ const BattleArena = ({
           <h2 className="text-3xl font-gaming mb-2">
             {isDraw ? '平局！' : isWinner ? '胜利！' : '失败'}
           </h2>
+          {!isDraw && !isWinner && !isBotMatch && isOraxPlayer(opponentProfile) && <EliminatedByOrax by={opponentProfile?.username} />}
           {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">

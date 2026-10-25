@@ -41,6 +41,9 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
   const [error, setError] = useState<string | null>(null);
   const [finalResult, setFinalResult] = useState<BotResult | null>(null);
   const sessionRef = useRef<string | null>(null);
+  // Stable reference: an inline loader re-triggers the card's audio prefetch on every render,
+  // which requests audio for an already-answered question and the server rejects it (409).
+  const loadBotAudio = useCallback((index: number) => botAudio(sessionRef.current ?? '', index), []);
   const deadlineRef = useRef(0);
   const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -277,7 +280,7 @@ const BotBattle = ({ onBack }: BotBattleProps) => {
         <KillStreakBanner combo={comboCount} />
         {question ? (
           <ServerBattleQuizCard key={question.questionIndex} question={question} onAnswer={handleAnswer}
-            comboCount={comboCount} loadAudio={index => botAudio(sessionRef.current ?? '', index)} />
+            comboCount={comboCount} loadAudio={loadBotAudio} />
         ) : <div className="text-center py-12">
           {error ? <><p role="alert" className="text-destructive mb-3">{error}</p><Button onClick={() => void loadQuestion()}>重试</Button></> : <Bot className="w-12 h-12 mx-auto text-primary animate-pulse" />}
         </div>}

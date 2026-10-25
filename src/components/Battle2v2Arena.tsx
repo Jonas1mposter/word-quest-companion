@@ -10,6 +10,8 @@ import { ChevronLeft, Trophy, XCircle, Timer, Zap, Swords } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import SoundVariantSwitcher from "./battle/SoundVariantSwitcher";
+import EliminatedByOrax from "./battle/EliminatedByOrax";
+import { isOraxPlayer } from "@/lib/oraxTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
@@ -398,6 +400,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <h2 className="text-3xl font-gaming mb-2">
             {isDraw ? '平局！' : isWinner ? '团队胜利！' : '团队失败'}
           </h2>
+          {!isDraw && !isWinner && (() => { const k = (onTeam1Ref.current ? team2Profiles : team1Profiles).find((p: any) => isOraxPlayer(p)); return k ? <EliminatedByOrax by={k.username} /> : null; })()}
           {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">

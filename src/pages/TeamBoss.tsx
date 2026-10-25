@@ -7,6 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useLobbyParty } from "@/hooks/useLobbyParty";
 import { BOSS_ROLES, bossAction, canStartBoss, type BossRequest, type BossResult, type BossRole } from "@/lib/teamBoss";
+import { useComboFx } from "@/hooks/useComboFx";
+import KillStreakBanner from "@/components/battle/KillStreakBanner";
+import SoundVariantSwitcher from "@/components/battle/SoundVariantSwitcher";
 import art from "@/assets/team-boss.jpg";
 
 const icons = { damage: Swords, guardian: Shield, healer: Heart };
@@ -21,6 +24,7 @@ export default function TeamBoss() {
   const [answer, setAnswer] = useState("");
   const [target, setTarget] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const comboFx = useComboFx(); const registerCombo = comboFx.register;
   const lock = useRef(false); const active = useRef(true); const offset = useRef(0);
   const pendingRef = useRef(pending); pendingRef.current = pending;
   const state = result?.state; const me = state?.players.find(p => p.id === profile?.id);
@@ -32,6 +36,7 @@ export default function TeamBoss() {
       const next = await bossAction(request);
       if (!active.current) return;
       setResult(next); setError(null); setPending(null);
+      if (request.action === "answer" && typeof next.state?.question?.correct === "boolean") registerCombo(next.state.question.correct);
       if (next.state) {
         offset.current = Date.parse(next.state.serverNow) - Date.now();
         if (!["lobby", "combat"].includes(next.state.phase)) void refreshProfile();
@@ -42,7 +47,7 @@ export default function TeamBoss() {
         if (!poll) setPending(request);
       }
     } finally { lock.current = false; if (active.current) setBusy(false); }
-  }, [refreshProfile]);
+  }, [refreshProfile, registerCombo]);
   const execRef = useRef(execute); execRef.current = execute;
   const stateRef = useRef(state); stateRef.current = state;
   const joinedRef = useRef(!!me); joinedRef.current = !!me;
@@ -66,6 +71,7 @@ export default function TeamBoss() {
   const disabled = busy || !!pending;
   const q = state?.question;
   return <div className="min-h-screen bg-background bg-grid-pattern">
+    {state?.phase === "combat" && <><KillStreakBanner combo={comboFx.combo} /><SoundVariantSwitcher /></>}
     <header className="border-b border-border"><div className="mx-auto max-w-5xl px-4 py-3 flex justify-between gap-3">
       <Button variant="ghost" onClick={() => navigate("/entertainment")}><ArrowLeft className="h-4 w-4" />娱乐模式</Button>
       {state?.phase === "lobby" && me && <Button variant="ghost" disabled={disabled} onClick={() => send("leave")}><LogOut className="h-4 w-4" />离开房间</Button>}

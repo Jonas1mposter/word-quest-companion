@@ -14,6 +14,7 @@ import EliminatedByOrax from "./battle/EliminatedByOrax";
 import { isOraxPlayer } from "@/lib/oraxTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
 import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
 import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
@@ -170,6 +171,10 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
         winnerTeamRef.current = data.winnerTeam ?? null;
         if (typeof data.coinsEarned === 'number' && typeof data.xpEarned === 'number') {
           setRewards({ coins: data.coinsEarned, xp: data.xpEarned });
+        }
+        if (data.shielded) toast.info("不掉分卡生效：本场失败未扣段位与排位分");
+        else if (data.boosts && (data.boosts.xp === 2 || data.boosts.coins === 2 || data.boosts.elo === 2)) {
+          toast.success("增益卡生效：本场奖励翻倍");
         }
       }
     } catch (e) { console.error(e); }

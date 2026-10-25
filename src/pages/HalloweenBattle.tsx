@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useComboFx } from "@/hooks/useComboFx";
+import KillStreakBanner from "@/components/battle/KillStreakBanner";
+import SoundVariantSwitcher from "@/components/battle/SoundVariantSwitcher";
 
 type Mode = "1v1" | "2v2";
 interface HwPlayer { slot: number; team: number; name: string; isBot: boolean; score: number; answered: number; streak: number; shield: boolean; itemCount: number }
@@ -40,6 +43,7 @@ export default function HalloweenBattle() {
   const [waited, setWaited] = useState(0);
   const [state, setState] = useState<HwState | null>(null);
   const [busy, setBusy] = useState(false);
+  const comboFx = useComboFx();
   const [feedback, setFeedback] = useState<{ correct: boolean; answer: string; picked: string } | null>(null);
   const [shuffleTick, setShuffleTick] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -124,6 +128,7 @@ export default function HalloweenBattle() {
         { p_match: matchId, p_index: state.question.index, p_answer: opt });
       if (!r.ok) { toast.error(r.error ?? "提交失败"); await refresh(); return; }
       setFeedback({ correct: r.correct, answer: r.answer, picked: opt });
+      comboFx.register(r.correct);
       if (r.drop) toast.success(`连对掉落道具：${HW_ITEMS[r.drop]?.emoji} ${HW_ITEMS[r.drop]?.name}`);
       setTimeout(async () => { setFeedback(null); await refresh(); }, 900);
     } catch { toast.error("网络异常，请再点一次同一个答案"); } finally { setBusy(false); }
@@ -192,6 +197,7 @@ export default function HalloweenBattle() {
 
         {profile && phase === "play" && !state && <Loader2 className="mx-auto h-10 w-10 animate-spin" />}
 
+        {profile && phase === "play" && state && state.status === "active" && <><KillStreakBanner combo={comboFx.combo} /><SoundVariantSwitcher /></>}
         {profile && phase === "play" && state && (
           <>
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border border-border bg-card p-4">
@@ -272,7 +278,7 @@ export default function HalloweenBattle() {
                 <p>获得狄邦豆 <b className="text-gold">+{state.reward ?? 0}</b>（今日 {state.todayCoins}/250）</p>
                 {state.reward === 0 && <p className="text-xs text-muted-foreground">没有答题或今天已达上限，本局不发豆</p>}
                 <div className="flex justify-center gap-3">
-                  <Button variant="hero" onClick={() => { setState(null); setMatchId(null); setPhase("lobby"); }}>再来一局</Button>
+                  <Button variant="hero" onClick={() => { comboFx.reset(); setState(null); setMatchId(null); setPhase("lobby"); }}>再来一局</Button>
                   <Button variant="outline" onClick={() => navigate("/")}>回主页</Button>
                 </div>
               </section>

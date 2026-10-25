@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { audioManager } from "@/lib/audioManager";
 import { boundedRequest } from "@/lib/boundedRequest";
 import { ROGUE_NODES, ROGUE_SKILLS, rogueAction, type RogueState, type RogueFeedback, type RogueAction, type RogueNode, type RogueSkill } from "@/lib/roguelike";
+import { useComboFx } from "@/hooks/useComboFx";
+import KillStreakBanner from "@/components/battle/KillStreakBanner";
+import SoundVariantSwitcher from "@/components/battle/SoundVariantSwitcher";
 import forest from "@/assets/roguelike-forest.jpg";
 
 const nodeIcons = { battle: Swords, elite: Skull, rest: Tent, event: Sparkles, boss: Crown };
@@ -33,6 +36,8 @@ export default function Roguelike() {
   const active = useRef(true);
   const requestBusy = useRef(false);
   const audioSource = useRef<AudioBufferSourceNode | null>(null);
+  const comboFx = useComboFx();
+  const registerCombo = comboFx.register;
   const execute = useCallback(async (request: RogueAction) => {
     if (requestBusy.current) return;
     requestBusy.current = true; setBusy(true); setError(null);
@@ -40,13 +45,15 @@ export default function Roguelike() {
       const result = await rogueAction(request);
       if (!active.current) return;
       setState(result.state); setFeedback(result.feedback ?? null); setPending(null);
+      if (request.action === "start") comboFx.reset();
+      if (result.feedback) registerCombo(result.feedback.correct);
       if (result.state) offset.current = Date.parse(result.state.serverNow) - Date.now();
       if (result.state && ["won", "lost", "abandoned"].includes(result.state.phase)) void refreshProfile();
       setReady(true);
     } catch (e) {
       if (active.current) { setError(e instanceof Error ? e.message : "请求未能确认，请重试"); setPending(request); }
     } finally { requestBusy.current = false; if (active.current) setBusy(false); }
-  }, [refreshProfile]);
+  }, [refreshProfile, registerCombo, comboFx.reset]);
   const executeRef = useRef(execute); executeRef.current = execute;
   useEffect(() => {
     active.current = true;
@@ -100,6 +107,7 @@ export default function Roguelike() {
       </section>
       <section className="mx-auto max-w-5xl px-4 py-6 border-t border-border"><div className="flex flex-wrap gap-4 text-sm text-muted-foreground"><span className="text-gold">通关 +30 豆</span><span>每个精英 +5 豆</span><span>失败 ≥10 题 +5 豆</span><span>每日上限 120 豆</span></div></section>
     </> : <main className="mx-auto max-w-5xl px-4 py-6 space-y-6">
+      {!finished && <><KillStreakBanner combo={comboFx.combo} /><SoundVariantSwitcher /></>}
       <div className="flex flex-wrap justify-between items-center gap-3"><h1 className="font-gaming text-2xl font-bold">词汇肉鸽</h1><span className="font-mono flex gap-2 items-center text-gold"><Timer className="h-4 w-4" />{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span></div>
       <div className="flex items-center gap-2" aria-label="冒险进度">{Array.from({ length: 5 }, (_, i) => <div key={i} className={`flex-1 border-b-2 pb-2 text-center text-xs ${i + 1 <= state.floor ? "border-gold text-gold" : "border-border text-muted-foreground"}`}>{i === 4 ? "守护者" : `第 ${i + 1} 层`}</div>)}</div>
       <div className="grid grid-cols-2 gap-6"><div><div className="flex justify-between items-center text-sm mb-2"><span className="flex items-center gap-2"><Heart className="h-4 w-4 text-destructive" />生命</span><span>{state.hp} / {state.maxHp}</span></div><Progress value={state.hp / state.maxHp * 100} className="h-2" /></div><div className="flex items-center justify-end gap-5 text-sm"><span className="text-gold">连击 {state.streak}</span><span className="text-muted-foreground">{state.correct} / {state.answered} 答对</span></div></div>

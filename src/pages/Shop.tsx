@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play } from "lucide-react";
+import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play, Shield, Zap, TrendingUp, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
@@ -49,6 +49,14 @@ const RARITY_LABEL: Record<string, string> = {
 
 const SINGLE_COST = 100;
 const TEN_COST = 900;
+
+// 增益卡：价格与 purchase_booster RPC 服务端定价一致，改价需同步迁移
+const BOOSTERS = [
+  { type: "rank_shield", name: "排位不掉分卡", desc: "排位失败不扣段位与排位分，可抵 3 场", price: 150, icon: Shield, unit: "3 场" },
+  { type: "double_xp", name: "双倍经验卡", desc: "24 小时内对战获得的经验 ×2", price: 100, icon: Zap, unit: "24 小时" },
+  { type: "double_coins", name: "双倍豆卡", desc: "24 小时内对战获得的狄邦豆 ×2，可与周末双倍叠加", price: 120, icon: Coins, unit: "24 小时" },
+  { type: "double_elo", name: "双倍排位分卡", desc: "24 小时内排位胜利获得的排位分 ×2", price: 180, icon: TrendingUp, unit: "24 小时" },
+] as const;
 
 export default function Shop() {
   const navigate = useNavigate();

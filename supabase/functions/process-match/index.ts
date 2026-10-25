@@ -4,6 +4,7 @@ import { coinMultiplier } from "../_shared/weekend.ts";
 import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.ts";
 import { settleEmptyMatch } from "../_shared/emptyMatch.ts";
 import { classifyForfeit } from "../_shared/forfeitReason.ts";
+import { boostSet, applyEloBoost, type BoostRow } from "../_shared/boosts.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -135,6 +136,20 @@ Deno.serve(async (req) => {
       });
     }
     const isFree = match.match_type === "free";
+
+    // 增益卡：双倍经验/豆数/排位分与不掉分卡，结算时由服务器核验与消耗
+    const { data: boostRows } = await admin
+      .from("profile_boosts")
+      .select("id, profile_id, boost_type, uses_remaining, expires_at")
+      .in("profile_id", memberIds);
+    const boosts = (boostRows ?? []) as BoostRow[];
+    const shieldConsumed: string[] = [];
+    const consumeShields = async () => {
+      for (const pid of shieldConsumed) {
+        const s = boostSet(boosts, pid).shield;
+        if (s) await admin.from("profile_boosts").update({ uses_remaining: s.uses_remaining - 1 }).eq("id", s.id);
+      }
+    };
 
     // ====================== 2v2 BRANCH ======================
     if (is2v2) {

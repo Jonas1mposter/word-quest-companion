@@ -4,6 +4,7 @@ import { coinMultiplier } from "../_shared/weekend.ts";
 import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.ts";
 import { settleEmptyMatch } from "../_shared/emptyMatch.ts";
 import { classifyForfeit } from "../_shared/forfeitReason.ts";
+import { boostSet, applyEloBoost, type BoostRow } from "../_shared/boosts.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -136,6 +137,20 @@ Deno.serve(async (req) => {
     }
     const isFree = match.match_type === "free";
 
+    // 增益卡：双倍经验/豆数/排位分与不掉分卡，结算时由服务器核验与消耗
+    const { data: boostRows } = await admin
+      .from("profile_boosts")
+      .select("id, profile_id, boost_type, uses_remaining, expires_at")
+      .in("profile_id", memberIds);
+    const boosts = (boostRows ?? []) as BoostRow[];
+    const shieldConsumed: string[] = [];
+    const consumeShields = async () => {
+      for (const pid of shieldConsumed) {
+        const s = boostSet(boosts, pid).shield;
+        if (s) await admin.from("profile_boosts").update({ uses_remaining: s.uses_remaining - 1 }).eq("id", s.id);
+      }
+    };
+
     // ====================== 2v2 BRANCH ======================
     if (is2v2) {
       const team1 = [match.player1_id, match.player3_id].filter(Boolean) as string[];
@@ -184,9 +199,12 @@ Deno.serve(async (req) => {
           const myAvg = onTeam1 ? t1Avg : t2Avg;
           const oppAvg = onTeam1 ? t2Avg : t1Avg;
           const score: 1 | 0 | 0.5 = winnerTeam === null ? 0.5 : (winnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
-          const delta = Math.round(K * (score - expected(myAvg, oppAvg)));
+          const bs = boostSet(boosts, pid);
+          const eloBoost = applyEloBoost(Math.round(K * (score - expected(myAvg, oppAvg))), score, bs);
+          const delta = eloBoost.delta;
+          if (eloBoost.shielded) shieldConsumed.push(pid);
 
-          const xpGain = xpReward(score, false);
+          const xpGain = xpReward(score, false) * bs.xp;
           let newXp = (pp.xp ?? 0) + xpGain;
           let newLevel = pp.level ?? 1;
           let newXpToNext = pp.xp_to_next_level ?? 100;
@@ -194,14 +212,16 @@ Deno.serve(async (req) => {
 
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, false, coinMultiplier()),
+            coins: (pp.coins ?? 0) + coinReward(score, false, coinMultiplier() * bs.coins),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
-          patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
+          if (!eloBoost.shielded) {
+            const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
+            patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
+          }
 
           updates.push(admin.from("profiles").update(patch).eq("id", pid));
           // 累计豆数
@@ -215,6 +235,7 @@ Deno.serve(async (req) => {
         }
 
         await Promise.all(updates);
+        await consumeShields();
 
         // 双子星：完赛领先 15 分
         if (winnerTeam !== null) {
@@ -240,8 +261,9 @@ Deno.serve(async (req) => {
       const finalWinnerTeam = match.status === "completed" ? match.winner_team : winnerTeam;
       const callerScore: 1 | 0 | 0.5 = finalWinnerTeam === null ? 0.5
         : (finalWinnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
-      const coinsEarned = coinReward(callerScore, false, coinMultiplier());
-      const xpEarned = xpReward(callerScore, false);
+      const callerBs = boostSet(boosts, profile.id);
+      const coinsEarned = coinReward(callerScore, false, coinMultiplier() * callerBs.coins);
+      const xpEarned = xpReward(callerScore, false) * callerBs.xp;
 
       await admin.from("match_queue").delete().in("profile_id", memberIds);
 
@@ -252,6 +274,8 @@ Deno.serve(async (req) => {
         team2_score: match.status === "completed" ? match.team2_score : t2,
         coinsEarned, xpEarned,
         weekendBonus: coinMultiplier() === 2,
+        shielded: shieldConsumed.includes(profile.id),
+        boosts: { xp: callerBs.xp, coins: callerBs.coins, elo: callerBs.elo },
       });
     }
 
@@ -303,21 +327,27 @@ Deno.serve(async (req) => {
         const d2 = Math.round(K * (s2 - expected(e2, e1)));
 
         const updates: Promise<unknown>[] = [];
-        for (const [pp, delta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
-          const xpGain = xpReward(score, isFree);
+        for (const [pp, rawDelta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
+          const bs = boostSet(boosts, pp.id);
+          const eloBoost = isFree
+            ? { delta: rawDelta, shielded: false }
+            : applyEloBoost(rawDelta, score, bs);
+          const delta = eloBoost.delta;
+          if (eloBoost.shielded) shieldConsumed.push(pp.id);
+          const xpGain = xpReward(score, isFree) * bs.xp;
           let newXp = (pp.xp ?? 0) + xpGain;
           let newLevel = pp.level ?? 1;
           let newXpToNext = pp.xp_to_next_level ?? 100;
           while (newXp >= newXpToNext) { newXp -= newXpToNext; newLevel++; newXpToNext = 100 * newLevel; }
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, isFree, coinMultiplier()),
+            coins: (pp.coins ?? 0) + coinReward(score, isFree, coinMultiplier() * bs.coins),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          if (!isFree) {
+          if (!isFree && !eloBoost.shielded) {
             const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
             patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
           }
@@ -333,7 +363,7 @@ Deno.serve(async (req) => {
           }
         }
         await Promise.all(updates);
-
+        await consumeShields();
 
         // 降维打击：排位领先对手至少 8 分
         if (!isFree && winnerId) {
@@ -355,12 +385,18 @@ Deno.serve(async (req) => {
     }
 
     const callerScore: 1 | 0 | 0.5 = winnerId === null ? 0.5 : winnerId === profile.id ? 1 : 0;
-    const coinsEarned = coinReward(callerScore, isFree, coinMultiplier());
-    const xpEarned = xpReward(callerScore, isFree);
+    const callerBs = boostSet(boosts, profile.id);
+    const coinsEarned = coinReward(callerScore, isFree, coinMultiplier() * callerBs.coins);
+    const xpEarned = xpReward(callerScore, isFree) * callerBs.xp;
 
     await admin.from("match_queue").delete().in("profile_id", [match.player1_id, match.player2_id]);
 
-    return json({ ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned, weekendBonus: coinMultiplier() === 2 });
+    return json({
+      ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned,
+      weekendBonus: coinMultiplier() === 2,
+      shielded: shieldConsumed.includes(profile.id),
+      boosts: { xp: callerBs.xp, coins: callerBs.coins, elo: callerBs.elo },
+    });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

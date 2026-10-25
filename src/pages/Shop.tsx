@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play } from "lucide-react";
+import { ChevronLeft, Coins, Sparkles, Gift, Loader2, ShoppingBag, Volume2, Check, Play, Shield, Zap, TrendingUp, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { reloadActiveSoundPack } from "@/hooks/useMatchSounds";
@@ -50,6 +50,14 @@ const RARITY_LABEL: Record<string, string> = {
 const SINGLE_COST = 100;
 const TEN_COST = 900;
 
+// 增益卡：价格与 purchase_booster RPC 服务端定价一致，改价需同步迁移
+const BOOSTERS = [
+  { type: "rank_shield", name: "排位不掉分卡", desc: "排位失败不扣段位与排位分，可抵 3 场", price: 150, icon: Shield, unit: "3 场" },
+  { type: "double_xp", name: "双倍经验卡", desc: "24 小时内对战获得的经验 ×2", price: 100, icon: Zap, unit: "24 小时" },
+  { type: "double_coins", name: "双倍豆卡", desc: "24 小时内对战获得的狄邦豆 ×2，可与周末双倍叠加", price: 120, icon: Coins, unit: "24 小时" },
+  { type: "double_elo", name: "双倍排位分卡", desc: "24 小时内排位胜利获得的排位分 ×2", price: 180, icon: TrendingUp, unit: "24 小时" },
+] as const;
+
 export default function Shop() {
   const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth();
@@ -59,6 +67,8 @@ export default function Shop() {
   const [soundPacks, setSoundPacks] = useState<any[]>([]);
   const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
   const [packBusy, setPackBusy] = useState<string | null>(null);
+  const [boosts, setBoosts] = useState<any[]>([]);
+  const [boostBusy, setBoostBusy] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [revealKey, setRevealKey] = useState(0);
@@ -67,6 +77,42 @@ export default function Shop() {
     if (!results) return;
     results.forEach((_, i) => setTimeout(() => flip(i), i * 120));
   };
+
+  const loadBoosts = async () => {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from("profile_boosts" as any)
+      .select("*")
+      .eq("profile_id", profile.id);
+    const now = new Date();
+    setBoosts(((data ?? []) as any[]).filter((b) =>
+      (!b.expires_at || new Date(b.expires_at) > now) &&
+      (b.uses_remaining == null || b.uses_remaining > 0)));
+  };
+
+  useEffect(() => { loadBoosts(); /* eslint-disable-next-line */ }, [profile?.id]);
+
+  const buyBooster = async (type: string, price: number, name: string) => {
+    if (!profile) return;
+    if ((profile.coins ?? 0) < price) { toast.error(`狄邦豆不足，需要 ${price}`); return; }
+    setBoostBusy(type);
+    try {
+      const { data, error } = await supabase.rpc("purchase_booster" as any, { p_type: type });
+      if (error) throw error;
+      const payload = data as any;
+      if (payload?.error === "not_enough_coins") { toast.error("狄邦豆不足"); return; }
+      if (payload?.error === "already_active") { toast.info("同类增益卡正在生效中，结束后再购买"); return; }
+      if (payload?.error) throw new Error(String(payload.error));
+      toast.success(`已激活「${name}」`);
+      await Promise.all([refreshProfile(), loadBoosts()]);
+    } catch (e: any) {
+      toast.error(e?.message || "购买失败，请稍后再试");
+    } finally {
+      setBoostBusy(null);
+    }
+  };
+
+  const activeBoost = (type: string) => boosts.find((b) => b.boost_type === type);
 
   const loadPacks = async () => {
     const { data: packs } = await supabase
@@ -205,6 +251,69 @@ export default function Shop() {
         </header>
 
         <PriorityAccountCard />
+
+        {/* 增益卡 */}
+        <Card className="overflow-hidden border-emerald-400/40 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Shield className="w-7 h-7 text-emerald-400" />
+              <div>
+                <h2 className="text-xl font-gaming">增益卡</h2>
+                <p className="text-sm text-muted-foreground">
+                  购买后立即生效；同类卡生效期间不能重复购买。
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {BOOSTERS.map((b) => {
+                const active = activeBoost(b.type);
+                const Icon = b.icon;
+                return (
+                  <Card
+                    key={b.type}
+                    className={cn(
+                      "border-2 transition-colors",
+                      active ? "border-emerald-400 bg-emerald-500/10" : "border-border/60 hover:border-emerald-400/60",
+                    )}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-6 h-6 text-emerald-400" />
+                          <div className="font-gaming text-base">{b.name}</div>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">{b.unit}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{b.desc}</p>
+                      {active ? (
+                        <div className="flex items-center gap-1 text-xs text-emerald-400">
+                          <Clock className="w-3 h-3" />
+                          {active.boost_type === "rank_shield"
+                            ? `生效中 · 剩余 ${active.uses_remaining} 场`
+                            : `生效中 · ${new Date(active.expires_at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 到期`}
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+                          disabled={boostBusy === b.type || (profile?.coins ?? 0) < b.price}
+                          onClick={() => buyBooster(b.type, b.price, b.name)}
+                        >
+                          {boostBusy === b.type ? (
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          ) : (
+                            <Coins className="w-3 h-3 mr-1" />
+                          )}
+                          {b.price} 狄邦豆
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="overflow-hidden border-amber-400/40 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent">
           <CardContent className="p-6 space-y-3">

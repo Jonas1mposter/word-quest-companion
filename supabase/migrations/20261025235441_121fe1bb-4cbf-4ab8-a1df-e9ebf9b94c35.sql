@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.purchase_booster(text) TO service_role;

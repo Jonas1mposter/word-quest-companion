@@ -7,9 +7,10 @@ import { PartyInviteReceiver } from "@/components/friends/PartyInviteReceiver";
 import GradeSelectionDialog from "@/components/GradeSelectionDialog";
 import OnboardingTour from "@/components/OnboardingTour";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, loadingError, retryLoading } = useAuth();
   const navigate = useNavigate();
   const [grade, setGrade] = useState<number>(7);
   const [showGradeDialog, setShowGradeDialog] = useState(false);
@@ -19,10 +20,10 @@ const Index = () => {
   const hasResolvedGradeSelection = !!(profile as any)?.grade_selected_at;
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !loadingError && !user) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, loadingError, navigate]);
 
   // Show grade selection dialog if auto-detection failed
   useEffect(() => {
@@ -61,7 +62,18 @@ const Index = () => {
     }
   }, [profile?.grade]);
 
-  if (loading || (user && !profile)) {
+  if (loadingError && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p role="alert" className="text-muted-foreground">{loadingError}</p>
+          <Button onClick={() => void retryLoading()}>重新加载</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

@@ -1,5 +1,8 @@
 // Reviewed UI phrases for features added after the original dictionary.
 export const UI_UPDATES: Record<string, string> = {
+  "账号资料加载失败，请重试": "Unable to load your profile. Please try again.",
+  "登录状态加载失败，请重试": "Unable to load your sign-in status. Please try again.",
+  "重新加载": "Retry loading",
   "战队 Boss": "Team Boss",
   "晶角圣殿 · 战队合作": "Crystal Sanctuary · Team Co-op",
   "晶角巨兽": "Crystal Antler Beast",

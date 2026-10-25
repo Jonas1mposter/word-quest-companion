@@ -1,0 +1,1 @@
+REVOKE INSERT, UPDATE, DELETE ON public.profile_boosts FROM authenticated, anon;

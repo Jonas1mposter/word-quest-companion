@@ -199,9 +199,12 @@ Deno.serve(async (req) => {
           const myAvg = onTeam1 ? t1Avg : t2Avg;
           const oppAvg = onTeam1 ? t2Avg : t1Avg;
           const score: 1 | 0 | 0.5 = winnerTeam === null ? 0.5 : (winnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
-          const delta = Math.round(K * (score - expected(myAvg, oppAvg)));
+          const bs = boostSet(boosts, pid);
+          const eloBoost = applyEloBoost(Math.round(K * (score - expected(myAvg, oppAvg))), score, bs);
+          const delta = eloBoost.delta;
+          if (eloBoost.shielded) shieldConsumed.push(pid);
 
-          const xpGain = xpReward(score, false);
+          const xpGain = xpReward(score, false) * bs.xp;
           let newXp = (pp.xp ?? 0) + xpGain;
           let newLevel = pp.level ?? 1;
           let newXpToNext = pp.xp_to_next_level ?? 100;
@@ -209,14 +212,16 @@ Deno.serve(async (req) => {
 
           const patch: Record<string, any> = {
             [eloField]: Math.max(100, (pp[eloField] ?? 1000) + delta),
-            coins: (pp.coins ?? 0) + coinReward(score, false, coinMultiplier()),
+            coins: (pp.coins ?? 0) + coinReward(score, false, coinMultiplier() * bs.coins),
             xp: newXp, level: newLevel, xp_to_next_level: newXpToNext,
             total_xp: (pp.total_xp ?? 0) + xpGain,
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
-          patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
+          if (!eloBoost.shielded) {
+            const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
+            patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
+          }
 
           updates.push(admin.from("profiles").update(patch).eq("id", pid));
           // 累计豆数

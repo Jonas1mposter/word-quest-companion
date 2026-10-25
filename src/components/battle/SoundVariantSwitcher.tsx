@@ -15,6 +15,7 @@ const VARIANT_LABELS: Record<string, { name: string; sub: string }> = {
 const SoundVariantSwitcher = () => {
   const { variants, selected, icons } = useSoundVariants();
   const [open, setOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const tone = useApplyOraxTone(!!variants, selected);
   if (!variants) return null;
   const keys = Object.keys(variants);
 

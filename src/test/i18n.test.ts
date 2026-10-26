@@ -53,4 +53,10 @@ describe("localization boundaries", () => {
       expect(translate(translated)).toBe(translated);
     }
   });
+  it("translates header buttons exactly and keeps longer phrases intact", () => {
+    expect(translate("活动")).toBe("Events");
+    expect(translate("活动中心")).toBe("Event Center");
+    expect(translate("赛季活动")).toBe("Season Events");
+    expect(translate("抽奖")).toBe("Lottery");
+  });
 });

@@ -159,6 +159,7 @@ export const UI_UPDATES: Record<string, string> = {
   "张抽奖券": "tickets",
   "抽奖券": "Lottery Ticket",
   "活动中心": "Event Center",
+  "活动": "Events",
   "掠影首发 · 免费领": "Reaver Launch · Free Claim",
   "完成任务即可免费获得限定连杀音效「掠影」与 10 张抽奖券（所有奖池通用）。人机补位局不计入。": "Complete the tasks to get the limited kill-streak sound \"Reaver\" and 10 lottery tickets (usable in every pool) for free. Bot-filled matches don't count.",
   "登录账号": "Log in",

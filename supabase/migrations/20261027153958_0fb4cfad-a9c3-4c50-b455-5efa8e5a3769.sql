@@ -1,0 +1,1 @@
+DO $$ DECLARE d text; BEGIN SELECT pg_get_functiondef('public.settle_fallback_rank(uuid,integer,uuid)'::regprocedure) INTO d; d=replace(d,'''double_rank''','''double_elo'''); d=replace(d,'''shieldUsed''','''shielded'''); d=replace(d,'''rank'',CASE','''elo'',CASE'); EXECUTE d; END $$;

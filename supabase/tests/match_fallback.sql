@@ -29,12 +29,13 @@ BEGIN
    IF (out->>'matchId')::uuid<>mid THEN RAISE EXCEPTION 'Late cancel lost match'; END IF;
    IF EXISTS(SELECT 1 FROM match_queue WHERE profile_id=pid AND status='searching') THEN RAISE EXCEPTION 'Still searching after fallback'; END IF;
    SELECT to_jsonb(p) INTO before_state FROM profiles p WHERE id=pid;
-   out=complete_empty_match(mid,pid);
+   out=complete_empty_match(mid,NULL);
    IF out->>'handled'<>'false' THEN RAISE EXCEPTION 'Bot empty settlement bypass'; END IF;
    out=tick_match_bots(mid,pid,true,false);
    IF out->>'pending'<>'true' THEN RAISE EXCEPTION 'Premature finish'; END IF;
-   out=tick_match_bots(mid,pid,true,true);
-   PERFORM tick_match_bots(mid,pid,true,true);
+   UPDATE ranked_matches SET started_at=now()-interval '301 seconds' WHERE id=mid;
+   out=tick_match_bots(mid,pid,true,false);
+   PERFORM tick_match_bots(mid,pid,true,false);
    SELECT to_jsonb(p) INTO after_state FROM profiles p WHERE id=pid;
    IF before_state<>after_state OR (out->>'coinsEarned')::integer<>0 OR (out->>'xpEarned')::integer<>0 THEN RAISE EXCEPTION 'Bot competitive benefits'; END IF;
    IF EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND (winner_id IS NOT NULL OR winner_team IS NOT NULL)) THEN RAISE EXCEPTION 'Empty bot winner'; END IF;
@@ -64,13 +65,13 @@ BEGIN
    IF mid IS NULL OR NOT EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND question_count=15 AND player1_id=pid AND player3_id IS NOT DISTINCT FROM CASE WHEN mode='friends' THEN ids[2] END) THEN RAISE EXCEPTION '2v2 party or question total'; END IF;
    IF NOT EXISTS(SELECT 1 FROM match_bot_state WHERE match_id=mid AND bot_slots=CASE WHEN mode='friends' THEN ARRAY[2,4] ELSE ARRAY[2,3,4] END) THEN RAISE EXCEPTION '2v2 bot slots'; END IF;
    IF mode='friends' AND NOT EXISTS(SELECT 1 FROM match_parties WHERE id=party AND status='matched' AND match_id=mid) THEN RAISE EXCEPTION 'Friend not synchronized'; END IF;
-   -- Winning bot-game result never changes either profile or competitive winner.
+   -- Ranked fallback forfeits settle once; the forfeiter loses rating.
    SELECT jsonb_agg(to_jsonb(p) ORDER BY id) INTO before_state FROM profiles p WHERE id=ANY(ids);
    INSERT INTO match_answers(match_id,player_id,question_index,is_correct) VALUES(mid,pid,0,true);
    out=tick_match_bots(mid,pid,true,true);
    PERFORM tick_match_bots(mid,pid,true,true);
    SELECT jsonb_agg(to_jsonb(p) ORDER BY id) INTO after_state FROM profiles p WHERE id=ANY(ids);
-   IF before_state<>after_state OR EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND winner_id IS NOT NULL) THEN RAISE EXCEPTION 'Bot rank settlement'; END IF;
+   IF before_state=after_state OR (out->>'eloDelta')::int<>-16 THEN RAISE EXCEPTION 'Bot rank settlement missing'; END IF;
    UPDATE match_search_requests SET cancelled=true WHERE profile_id=ANY(ids);
   END LOOP;
   RAISE EXCEPTION 'ROLLBACK_MATCH_FALLBACK_OK';

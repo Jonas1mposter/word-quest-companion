@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import handlerSource from "../../supabase/functions/submit-answer/index.ts?raw";
 import ts from "typescript";
 import { z } from "zod";
 
@@ -32,7 +32,7 @@ describe("answer feedback critical path", () => {
       from: () => query, rpc: async () => ({ data: { ok: true, isCorrect: true }, error: null }),
     } });
     // Execute the real Deno handler with injected transports; Vite cannot resolve npm: imports.
-    const source = readFileSync("supabase/functions/submit-answer/index.ts", "utf8")
+    const source = handlerSource
       .replace(/^import .*;\n/gm, "");
     const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022 });
     new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", compiled)(

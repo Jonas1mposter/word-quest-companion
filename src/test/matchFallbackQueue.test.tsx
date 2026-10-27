@@ -7,13 +7,13 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   from: () => { const q = { select: () => q, eq: () => q, single: () => Promise.resolve({data:{player1_id:'p1',player2_id:null}}) }; return q; },
 } }));
 import { useMatchQueue } from '@/hooks/useMatchQueue';
-describe('60秒补位入口', () => {
+describe('30秒补位入口', () => {
   beforeEach(() => { vi.useFakeTimers(); mocks.search.mockReset(); mocks.cancel.mockReset(); mocks.cancel.mockResolvedValue(null); });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
-  it.each([{mode:'1v1' as const,matchType:'ranked' as const,partyId:null}, {mode:'1v1' as const,matchType:'free' as const,partyId:null}, {mode:'2v2' as const,matchType:'ranked' as const,partyId:'party'}])('$mode $matchType 持续至60秒并只跳转一次', async options => {
-    const start=Date.now(); mocks.search.mockImplementation(async () => Date.now()-start>=60000?'fallback-match':null);
+  it.each([{mode:'1v1' as const,matchType:'ranked' as const,partyId:null}, {mode:'1v1' as const,matchType:'free' as const,partyId:null}, {mode:'2v2' as const,matchType:'ranked' as const,partyId:'party'}])('$mode $matchType 持续至30秒并只跳转一次', async options => {
+    const start=Date.now(); mocks.search.mockImplementation(async () => Date.now()-start>=30000?'fallback-match':null);
     const found=vi.fn(); const {result}=renderHook(() => useMatchQueue({...options,profileId:'p1',grade:7,eloRating:1000,enabled:true,onMatchFound:found}));
-    await act(async () => { await result.current.joinQueue(); await vi.advanceTimersByTimeAsync(59000); });
+    await act(async () => { await result.current.joinQueue(); await vi.advanceTimersByTimeAsync(29000); });
     expect(found).not.toHaveBeenCalled();
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(found).toHaveBeenCalledTimes(1); expect(found).toHaveBeenCalledWith('fallback-match','bot-2');

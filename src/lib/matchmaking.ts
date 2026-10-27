@@ -45,7 +45,7 @@ export async function tickMatchBots(matchId: string) {
 
 export const botPlayer = (slot: number, bots?: MatchBots | null) => ({
   isAI: true,
-  id: `bot-${slot}`, username: `${bots?.identities?.[String(slot)] ?? `人机 ${slot}`}（人机）`, level: 1, rank_tier: "bronze",
+  id: `bot-${slot}`, username: bots?.identities?.[String(slot)] ?? `人机 ${slot}`, level: 1, rank_tier: "bronze",
   rank_stars: 0, wins: 0, losses: 0, avatar_url: null,
   botCosmetics: bots?.cosmetics?.[String(slot)],
 });

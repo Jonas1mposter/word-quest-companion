@@ -1,7 +1,9 @@
 import { z } from "npm:zod@3.25.76";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const AnswerRequest = z.object({ matchId: z.string().uuid(), questionIndex: z.number().int().min(0).max(999), answer: z.string().max(2000), elapsedMs: z.number().finite().nonnegative().optional() });
-import { analyzeTiming, analyzeLookup, LOOKUP_MIN_SAMPLES } from "../_shared/answerTiming.ts";
+import { analyzeTiming } from "../_shared/answerTiming.ts";
+import { reviewAnswer } from "./review.ts";
+declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void };
 import { requireProfile, json } from "../_shared/auth.ts";
 import { submittedSpellingFeedback } from "../_shared/answerFeedback.ts";
 
@@ -24,74 +26,19 @@ Deno.serve(async (req) => {
       p_question_index: questionIndex, p_answer: answer,
     });
     if (submitError) return json({ error: submitError.message }, 409);
-    const feedback = await submittedSpellingFeedback(admin, matchId, profile.id, questionIndex, result);
-    if (result?.matchEnded || result?.duplicate) return json({ ...result, ...feedback });
+    const feedbackTask = submittedSpellingFeedback(admin, matchId, profile.id, questionIndex, result);
+    if (result?.matchEnded || result?.duplicate) return json({ ...result, ...await feedbackTask });
     const isCorrect = result?.isCorrect === true;
-    // ===== DAC (Dipont Anti-Cheat)：答题速度检测 =====
-    // 答对且速度快到人类不可能（<1.2s）时记录可疑标记，不影响本次计分
-    if (isCorrect) {
-      let fastest: number | null =
-        typeof elapsedMs === "number" && elapsedMs >= 0 ? elapsedMs : null;
-      // 服务端口径：与上一题的作答间隔（不依赖客户端上报）
-      const { data: prev } = await admin
-        .from("match_answers")
-        .select("answered_at")
-        .eq("match_id", matchId)
-        .eq("player_id", profile.id)
-        .lt("question_index", questionIndex)
-        .order("question_index", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (prev?.answered_at) {
-        const serverDelta = Date.now() - new Date(prev.answered_at).getTime();
-        if (fastest === null || serverDelta < fastest) fastest = serverDelta;
-      }
-      if (fastest !== null && fastest < 1200) {
-        await admin.rpc("dac_flag", {
-          p_profile_id: profile.id,
-          p_source: "submit-answer",
-          p_reason: "impossible_answer_speed",
-          p_severity: fastest < 600 ? "high" : "medium",
-          p_meta: { matchId, questionIndex, elapsedMs: fastest, match_type: match.match_type, mode: match.mode },
-        });
-      }
-    }
-
-    // ===== DAC：答题节奏过于固定 → 通知客户端判负（服务端结算时也会强制判负）=====
-    const { data: mine } = await admin
-      .from("match_answers").select("answered_at, answer, is_correct")
-      .eq("match_id", matchId).eq("player_id", profile.id);
-    const timing = analyzeTiming((mine ?? []) as any);
-    // ===== DAC：疑似拍照/查答案（明显比平时慢却几乎全对）→ 仅记录，管理员复查 =====
-    const checkAt = Math.max(LOOKUP_MIN_SAMPLES, match.question_count);
-    if (!timing.robotic && (mine?.length ?? 0) === checkAt) {
-      try {
-        const since = new Date(Date.now() - 30 * 86400000).toISOString();
-        const { data: past } = await admin
-          .from("match_answers").select("match_id, answered_at, answer")
-          .eq("player_id", profile.id).neq("match_id", matchId)
-          .gte("answered_at", since).order("answered_at", { ascending: false }).limit(400);
-        const byMatch = new Map<string, any[]>();
-        for (const r of past ?? []) { const a = byMatch.get(r.match_id) ?? []; a.push(r); byMatch.set(r.match_id, a); }
-        const lookup = analyzeLookup((mine ?? []) as any, [...byMatch.values()]);
-        // DAC：正确率突然暴涨（平时 <60%，本局 ≥95%）→ 记录复核
-        const { data: pastAcc } = await admin.from("match_answers").select("is_correct")
-          .eq("player_id", profile.id).neq("match_id", matchId).gte("answered_at", since).limit(500);
-        const pn = pastAcc?.length ?? 0;
-        const pastRate = pn ? pastAcc!.filter((r: any) => r.is_correct).length / pn : 1;
-        const curRate = (mine ?? []).filter((r: any) => r.is_correct).length / Math.max(1, mine?.length ?? 0);
-        if (pn >= 30 && pastRate < 0.6 && curRate >= 0.95) {
-          await admin.rpc("dac_flag", { p_profile_id: profile.id, p_source: "submit-answer", p_reason: "accuracy_spike",
-            p_severity: "medium", p_meta: { matchId, pastRate: Math.round(pastRate * 100) / 100, curRate: Math.round(curRate * 100) / 100, pastSamples: pn } });
-        }
-        if (lookup.suspicious) {
-          await admin.rpc("dac_flag", {
-            p_profile_id: profile.id, p_source: "submit-answer", p_reason: "suspected_answer_lookup",
-            p_severity: "medium", p_meta: { matchId, ...lookup, match_type: match.match_type, mode: match.mode },
-          });
-        }
-      } catch (_) { /* 检测失败不影响答题 */ }
-    }
+    // Fetch feedback and timing rows together; reuse timing rows for review-only speed checks.
+    const [feedback, { data: mine, error: timingError }] = await Promise.all([
+      feedbackTask,
+      admin.from("match_answers").select("question_index, answered_at, answer, is_correct")
+        .eq("match_id", matchId).eq("player_id", profile.id),
+    ]);
+    if (timingError) return json({ error: "Unable to validate answer timing" }, 503);
+    const timing = analyzeTiming(mine ?? []);
+    EdgeRuntime.waitUntil(reviewAnswer(admin, profile, match, matchId, questionIndex, elapsedMs,
+      isCorrect, mine ?? [], timing).catch(() => { console.error("Answer review unavailable"); }));
 
     if (timing.robotic) {
       return json({ ok: true, isCorrect, ...feedback, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });

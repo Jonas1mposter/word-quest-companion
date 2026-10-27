@@ -1,0 +1,51 @@
+/* Material finishes sit below player names, icons and controls. */
+:root {
+  --nc-material-light: 0 0% 100%;
+  --nc-material-dark: 220 20% 5%;
+  --nc-material-gold: 43 96% 58%;
+  --nc-material-glint: linear-gradient(115deg, transparent 20%, hsl(var(--nc-material-light) / .38) 42%, transparent 54%);
+  --nc-material-metal: linear-gradient(180deg, hsl(var(--nc-material-light) / .22), transparent 22%, hsl(var(--nc-material-dark) / .24) 45%, hsl(var(--nc-material-light) / .28) 72%, transparent);
+  --nc-material-relief: inset 0 1px 0 hsl(var(--nc-material-light) / .4), inset 0 -2px 0 hsl(var(--nc-material-dark) / .4);
+}
+
+.nc-material {
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.nc-material img {
+  position: absolute;
+  width: 300%;
+  height: 200%;
+  max-width: none;
+  opacity: .32;
+  pointer-events: none;
+}
+.nc-material::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.nc-material--matte img { left: -100%; top: 0; opacity: .14; mix-blend-mode: soft-light; }
+.nc-material--matte::after { box-shadow: inset 0 0 24px hsl(var(--nc-material-dark) / .18); }
+.nc-material--titanium img { left: 0; top: 0; mix-blend-mode: soft-light; opacity: .5; }
+.nc-material--titanium::after { background: var(--nc-material-metal); box-shadow: var(--nc-material-relief); }
+.nc-material--carbon img { left: -200%; top: 0; opacity: .4; mix-blend-mode: multiply; }
+.nc-material--carbon::after { box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .18), inset 0 0 28px hsl(var(--nc-material-dark) / .38); }
+.nc-material--gold img { left: 0; top: -100%; opacity: .44; mix-blend-mode: soft-light; }
+.nc-material--gold::after { background: var(--nc-material-metal); box-shadow: var(--nc-material-relief), inset 0 0 0 1px hsl(var(--nc-material-gold) / .5); }
+.nc-material--crystal img { left: -100%; top: -100%; opacity: .34; mix-blend-mode: soft-light; }
+.nc-material--crystal::after { background: var(--nc-material-glint); box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .55), inset 0 0 16px hsl(var(--nc-material-light) / .2); }
+.nc-material--holographic img { left: -200%; top: -100%; opacity: .5; mix-blend-mode: soft-light; }
+.nc-material--holographic::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 7s ease-in-out infinite; box-shadow: var(--nc-material-relief); }
+@keyframes nc-material-light {
+  0%, 100% { background-position: 100% 0; }
+  50% { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nc-material--holographic::after { animation: none; }
+}

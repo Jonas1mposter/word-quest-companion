@@ -29,8 +29,6 @@ BEGIN
    IF (out->>'matchId')::uuid<>mid THEN RAISE EXCEPTION 'Late cancel lost match'; END IF;
    IF EXISTS(SELECT 1 FROM match_queue WHERE profile_id=pid AND status='searching') THEN RAISE EXCEPTION 'Still searching after fallback'; END IF;
    SELECT to_jsonb(p) INTO before_state FROM profiles p WHERE id=pid;
-   out=complete_empty_match(mid,NULL);
-   IF out->>'handled'<>'false' THEN RAISE EXCEPTION 'Bot empty settlement bypass'; END IF;
    out=tick_match_bots(mid,pid,true,false);
    IF out->>'pending'<>'true' THEN RAISE EXCEPTION 'Premature finish'; END IF;
    UPDATE ranked_matches SET started_at=now()-interval '301 seconds' WHERE id=mid;

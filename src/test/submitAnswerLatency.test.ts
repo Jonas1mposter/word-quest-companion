@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import ts from "typescript";
+import { z } from "zod";
 
 const mocks = vi.hoisted(() => ({
   serve: vi.fn(), waitUntil: vi.fn(), review: vi.fn(), auth: vi.fn(),
@@ -28,7 +31,14 @@ describe("answer feedback critical path", () => {
     mocks.auth.mockResolvedValue({ profile: { id: "player" }, admin: {
       from: () => query, rpc: async () => ({ data: { ok: true, isCorrect: true }, error: null }),
     } });
-    await import("../../supabase/functions/submit-answer/index.ts");
+    // Execute the real Deno handler with injected transports; Vite cannot resolve npm: imports.
+    const source = readFileSync("supabase/functions/submit-answer/index.ts", "utf8")
+      .replace(/^import .*;\n/gm, "");
+    const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022 });
+    new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", compiled)(
+      z, {}, mocks.auth, (body: unknown, status = 200) => new Response(JSON.stringify(body), { status }),
+      mocks.feedback, mocks.timing, mocks.review,
+    );
     const handler = mocks.serve.mock.calls[0]?.[0];
     expect(handler).toBeTypeOf("function");
     const response = await handler(new Request("http://localhost/submit", { method: "POST", body: JSON.stringify({

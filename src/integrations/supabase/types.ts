@@ -1432,6 +1432,7 @@ export type Database = {
       match_bot_state: {
         Row: {
           bot_slots: number[]
+          cosmetics: Json
           created_at: string
           identities: Json
           match_id: string
@@ -1441,6 +1442,7 @@ export type Database = {
         }
         Insert: {
           bot_slots: number[]
+          cosmetics?: Json
           created_at?: string
           identities?: Json
           match_id: string
@@ -1450,6 +1452,7 @@ export type Database = {
         }
         Update: {
           bot_slots?: number[]
+          cosmetics?: Json
           created_at?: string
           identities?: Json
           match_id?: string
@@ -3982,6 +3985,7 @@ export type Database = {
       }
       purchase_priority: { Args: never; Returns: Json }
       purchase_sound_pack: { Args: { p_pack_id: string }; Returns: Json }
+      random_bot_cosmetics: { Args: never; Returns: Json }
       reaver_event_status: { Args: never; Returns: Json }
       record_daily_login: { Args: never; Returns: Json }
       redeem_code: {

@@ -1433,21 +1433,27 @@ export type Database = {
         Row: {
           bot_slots: number[]
           created_at: string
+          identities: Json
           match_id: string
+          rank_results: Json
           schedule: Json
           updated_at: string
         }
         Insert: {
           bot_slots: number[]
           created_at?: string
+          identities?: Json
           match_id: string
+          rank_results?: Json
           schedule: Json
           updated_at?: string
         }
         Update: {
           bot_slots?: number[]
           created_at?: string
+          identities?: Json
           match_id?: string
+          rank_results?: Json
           schedule?: Json
           updated_at?: string
         }
@@ -4071,6 +4077,10 @@ export type Database = {
         Returns: undefined
       }
       rogue_view: { Args: { p_run: string }; Returns: Json }
+      settle_fallback_rank: {
+        Args: { p_forfeiter?: string; p_match: string; p_winner: number }
+        Returns: Json
+      }
       team_boss_action: {
         Args: {
           p_action?: string

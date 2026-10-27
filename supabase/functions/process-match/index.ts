@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       : [match.player1_id, match.player2_id];
     if (!memberIds.includes(profile.id)) return json({ error: "Not in match" }, 403);
 
-    // Bot fallback never runs the competitive payout or rank branch.
+    // Fallback rank changes settle atomically in SQL; never reuse the PvP payout branch.
     const { data: botState, error: botError } = await admin.from('match_bot_state')
       .select('match_id').eq('match_id', matchId).maybeSingle();
     if (botError) throw new Error('Unable to verify match type');

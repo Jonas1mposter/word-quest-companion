@@ -26,7 +26,7 @@ export async function cancelSearch(requestId: string, mode: "1v1" | "2v2", party
   return typeof data?.matchId === "string" ? data.matchId : null;
 }
 
-export interface MatchBots { bot_slots: number[] }
+export interface MatchBots { bot_slots: number[]; identities?: Record<string, string> }
 export async function matchBots(matchId: string): Promise<MatchBots | null> {
   const { data, error } = await boundedRequest(supabase.functions.invoke("matchmaking", {
     body: { action: "bots", matchId },
@@ -39,8 +39,8 @@ export async function tickMatchBots(matchId: string) {
   return boundedRequest(supabase.functions.invoke("matchmaking", { body: { action: "tick", matchId } }));
 }
 
-export const botPlayer = (slot: number) => ({
+export const botPlayer = (slot: number, bots?: MatchBots | null) => ({
   isAI: true,
-  id: `bot-${slot}`, username: `人机 ${slot}`, level: 1, rank_tier: "bronze",
+  id: `bot-${slot}`, username: `${bots?.identities?.[String(slot)] ?? `人机 ${slot}`}（人机）`, level: 1, rank_tier: "bronze",
   rank_stars: 0, wins: 0, losses: 0, avatar_url: null,
 });

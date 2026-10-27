@@ -95,8 +95,8 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     setTeam2Score(match.team2_score ?? 0);
 
     const { data: profs } = await boundedRequest(supabase.from('profiles').select('*').in('id', [...team1Ids, ...team2Ids]));
-    setTeam1Profiles([profs?.find(p => p.id === match.player1_id), match.player3_id ? profs?.find(p => p.id === match.player3_id) : bots?.bot_slots.includes(3) ? botPlayer(3) : null].filter(Boolean));
-    setTeam2Profiles([match.player2_id ? profs?.find(p => p.id === match.player2_id) : bots?.bot_slots.includes(2) ? botPlayer(2) : null, match.player4_id ? profs?.find(p => p.id === match.player4_id) : bots?.bot_slots.includes(4) ? botPlayer(4) : null].filter(Boolean));
+    setTeam1Profiles([profs?.find(p => p.id === match.player1_id), match.player3_id ? profs?.find(p => p.id === match.player3_id) : bots?.bot_slots.includes(3) ? botPlayer(3, bots) : null].filter(Boolean));
+    setTeam2Profiles([match.player2_id ? profs?.find(p => p.id === match.player2_id) : bots?.bot_slots.includes(2) ? botPlayer(2, bots) : null, match.player4_id ? profs?.find(p => p.id === match.player4_id) : bots?.bot_slots.includes(4) ? botPlayer(4, bots) : null].filter(Boolean));
 
 
     const channel = supabase.channel(`match2v2-${matchId}`)
@@ -287,7 +287,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
           <Swords className="w-20 h-20 mx-auto mb-4 animate-bounce text-primary" />
           <h2 className="text-3xl font-gaming mb-2 text-primary">4 人已就位！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
-          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
+          {isBotMatch && <Badge variant="secondary">人机补位 · 排位结算</Badge>}
           {matchLoadError && <div role="alert" className="mt-4 space-y-3">
             <p className="text-destructive">{matchLoadError}</p>
             <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id); }}>重试</Button>
@@ -318,7 +318,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
               {team2Profiles.map(p => <PlayerBattleCard key={p.id} profile={mkPlayerProfile(p)} variant="right" className="max-w-[180px]" />)}
             </div>
           </div>
-          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
+          {isBotMatch && <Badge variant="secondary">人机补位 · 排位结算</Badge>}
           <div className="text-8xl font-gaming animate-bounce text-primary">
             {countdown > 0 ? countdown : question ? 'GO!' : '…'}
           </div>
@@ -345,7 +345,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto mb-4">
-          {isBotMatch && <Badge variant="secondary" className="mb-2">人机补位 · 不计排位分</Badge>}
+          {isBotMatch && <Badge variant="secondary" className="mb-2">人机补位 · 排位结算</Badge>}
           <div className="flex items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="flex flex-col gap-0.5 truncate">
@@ -406,7 +406,7 @@ const Battle2v2Arena = ({ onBack, subject = "mixed", partyId = null, initialMatc
             {isDraw ? '平局！' : isWinner ? '团队胜利！' : '团队失败'}
           </h2>
           {!isDraw && !isWinner && (() => { const k = (onTeam1Ref.current ? team2Profiles : team1Profiles).find((p: any) => isOraxPlayer(p)); return k ? <EliminatedByOrax by={k.username} /> : null; })()}
-          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
+          {isBotMatch && <Badge variant="secondary">人机补位 · 排位结算</Badge>}
           <div className="flex items-center justify-center gap-8 my-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">我方</p>

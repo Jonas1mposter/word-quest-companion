@@ -31,7 +31,7 @@ Deno.serve(async req => {
     const { data: m } = await admin.from('ranked_matches').select('player1_id,player2_id,player3_id,player4_id').eq('id', b.matchId).single();
     if (!m || ![m.player1_id, m.player2_id, m.player3_id, m.player4_id].includes(profile.id)) return json({ error: 'Not in match' }, 403);
     if (b.action === 'bots') {
-      const { data, error } = await admin.from('match_bot_state').select('bot_slots').eq('match_id', b.matchId).maybeSingle();
+      const { data, error } = await admin.from('match_bot_state').select('bot_slots,identities').eq('match_id', b.matchId).maybeSingle();
       if (error) return json({ error: 'Unable to load bots' }, 500);
       return json({ bots: data });
     }

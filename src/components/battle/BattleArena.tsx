@@ -133,7 +133,7 @@ const BattleArena = ({
     setOpponentScore(isPlayer1Ref.current ? match.player2_score : match.player1_score);
     setTimeLeft(remainingBattleSeconds(match.started_at));
     const opponentId = isPlayer1Ref.current ? match.player2_id : match.player1_id;
-    const opp = bots ? botPlayer(2) : (await boundedRequest(supabase.from('profiles').select('*').eq('id', opponentId ?? '').single())).data;
+    const opp = bots ? botPlayer(2, bots) : (await boundedRequest(supabase.from('profiles').select('*').eq('id', opponentId ?? '').single())).data;
     setOpponentProfile(opp);
 
     // 预讯过场：拉取对手佩戴的名片
@@ -370,7 +370,7 @@ const BattleArena = ({
           <Icon className={cn("w-20 h-20 mx-auto mb-4 animate-bounce", theme.accentText)} />
           <h2 className={cn("text-3xl font-gaming mb-2", theme.accentText)}>对手已找到！</h2>
           <p className="text-muted-foreground">准备战斗...</p>
-          {isBotMatch && <Badge variant="secondary">人机补位 · 不计排位分</Badge>}
+          {isBotMatch && <Badge variant="secondary">{matchType === 'ranked' ? '人机补位 · 排位结算' : '人机补位 · 自由赛'}</Badge>}
           {matchLoadError && <div role="alert" className="mt-4 space-y-3">
             <p className="text-destructive">{matchLoadError}</p>
             <Button onClick={() => { const id = loadingMatchIdRef.current; if (id) void loadMatch(id, false); }}>重试</Button>

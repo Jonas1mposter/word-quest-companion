@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BadgeIcon } from "@/components/ui/badge-icon";
 import { cn } from "@/lib/utils";
+import type { BotCosmetics } from "@/lib/matchmaking";
 
 interface PlayerBattleCardProps {
   profile: {
@@ -17,6 +18,7 @@ interface PlayerBattleCardProps {
     losses: number;
     avatar_url?: string | null;
     isAI?: boolean;
+    botCosmetics?: BotCosmetics;
   } | null;
   variant: "left" | "right";
   className?: string;
@@ -47,7 +49,12 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
     let active = true;
     setEquippedBadges([]);
     setEquippedNameCard(null);
-    if (!profile || profile.isAI) return;
+    if (!profile) return;
+    if (profile.isAI) {
+      setEquippedBadges(profile.botCosmetics?.badges ?? []);
+      setEquippedNameCard(profile.botCosmetics?.name_card ?? null);
+      return;
+    }
 
     // Fetch equipped badges
     const fetchBadges = async () => {
@@ -113,7 +120,7 @@ const PlayerBattleCard = ({ profile, variant, className }: PlayerBattleCardProps
     fetchBadges();
     fetchNameCard();
     return () => { active = false; };
-  }, [profile?.id, profile?.isAI]);
+  }, [profile?.id, profile?.isAI, profile?.botCosmetics]);
 
   if (!profile) return null;
 

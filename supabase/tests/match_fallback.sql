@@ -12,13 +12,13 @@ BEGIN
   FOREACH kind IN ARRAY ARRAY['ranked','free'] LOOP
    rid=gen_random_uuid();
    out=matchmaking_action(pid,rid,'1v1',kind,'fallback-test',NULL,false);
-   IF out->>'matchId' IS NOT NULL THEN RAISE EXCEPTION 'Fallback before 60s'; END IF;
-   UPDATE match_search_requests SET created_at=now()-interval '59 seconds' WHERE request_id=rid;
-   UPDATE match_queue SET created_at=now()-interval '59 seconds' WHERE profile_id=pid AND status='searching';
+   IF out->>'matchId' IS NOT NULL THEN RAISE EXCEPTION 'Fallback before 30s'; END IF;
+   UPDATE match_search_requests SET created_at=now()-interval '29 seconds' WHERE request_id=rid;
+   UPDATE match_queue SET created_at=now()-interval '29 seconds' WHERE profile_id=pid AND status='searching';
    out=matchmaking_action(pid,rid,'1v1',kind,'fallback-test',NULL,false);
-   IF out->>'matchId' IS NOT NULL THEN RAISE EXCEPTION 'Fallback at 59s'; END IF;
-   UPDATE match_search_requests SET created_at=now()-interval '60 seconds' WHERE request_id=rid;
-   UPDATE match_queue SET created_at=now()-interval '60 seconds' WHERE profile_id=pid AND status='searching';
+   IF out->>'matchId' IS NOT NULL THEN RAISE EXCEPTION 'Fallback at 29s'; END IF;
+   UPDATE match_search_requests SET created_at=now()-interval '30 seconds' WHERE request_id=rid;
+   UPDATE match_queue SET created_at=now()-interval '30 seconds' WHERE profile_id=pid AND status='searching';
    out=matchmaking_action(pid,rid,'1v1',kind,'fallback-test',NULL,false); mid=(out->>'matchId')::uuid;
    IF mid IS NULL OR NOT EXISTS(SELECT 1 FROM match_bot_state WHERE match_id=mid AND bot_slots=ARRAY[2]) THEN RAISE EXCEPTION '1v1 fallback missing'; END IF;
    again=(matchmaking_action(pid,rid,'1v1',kind,'fallback-test',NULL,false)->>'matchId')::uuid;
@@ -57,8 +57,8 @@ BEGIN
     party=gen_random_uuid(); INSERT INTO match_parties(id,leader_id,member_id,status,grade,subject,expires_at) VALUES(party,ids[1],ids[2],'ready',7,'fallback-test',now()+interval '10 minutes');
    END IF;
    PERFORM matchmaking_action(pid,rid,'2v2','ranked','fallback-test',party,false);
-   UPDATE match_search_requests SET created_at=now()-interval '60 seconds' WHERE request_id=rid;
-   UPDATE match_queue SET created_at=now()-interval '60 seconds' WHERE status='searching' AND (profile_id=pid OR party_id=party);
+   UPDATE match_search_requests SET created_at=now()-interval '30 seconds' WHERE request_id=rid;
+   UPDATE match_queue SET created_at=now()-interval '30 seconds' WHERE status='searching' AND (profile_id=pid OR party_id=party);
    out=matchmaking_action(pid,rid,'2v2','ranked','fallback-test',party,false); mid=(out->>'matchId')::uuid;
    IF mid IS NULL OR NOT EXISTS(SELECT 1 FROM ranked_matches WHERE id=mid AND question_count=15 AND player1_id=pid AND player3_id IS NOT DISTINCT FROM CASE WHEN mode='friends' THEN ids[2] END) THEN RAISE EXCEPTION '2v2 party or question total'; END IF;
    IF NOT EXISTS(SELECT 1 FROM match_bot_state WHERE match_id=mid AND bot_slots=CASE WHEN mode='friends' THEN ARRAY[2,4] ELSE ARRAY[2,3,4] END) THEN RAISE EXCEPTION '2v2 bot slots'; END IF;

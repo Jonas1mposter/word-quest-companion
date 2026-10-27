@@ -1,12 +1,15 @@
-/* Material finishes sit below player names, icons and controls. */
+/* Material finishes sit below player names, icons and controls.
+   Depth comes from darkening + crisp highlights, never milky white washes. */
 :root {
   --nc-material-light: 0 0% 100%;
-  --nc-material-dark: 220 20% 5%;
-  --nc-material-gold: 43 96% 58%;
-  --nc-material-gold-deep: 32 80% 28%;
-  --nc-material-glint: linear-gradient(115deg, transparent 30%, hsl(var(--nc-material-light) / .55) 46%, hsl(var(--nc-material-light) / .12) 50%, transparent 60%);
-  --nc-material-metal: linear-gradient(180deg, hsl(var(--nc-material-light) / .35) 0%, hsl(var(--nc-material-light) / .05) 18%, hsl(var(--nc-material-dark) / .35) 48%, hsl(var(--nc-material-light) / .3) 52%, hsl(var(--nc-material-dark) / .2) 80%, hsl(var(--nc-material-light) / .15) 100%);
-  --nc-material-relief: inset 0 1px 0 hsl(var(--nc-material-light) / .6), inset 0 -1px 0 hsl(var(--nc-material-dark) / .6), inset 1px 0 0 hsl(var(--nc-material-light) / .15), inset -1px 0 0 hsl(var(--nc-material-dark) / .3);
+  --nc-material-dark: 225 30% 4%;
+  --nc-material-gold: 43 96% 62%;
+  --nc-material-gold-deep: 28 85% 18%;
+  /* narrow, sharp specular streak */
+  --nc-material-glint: linear-gradient(110deg, transparent 44%, hsl(var(--nc-material-light) / .5) 49.5%, hsl(var(--nc-material-light) / .9) 50%, hsl(var(--nc-material-light) / .5) 50.5%, transparent 56%);
+  /* light from above, shadow below: gives the slab thickness */
+  --nc-material-depth: linear-gradient(180deg, hsl(var(--nc-material-light) / .16) 0%, transparent 30%, transparent 55%, hsl(var(--nc-material-dark) / .55) 100%);
+  --nc-material-edge: inset 0 1px 0 hsl(var(--nc-material-light) / .55), inset 0 -1px 0 hsl(var(--nc-material-dark) / .8), inset 0 0 0 1px hsl(var(--nc-material-dark) / .35);
 }
 
 .nc-material {
@@ -16,6 +19,7 @@
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
+  background: var(--nc-material-depth);
 }
 .nc-material img {
   position: absolute;
@@ -23,7 +27,9 @@
   height: 200%;
   max-width: none;
   pointer-events: none;
-  filter: contrast(1.35) saturate(.9);
+  opacity: .18;
+  mix-blend-mode: overlay;
+  filter: contrast(1.6) grayscale(1);
 }
 .nc-material::before,
 .nc-material::after {
@@ -33,73 +39,66 @@
   border-radius: inherit;
   pointer-events: none;
 }
-
-/* Matte: fine grain, soft vignette, no shine */
-.nc-material--matte img { left: -100%; top: 0; opacity: .3; mix-blend-mode: overlay; }
-.nc-material--matte::before {
-  background: repeating-radial-gradient(circle at 30% 40%, hsl(var(--nc-material-light) / .05) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
+.nc-material::after {
+  background: var(--nc-material-glint);
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  animation: nc-material-sweep 6s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+  box-shadow: var(--nc-material-edge);
 }
-.nc-material--matte::after { box-shadow: inset 0 0 30px hsl(var(--nc-material-dark) / .35), inset 0 1px 0 hsl(var(--nc-material-light) / .12); }
 
-/* Titanium: anisotropic brushed lines + cold specular band */
-.nc-material--titanium img { left: 0; top: 0; mix-blend-mode: overlay; opacity: .75; }
+/* Matte: no glint, soft grain, heavy vignette */
+.nc-material--matte img { left: -100%; top: 0; }
+.nc-material--matte::after { animation: none; background: none; box-shadow: inset 0 0 28px hsl(var(--nc-material-dark) / .5), var(--nc-material-edge); }
+
+/* Titanium: hairline brushed grain */
+.nc-material--titanium img { left: 0; top: 0; }
 .nc-material--titanium::before {
-  background:
-    repeating-linear-gradient(90deg, hsl(var(--nc-material-light) / .08) 0 1px, transparent 1px 2px, hsl(var(--nc-material-dark) / .1) 2px 3px),
-    var(--nc-material-metal);
+  background: repeating-linear-gradient(0deg, hsl(var(--nc-material-light) / .07) 0 1px, hsl(var(--nc-material-dark) / .12) 1px 2px);
   mix-blend-mode: overlay;
 }
-.nc-material--titanium::after { background: var(--nc-material-glint); background-size: 250% 100%; animation: nc-material-light 9s ease-in-out infinite; box-shadow: var(--nc-material-relief); mix-blend-mode: screen; }
 
-/* Carbon: twill weave with directional sheen and lacquer coat */
-.nc-material--carbon img { left: -200%; top: 0; opacity: .55; mix-blend-mode: multiply; }
+/* Carbon: tight twill weave, darkened, lacquer edge */
+.nc-material--carbon img { left: -200%; top: 0; }
 .nc-material--carbon::before {
   background:
-    repeating-linear-gradient(45deg, hsl(var(--nc-material-dark) / .55) 0 3px, hsl(var(--nc-material-light) / .1) 3px 4px, hsl(var(--nc-material-dark) / .3) 4px 7px),
-    repeating-linear-gradient(-45deg, hsl(var(--nc-material-dark) / .4) 0 3px, hsl(var(--nc-material-light) / .07) 3px 4px, transparent 4px 7px);
+    repeating-linear-gradient(45deg, hsl(var(--nc-material-dark) / .5) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, hsl(var(--nc-material-dark) / .35) 0 2px, hsl(var(--nc-material-light) / .06) 2px 4px);
   mix-blend-mode: multiply;
-  opacity: .8;
-}
-.nc-material--carbon::after {
-  background: linear-gradient(160deg, hsl(var(--nc-material-light) / .28) 0%, transparent 35%, transparent 65%, hsl(var(--nc-material-light) / .1) 100%);
-  box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .2), inset 0 0 30px hsl(var(--nc-material-dark) / .5);
 }
 
-/* Gold: warm brushed metal, deep shadow, bright specular */
-.nc-material--gold img { left: 0; top: -100%; opacity: .7; mix-blend-mode: overlay; }
+/* Gold: warm brushed grain + deep amber shadow + gold bezel */
+.nc-material--gold img { left: 0; top: -100%; }
 .nc-material--gold::before {
   background:
-    repeating-linear-gradient(90deg, hsl(var(--nc-material-light) / .07) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, hsl(var(--nc-material-gold) / .45), hsl(var(--nc-material-gold-deep) / .55) 50%, hsl(var(--nc-material-gold) / .5) 54%, hsl(var(--nc-material-gold-deep) / .6));
-  mix-blend-mode: overlay;
+    repeating-linear-gradient(0deg, hsl(var(--nc-material-light) / .06) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, transparent 40%, hsl(var(--nc-material-gold-deep) / .55));
+  mix-blend-mode: multiply;
 }
-.nc-material--gold::after { background: var(--nc-material-glint); background-size: 250% 100%; animation: nc-material-light 8s ease-in-out infinite; mix-blend-mode: screen; box-shadow: var(--nc-material-relief), inset 0 0 0 1px hsl(var(--nc-material-gold) / .65), inset 0 0 22px hsl(var(--nc-material-gold-deep) / .5); }
+.nc-material--gold::after { mix-blend-mode: overlay; box-shadow: var(--nc-material-edge), inset 0 0 0 1px hsl(var(--nc-material-gold) / .6); }
 
-/* Crystal: faceted refraction + sharp edge light */
-.nc-material--crystal img { left: -100%; top: -100%; opacity: .6; mix-blend-mode: overlay; }
+/* Crystal: hard-edged facets */
+.nc-material--crystal img { left: -100%; top: -100%; }
 .nc-material--crystal::before {
   background:
-    linear-gradient(120deg, hsl(var(--nc-material-light) / .22) 0 18%, transparent 18% 40%, hsl(var(--nc-material-light) / .14) 40% 52%, transparent 52% 75%, hsl(var(--nc-material-light) / .18) 75%),
-    linear-gradient(30deg, transparent 0 35%, hsl(var(--nc-material-dark) / .2) 35% 60%, transparent 60%);
-  mix-blend-mode: overlay;
+    linear-gradient(118deg, transparent 0 22%, hsl(var(--nc-material-dark) / .28) 22% 41%, transparent 41% 63%, hsl(var(--nc-material-dark) / .2) 63% 78%, transparent 78%),
+    linear-gradient(62deg, hsl(var(--nc-material-light) / .1) 0 30%, transparent 30% 70%, hsl(var(--nc-material-light) / .08) 70%);
 }
-.nc-material--crystal::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 6s ease-in-out infinite; mix-blend-mode: screen; box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .7), inset 0 0 18px hsl(var(--nc-material-light) / .3); }
+.nc-material--crystal::after { mix-blend-mode: overlay; }
 
-/* Holographic: iridescent diffraction that shifts */
-.nc-material--holographic img { left: -200%; top: -100%; opacity: .7; mix-blend-mode: overlay; }
+/* Holographic: fine diffraction lines that shift, kept dark so it does not go milky */
+.nc-material--holographic img { left: -200%; top: -100%; }
 .nc-material--holographic::before {
-  background: repeating-linear-gradient(115deg, hsl(0 90% 65% / .25), hsl(60 90% 65% / .25) 8%, hsl(160 90% 60% / .25) 16%, hsl(220 90% 65% / .25) 24%, hsl(300 90% 65% / .25) 32%, hsl(0 90% 65% / .25) 40%);
-  background-size: 300% 100%;
-  mix-blend-mode: color-dodge;
-  animation: nc-material-light 10s linear infinite;
+  background: repeating-linear-gradient(100deg, hsl(var(--nc-material-dark) / .22) 0 2px, transparent 2px 5px);
+  mix-blend-mode: multiply;
 }
-.nc-material--holographic::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 7s ease-in-out infinite; mix-blend-mode: screen; box-shadow: var(--nc-material-relief); }
+.nc-material--holographic::after { mix-blend-mode: overlay; }
 
-@keyframes nc-material-light {
-  0%, 100% { background-position: 100% 0; }
-  50% { background-position: 0 0; }
+@keyframes nc-material-sweep {
+  0% { background-position: 120% 0; }
+  60%, 100% { background-position: -20% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nc-material::before, .nc-material::after { animation: none; }
+  .nc-material::after { animation: none; }
 }

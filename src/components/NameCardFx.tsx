@@ -1,4 +1,16 @@
 import { CSSProperties } from "react";
+import materialAtlas from "@/assets/name-card-materials.jpg";
+import "./name-card-materials.css";
+
+/** Presentation only: finishes never affect ownership, rarity or rewards. */
+const MATERIAL: Record<string, string> = {
+  common: "matte",
+  rare: "titanium",
+  epic: "carbon",
+  legendary: "gold",
+  mythology: "crystal",
+  hidden: "holographic",
+};
 
 /** Decorative rarity effects layered inside a `.nc-card` container. */
 const BORDER: Record<string, string> = {
@@ -49,14 +61,16 @@ export default function NameCardFx({ rarity, background }: { rarity?: string; ba
       {r === "mythology" && <span className="nc-flame" aria-hidden />}
       {r === "mythology" && <span className="nc-border nc-border-rev" style={{ background: "conic-gradient(from 90deg, transparent, #ffd54f, transparent 35%, #ff1744, transparent 70%)" }} aria-hidden />}
       {r === "mythology" && border && <span className="nc-border-inner" style={{ background }} aria-hidden />}
-      <span className="nc-pattern" aria-hidden />
+      <span className={`nc-material nc-material--${MATERIAL[r] ?? "matte"}`} aria-hidden>
+        <img src={materialAtlas} alt="" loading="lazy" decoding="async" width={1536} height={1024} />
+      </span>
       {r === "mythology" && <span className="nc-bolt" aria-hidden />}
       {Array.from({ length: stars }).map((_, i) => (
         <span key={`s${i}`} className="nc-star" aria-hidden
           style={{ left: `${8 + ((i * 41) % 84)}%`, top: `${12 + ((i * 29) % 70)}%`, animationDelay: `${(i * 0.45) % 2.2}s`,
             ["--nc-star" as any]: r === "mythology" ? "#ffb199" : "#fde68a" }} />
       ))}
-      {r !== "common" && r !== "rare" && <span className="nc-holo" aria-hidden />}
+      {r === "hidden" && <span className="nc-holo" aria-hidden />}
       {pColor &&
         Array.from({ length: count }).map((_, i) => (
           <span

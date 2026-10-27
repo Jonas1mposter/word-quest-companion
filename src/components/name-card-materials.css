@@ -3,9 +3,10 @@
   --nc-material-light: 0 0% 100%;
   --nc-material-dark: 220 20% 5%;
   --nc-material-gold: 43 96% 58%;
-  --nc-material-glint: linear-gradient(115deg, transparent 20%, hsl(var(--nc-material-light) / .38) 42%, transparent 54%);
-  --nc-material-metal: linear-gradient(180deg, hsl(var(--nc-material-light) / .22), transparent 22%, hsl(var(--nc-material-dark) / .24) 45%, hsl(var(--nc-material-light) / .28) 72%, transparent);
-  --nc-material-relief: inset 0 1px 0 hsl(var(--nc-material-light) / .4), inset 0 -2px 0 hsl(var(--nc-material-dark) / .4);
+  --nc-material-gold-deep: 32 80% 28%;
+  --nc-material-glint: linear-gradient(115deg, transparent 30%, hsl(var(--nc-material-light) / .55) 46%, hsl(var(--nc-material-light) / .12) 50%, transparent 60%);
+  --nc-material-metal: linear-gradient(180deg, hsl(var(--nc-material-light) / .35) 0%, hsl(var(--nc-material-light) / .05) 18%, hsl(var(--nc-material-dark) / .35) 48%, hsl(var(--nc-material-light) / .3) 52%, hsl(var(--nc-material-dark) / .2) 80%, hsl(var(--nc-material-light) / .15) 100%);
+  --nc-material-relief: inset 0 1px 0 hsl(var(--nc-material-light) / .6), inset 0 -1px 0 hsl(var(--nc-material-dark) / .6), inset 1px 0 0 hsl(var(--nc-material-light) / .15), inset -1px 0 0 hsl(var(--nc-material-dark) / .3);
 }
 
 .nc-material {
@@ -21,31 +22,84 @@
   width: 300%;
   height: 200%;
   max-width: none;
-  opacity: .32;
   pointer-events: none;
+  filter: contrast(1.35) saturate(.9);
 }
+.nc-material::before,
 .nc-material::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  pointer-events: none;
 }
-.nc-material--matte img { left: -100%; top: 0; opacity: .14; mix-blend-mode: soft-light; }
-.nc-material--matte::after { box-shadow: inset 0 0 24px hsl(var(--nc-material-dark) / .18); }
-.nc-material--titanium img { left: 0; top: 0; mix-blend-mode: soft-light; opacity: .5; }
-.nc-material--titanium::after { background: var(--nc-material-metal); box-shadow: var(--nc-material-relief); }
-.nc-material--carbon img { left: -200%; top: 0; opacity: .4; mix-blend-mode: multiply; }
-.nc-material--carbon::after { box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .18), inset 0 0 28px hsl(var(--nc-material-dark) / .38); }
-.nc-material--gold img { left: 0; top: -100%; opacity: .44; mix-blend-mode: soft-light; }
-.nc-material--gold::after { background: var(--nc-material-metal); box-shadow: var(--nc-material-relief), inset 0 0 0 1px hsl(var(--nc-material-gold) / .5); }
-.nc-material--crystal img { left: -100%; top: -100%; opacity: .34; mix-blend-mode: soft-light; }
-.nc-material--crystal::after { background: var(--nc-material-glint); box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .55), inset 0 0 16px hsl(var(--nc-material-light) / .2); }
-.nc-material--holographic img { left: -200%; top: -100%; opacity: .5; mix-blend-mode: soft-light; }
-.nc-material--holographic::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 7s ease-in-out infinite; box-shadow: var(--nc-material-relief); }
+
+/* Matte: fine grain, soft vignette, no shine */
+.nc-material--matte img { left: -100%; top: 0; opacity: .3; mix-blend-mode: overlay; }
+.nc-material--matte::before {
+  background: repeating-radial-gradient(circle at 30% 40%, hsl(var(--nc-material-light) / .05) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+.nc-material--matte::after { box-shadow: inset 0 0 30px hsl(var(--nc-material-dark) / .35), inset 0 1px 0 hsl(var(--nc-material-light) / .12); }
+
+/* Titanium: anisotropic brushed lines + cold specular band */
+.nc-material--titanium img { left: 0; top: 0; mix-blend-mode: overlay; opacity: .75; }
+.nc-material--titanium::before {
+  background:
+    repeating-linear-gradient(90deg, hsl(var(--nc-material-light) / .08) 0 1px, transparent 1px 2px, hsl(var(--nc-material-dark) / .1) 2px 3px),
+    var(--nc-material-metal);
+  mix-blend-mode: overlay;
+}
+.nc-material--titanium::after { background: var(--nc-material-glint); background-size: 250% 100%; animation: nc-material-light 9s ease-in-out infinite; box-shadow: var(--nc-material-relief); mix-blend-mode: screen; }
+
+/* Carbon: twill weave with directional sheen and lacquer coat */
+.nc-material--carbon img { left: -200%; top: 0; opacity: .55; mix-blend-mode: multiply; }
+.nc-material--carbon::before {
+  background:
+    repeating-linear-gradient(45deg, hsl(var(--nc-material-dark) / .55) 0 3px, hsl(var(--nc-material-light) / .1) 3px 4px, hsl(var(--nc-material-dark) / .3) 4px 7px),
+    repeating-linear-gradient(-45deg, hsl(var(--nc-material-dark) / .4) 0 3px, hsl(var(--nc-material-light) / .07) 3px 4px, transparent 4px 7px);
+  mix-blend-mode: multiply;
+  opacity: .8;
+}
+.nc-material--carbon::after {
+  background: linear-gradient(160deg, hsl(var(--nc-material-light) / .28) 0%, transparent 35%, transparent 65%, hsl(var(--nc-material-light) / .1) 100%);
+  box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .2), inset 0 0 30px hsl(var(--nc-material-dark) / .5);
+}
+
+/* Gold: warm brushed metal, deep shadow, bright specular */
+.nc-material--gold img { left: 0; top: -100%; opacity: .7; mix-blend-mode: overlay; }
+.nc-material--gold::before {
+  background:
+    repeating-linear-gradient(90deg, hsl(var(--nc-material-light) / .07) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, hsl(var(--nc-material-gold) / .45), hsl(var(--nc-material-gold-deep) / .55) 50%, hsl(var(--nc-material-gold) / .5) 54%, hsl(var(--nc-material-gold-deep) / .6));
+  mix-blend-mode: overlay;
+}
+.nc-material--gold::after { background: var(--nc-material-glint); background-size: 250% 100%; animation: nc-material-light 8s ease-in-out infinite; mix-blend-mode: screen; box-shadow: var(--nc-material-relief), inset 0 0 0 1px hsl(var(--nc-material-gold) / .65), inset 0 0 22px hsl(var(--nc-material-gold-deep) / .5); }
+
+/* Crystal: faceted refraction + sharp edge light */
+.nc-material--crystal img { left: -100%; top: -100%; opacity: .6; mix-blend-mode: overlay; }
+.nc-material--crystal::before {
+  background:
+    linear-gradient(120deg, hsl(var(--nc-material-light) / .22) 0 18%, transparent 18% 40%, hsl(var(--nc-material-light) / .14) 40% 52%, transparent 52% 75%, hsl(var(--nc-material-light) / .18) 75%),
+    linear-gradient(30deg, transparent 0 35%, hsl(var(--nc-material-dark) / .2) 35% 60%, transparent 60%);
+  mix-blend-mode: overlay;
+}
+.nc-material--crystal::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 6s ease-in-out infinite; mix-blend-mode: screen; box-shadow: inset 0 0 0 1px hsl(var(--nc-material-light) / .7), inset 0 0 18px hsl(var(--nc-material-light) / .3); }
+
+/* Holographic: iridescent diffraction that shifts */
+.nc-material--holographic img { left: -200%; top: -100%; opacity: .7; mix-blend-mode: overlay; }
+.nc-material--holographic::before {
+  background: repeating-linear-gradient(115deg, hsl(0 90% 65% / .25), hsl(60 90% 65% / .25) 8%, hsl(160 90% 60% / .25) 16%, hsl(220 90% 65% / .25) 24%, hsl(300 90% 65% / .25) 32%, hsl(0 90% 65% / .25) 40%);
+  background-size: 300% 100%;
+  mix-blend-mode: color-dodge;
+  animation: nc-material-light 10s linear infinite;
+}
+.nc-material--holographic::after { background: var(--nc-material-glint); background-size: 220% 100%; animation: nc-material-light 7s ease-in-out infinite; mix-blend-mode: screen; box-shadow: var(--nc-material-relief); }
+
 @keyframes nc-material-light {
   0%, 100% { background-position: 100% 0; }
   50% { background-position: 0 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nc-material--holographic::after { animation: none; }
+  .nc-material::before, .nc-material::after { animation: none; }
 }

@@ -1,0 +1,1 @@
+update public.tb_series set status = 'cancelled' where id = 'a27b032a-c52f-49cc-8408-ab9da4eafabc';

@@ -61,7 +61,9 @@ export default function TeamBattleSpectate() {
     return () => { clearInterval(t); clearInterval(c); };
   }, [seriesId, slot, refresh]);
 
-  const left = state ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const left = state?.endsAt ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const breakLeft = state?.breakEndsAt ? Math.max(0, Math.ceil((new Date(state.breakEndsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const inGame = state?.status === "active" && state?.gameStatus === "active";
   const sideCorrect = (sd: number) => state?.players.filter(p => p.side === sd).reduce((a, p) => a + p.correct, 0) ?? 0;
   const winDots = (wins: number) => [0, 1].map(i => (
     <span key={i} className={`inline-block h-3 w-3 rounded-full ${i < wins ? "bg-gold" : "bg-muted"}`} />

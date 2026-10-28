@@ -25,6 +25,7 @@ import HalloweenBattle from "./pages/HalloweenBattle";
 import Entertainment from "./pages/Entertainment";
 import Roguelike from "./pages/Roguelike";
 import TeamBoss from "./pages/TeamBoss";
+import TeamBattle from "./pages/TeamBattle";
 import Shop from "./pages/Shop";
 import SeasonManual from "./pages/SeasonManual";
 import SeasonPassManual from "./pages/SeasonPassManual";
@@ -67,6 +68,7 @@ const App = () => {
               <Route path="/entertainment" element={<Entertainment />} />
               <Route path="/roguelike" element={<Roguelike />} />
               <Route path="/team-boss" element={<TeamBoss />} />
+              <Route path="/team-battle" element={<TeamBattle />} />
               <Route path="/lottery/champions-2024" element={<Lottery />} />
               <Route path="/lottery/glory-crown" element={<GloryCrownLottery />} />
               <Route path="/lottery/orax-beats" element={<OraxBeatsLottery />} />

@@ -2732,6 +2732,249 @@ export type Database = {
         }
         Relationships: []
       }
+      tb_games: {
+        Row: {
+          ends_at: string
+          game_no: number
+          score_a: number | null
+          score_b: number | null
+          series_id: string
+          started_at: string
+          status: string
+          time_a: number | null
+          time_b: number | null
+          winner_side: number | null
+        }
+        Insert: {
+          ends_at?: string
+          game_no: number
+          score_a?: number | null
+          score_b?: number | null
+          series_id: string
+          started_at?: string
+          status?: string
+          time_a?: number | null
+          time_b?: number | null
+          winner_side?: number | null
+        }
+        Update: {
+          ends_at?: string
+          game_no?: number
+          score_a?: number | null
+          score_b?: number | null
+          series_id?: string
+          started_at?: string
+          status?: string
+          time_a?: number | null
+          time_b?: number | null
+          winner_side?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tb_games_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "tb_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tb_player_games: {
+        Row: {
+          answered: number
+          correct: number
+          finished_at: string | null
+          game_no: number
+          series_id: string
+          side: number
+          slot: number
+          total_ms: number
+        }
+        Insert: {
+          answered?: number
+          correct?: number
+          finished_at?: string | null
+          game_no: number
+          series_id: string
+          side: number
+          slot: number
+          total_ms?: number
+        }
+        Update: {
+          answered?: number
+          correct?: number
+          finished_at?: string | null
+          game_no?: number
+          series_id?: string
+          side?: number
+          slot?: number
+          total_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tb_player_games_series_id_game_no_fkey"
+            columns: ["series_id", "game_no"]
+            isOneToOne: false
+            referencedRelation: "tb_games"
+            referencedColumns: ["series_id", "game_no"]
+          },
+        ]
+      }
+      tb_players: {
+        Row: {
+          avatar_url: string | null
+          display_name: string
+          profile_id: string
+          series_id: string
+          side: number
+          slot: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          display_name: string
+          profile_id: string
+          series_id: string
+          side: number
+          slot: number
+        }
+        Update: {
+          avatar_url?: string | null
+          display_name?: string
+          profile_id?: string
+          series_id?: string
+          side?: number
+          slot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tb_players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tb_players_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "tb_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tb_questions: {
+        Row: {
+          answer: string
+          game_no: number
+          idx: number
+          issued_at: string
+          options: Json
+          prompt: string
+          series_id: string
+          side: number
+          slot: number
+        }
+        Insert: {
+          answer: string
+          game_no: number
+          idx: number
+          issued_at?: string
+          options: Json
+          prompt: string
+          series_id: string
+          side: number
+          slot: number
+        }
+        Update: {
+          answer?: string
+          game_no?: number
+          idx?: number
+          issued_at?: string
+          options?: Json
+          prompt?: string
+          series_id?: string
+          side?: number
+          slot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tb_questions_series_id_game_no_fkey"
+            columns: ["series_id", "game_no"]
+            isOneToOne: false
+            referencedRelation: "tb_games"
+            referencedColumns: ["series_id", "game_no"]
+          },
+        ]
+      }
+      tb_series: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_game: number
+          grade_key: number
+          id: string
+          kind: string
+          name_a: string
+          name_b: string
+          status: string
+          team_a: string | null
+          team_b: string | null
+          updated_at: string
+          winner_side: number | null
+          wins_a: number
+          wins_b: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_game?: number
+          grade_key?: number
+          id?: string
+          kind: string
+          name_a: string
+          name_b: string
+          status?: string
+          team_a?: string | null
+          team_b?: string | null
+          updated_at?: string
+          winner_side?: number | null
+          wins_a?: number
+          wins_b?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_game?: number
+          grade_key?: number
+          id?: string
+          kind?: string
+          name_a?: string
+          name_b?: string
+          status?: string
+          team_a?: string | null
+          team_b?: string | null
+          updated_at?: string
+          winner_side?: number | null
+          wins_a?: number
+          wins_b?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tb_series_team_a_fkey"
+            columns: ["team_a"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tb_series_team_b_fkey"
+            columns: ["team_b"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_classes: {
         Row: {
           class_name: string
@@ -4085,6 +4328,42 @@ export type Database = {
         Args: { p_forfeiter?: string; p_match: string; p_winner: number }
         Returns: Json
       }
+      tb_answer: {
+        Args: { p_answer: string; p_index: number; p_series: string }
+        Returns: Json
+      }
+      tb_create_series: {
+        Args: {
+          p_a: string[]
+          p_b: string[]
+          p_grade?: number
+          p_kind: string
+          p_name_a: string
+          p_name_b: string
+          p_team_a?: string
+          p_team_b?: string
+        }
+        Returns: Json
+      }
+      tb_issue: {
+        Args: {
+          p_game: number
+          p_grade: number
+          p_idx: number
+          p_series: string
+          p_side: number
+          p_slot: number
+        }
+        Returns: undefined
+      }
+      tb_me: { Args: never; Returns: string }
+      tb_my_series: { Args: never; Returns: string }
+      tb_start_game: {
+        Args: { p_game: number; p_grade: number; p_series: string }
+        Returns: undefined
+      }
+      tb_state: { Args: { p_series: string }; Returns: Json }
+      tb_tick: { Args: { p_series: string }; Returns: undefined }
       team_boss_action: {
         Args: {
           p_action?: string

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Shield, Users, Crown, BookOpen, Award, Coins,
-  MessageSquareText, Swords, ShieldAlert, Ban, UserCheck,
+  MessageSquareText, Swords, ShieldAlert, Ban, UserCheck, Trophy,
 } from "lucide-react";
 import { useAdminData } from "./admin/useAdminData";
 import { UsersTab } from "./admin/UsersTab";
@@ -19,6 +19,7 @@ import { MatchesTab } from "./admin/MatchesTab";
 import { DacTab } from "./admin/DacTab";
 import { ModerationTab } from "./admin/ModerationTab";
 import { NameReviewTab } from "./admin/NameReviewTab";
+import { TeamBattleTab } from "./admin/TeamBattleTab";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-10 max-w-5xl">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />用户管理
             </TabsTrigger>
@@ -120,6 +121,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="names" className="flex items-center gap-2">
               <UserCheck className="w-4 h-4" />改名审核
+            </TabsTrigger>
+            <TabsTrigger value="teambattle" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />战队赛
             </TabsTrigger>
           </TabsList>
 
@@ -151,6 +155,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="dac">
             <DacTab />
+          </TabsContent>
+          <TabsContent value="teambattle">
+            <TeamBattleTab users={users} />
           </TabsContent>
         </Tabs>
       </div>

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Shield, Users, Crown, BookOpen, Award, Coins,
-  MessageSquareText, Swords, ShieldAlert, Ban, UserCheck,
+  MessageSquareText, Swords, ShieldAlert, Ban, UserCheck, Trophy,
 } from "lucide-react";
 import { useAdminData } from "./admin/useAdminData";
 import { UsersTab } from "./admin/UsersTab";

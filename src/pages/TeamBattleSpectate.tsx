@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Loader2, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Pause, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +16,9 @@ interface SpecState {
   ok: boolean; error?: string; kind: string; status: string;
   nameA: string; nameB: string; winsA: number; winsB: number; currentGame: number; winnerSide: number | null;
   players: TbPlayer[]; games: TbGame[];
-  gameStatus: string; endsAt: string; serverNow: string;
+  gameStatus: string; endsAt: string; serverNow: string; breakEndsAt: string | null;
   watch: { side: number; slot: number; name: string; answered: number; correct: number;
-    question: { index: number; total: number; prompt: string; options: string[] } | null };
+    question: { index: number; total: number; type: string; prompt: string; options: string[] } | null };
 }
 
 const rpc = async <T,>(fn: string, args?: Record<string, unknown>): Promise<T> => {

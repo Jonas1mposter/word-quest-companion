@@ -135,7 +135,7 @@ export default function TeamBattleSpectate() {
               <div className="order-2 text-center">
                 <div className="text-xs text-muted-foreground">第 {state.currentGame} 局 · BO3</div>
                 <div className="font-gaming text-xl">
-                  {state.status === "active" && state.gameStatus === "active" ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
+                  {inGame ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">{state.winsA} : {state.winsB}</div>
               </div>

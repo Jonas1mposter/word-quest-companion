@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Crown, Eye, Loader2, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, Crown, Eye, Loader2, Pause, Swords, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -14,10 +15,11 @@ interface TbGame { gameNo: number; status: string; scoreA: number | null; scoreB
 interface TbState {
   ok: boolean; error?: string; kind: string; status: string;
   nameA: string; nameB: string; winsA: number; winsB: number; currentGame: number; winnerSide: number | null;
+  breakEndsAt: string | null;
   mySide: number; mySlot: number; players: TbPlayer[]; games: TbGame[];
   gameStatus: string; endsAt: string; serverNow: string;
   myAnswered: number; myCorrect: number;
-  question: { index: number; total: number; prompt: string; options: string[] } | null;
+  question: { index: number; total: number; type: string; prompt: string; options: string[] } | null;
 }
 
 const rpc = async <T,>(fn: string, args?: Record<string, unknown>): Promise<T> => {
@@ -35,6 +37,7 @@ export default function TeamBattle() {
   const [busy, setBusy] = useState(false);
   const comboFx = useComboFx();
   const [feedback, setFeedback] = useState<{ correct: boolean; answer: string; picked: string } | null>(null);
+  const [fillValue, setFillValue] = useState("");
   const [now, setNow] = useState(Date.now());
   const clockOffset = useRef(0);
 
@@ -67,6 +70,7 @@ export default function TeamBattle() {
 
   const answer = async (opt: string) => {
     if (!seriesId || !state?.question || busy || feedback) return;
+    if (state.question.type === "fill" && !opt.trim()) return;
     setBusy(true);
     try {
       const r = await rpc<{ ok: boolean; error?: string; correct: boolean; answer: string }>("tb_answer",
@@ -74,15 +78,17 @@ export default function TeamBattle() {
       if (!r.ok) { toast.error(r.error ?? "提交失败"); await refresh(); return; }
       setFeedback({ correct: r.correct, answer: r.answer, picked: opt });
       comboFx.register(r.correct);
-      setTimeout(async () => { setFeedback(null); await refresh(); }, 900);
+      setTimeout(async () => { setFeedback(null); setFillValue(""); await refresh(); }, 1200);
     } catch { toast.error("网络异常，请再点一次同一个答案"); } finally { setBusy(false); }
   };
 
-  const left = state ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const left = state?.endsAt ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const breakLeft = state?.breakEndsAt ? Math.max(0, Math.ceil((new Date(state.breakEndsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
   const sideCorrect = (sd: number) => state?.players.filter(p => p.side === sd).reduce((a, p) => a + p.correct, 0) ?? 0;
   const winDots = (wins: number) => [0, 1].map(i => (
     <span key={i} className={`inline-block h-3 w-3 rounded-full ${i < wins ? "bg-gold" : "bg-muted"}`} />
   ));
+  const inGame = state?.status === "active" && state?.gameStatus === "active";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -111,15 +117,15 @@ export default function TeamBattle() {
           <div className="space-y-4 py-16 text-center">
             <Swords className="mx-auto h-12 w-12 text-muted-foreground" />
             <h1 className="font-gaming text-3xl">2v2 战队赛</h1>
-            <p className="text-sm text-muted-foreground">每人每局 50 题，三局两胜（BO3）。全队答对总数高者赢下本局，打平比总用时。</p>
-            <p className="text-sm text-muted-foreground">这是比赛专用模式，由管理员创建对阵后，参赛选手打开本页即可参赛。</p>
+            <p className="text-sm text-muted-foreground">每人每局 50 题（选择 + 填空混合），三局两胜（BO3），局间有中场休息。全队答对总数高者赢下本局，打平比总用时。</p>
+            <p className="text-sm text-muted-foreground">这是比赛专用模式，由管理员创建房间并统一开赛。</p>
             <p className="text-xs text-muted-foreground">你目前没有进行中的比赛。</p>
           </div>
         )}
 
         {profile && seriesId && !state && <Loader2 className="mx-auto h-10 w-10 animate-spin" />}
 
-        {profile && seriesId && state && state.status === "active" && <><KillStreakBanner combo={comboFx.combo} /><SoundVariantSwitcher /></>}
+        {profile && seriesId && state && inGame && <><KillStreakBanner combo={comboFx.combo} /><SoundVariantSwitcher /></>}
 
         {profile && seriesId && state && (
           <>
@@ -142,16 +148,34 @@ export default function TeamBattle() {
               <div className="order-2 text-center">
                 <div className="text-xs text-muted-foreground">第 {state.currentGame} 局 · BO3</div>
                 <div className="font-gaming text-xl">
-                  {state.status === "active" && state.gameStatus === "active" ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
+                  {inGame ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">{state.winsA} : {state.winsB}</div>
               </div>
             </div>
 
-            {state.status === "active" && state.gameStatus === "active" && state.question && (
+            {state.status === "lobby" && (
+              <section className="space-y-4 border border-gold/40 bg-card p-8 text-center">
+                <Swords className="mx-auto h-10 w-10 text-gold" />
+                <h2 className="font-gaming text-2xl">等待开赛</h2>
+                <p className="text-sm text-muted-foreground">你已进房间。管理员开赛后比赛自动开始，请保持本页打开。</p>
+                <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+              </section>
+            )}
+
+            {state.status === "halftime" && (
+              <section className="space-y-4 border border-border bg-card p-8 text-center">
+                <Pause className="mx-auto h-10 w-10 text-gold" />
+                <h2 className="font-gaming text-2xl">中场休息</h2>
+                <p className="font-gaming text-4xl">{Math.floor(breakLeft / 60)}:{String(breakLeft % 60).padStart(2, "0")}</p>
+                <p className="text-sm text-muted-foreground">第 {state.currentGame} 局结束，休息结束后自动开始下一局。</p>
+              </section>
+            )}
+
+            {inGame && state.question && state.question.type === "choice" && (
               <section className="space-y-4 border border-border bg-card p-6">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>第 {state.question.index + 1} / 50 题</span>
+                  <span>第 {state.question.index + 1} / 50 题 · 选择</span>
                   <span>我已答对 {state.myCorrect}</span>
                 </div>
                 <h2 className="text-center font-gaming text-4xl" data-no-translate>{state.question.prompt}</h2>
@@ -169,12 +193,30 @@ export default function TeamBattle() {
               </section>
             )}
 
-            {state.status === "active" && state.gameStatus === "active" && !state.question && (
-              <p className="text-center text-muted-foreground">你已答完本局 50 题，等待其他选手…</p>
+            {inGame && state.question && state.question.type === "fill" && (
+              <section className="space-y-4 border border-border bg-card p-6">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>第 {state.question.index + 1} / 50 题 · 填空</span>
+                  <span>我已答对 {state.myCorrect}</span>
+                </div>
+                <h2 className="text-center font-gaming text-3xl" data-no-translate>{state.question.prompt}</h2>
+                <p className="text-center text-xs text-muted-foreground">写出对应的英文单词</p>
+                {feedback ? (
+                  <p className={`text-center font-gaming text-2xl ${feedback.correct ? "text-success" : "text-destructive"}`} data-no-translate>
+                    {feedback.correct ? "正确！" : `正确答案：${feedback.answer}`}
+                  </p>
+                ) : (
+                  <form className="mx-auto flex max-w-sm gap-2" onSubmit={e => { e.preventDefault(); answer(fillValue); }}>
+                    <Input value={fillValue} onChange={e => setFillValue(e.target.value)} placeholder="输入英文单词…"
+                      autoFocus disabled={busy} className="text-center text-lg" autoCapitalize="off" autoCorrect="off" />
+                    <Button type="submit" variant="hero" disabled={busy || !fillValue.trim()}>提交</Button>
+                  </form>
+                )}
+              </section>
             )}
 
-            {state.status === "active" && state.gameStatus !== "active" && (
-              <p className="text-center text-muted-foreground">本局结束，下一局马上开始…</p>
+            {inGame && !state.question && (
+              <p className="text-center text-muted-foreground">你已答完本局 50 题，等待其他选手…</p>
             )}
 
             {state.games.some(g => g.status === "finished") && (

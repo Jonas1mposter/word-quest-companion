@@ -2870,6 +2870,7 @@ export type Database = {
           issued_at: string
           options: Json
           prompt: string
+          qtype: string
           series_id: string
           side: number
           slot: number
@@ -2881,6 +2882,7 @@ export type Database = {
           issued_at?: string
           options: Json
           prompt: string
+          qtype?: string
           series_id: string
           side: number
           slot: number
@@ -2892,6 +2894,7 @@ export type Database = {
           issued_at?: string
           options?: Json
           prompt?: string
+          qtype?: string
           series_id?: string
           side?: number
           slot?: number
@@ -2908,6 +2911,7 @@ export type Database = {
       }
       tb_series: {
         Row: {
+          break_ends_at: string | null
           created_at: string
           created_by: string | null
           current_game: number
@@ -2925,6 +2929,7 @@ export type Database = {
           wins_b: number
         }
         Insert: {
+          break_ends_at?: string | null
           created_at?: string
           created_by?: string | null
           current_game?: number
@@ -2942,6 +2947,7 @@ export type Database = {
           wins_b?: number
         }
         Update: {
+          break_ends_at?: string | null
           created_at?: string
           created_by?: string | null
           current_game?: number
@@ -4359,11 +4365,13 @@ export type Database = {
       tb_me: { Args: never; Returns: string }
       tb_my_series: { Args: never; Returns: string }
       tb_open_series: { Args: never; Returns: Json }
+      tb_resume: { Args: { p_series: string }; Returns: Json }
       tb_spectate: { Args: { p_series: string; p_slot: number }; Returns: Json }
       tb_start_game: {
         Args: { p_game: number; p_grade: number; p_series: string }
         Returns: undefined
       }
+      tb_start_series: { Args: { p_series: string }; Returns: Json }
       tb_state: { Args: { p_series: string }; Returns: Json }
       tb_tick: { Args: { p_series: string }; Returns: undefined }
       team_boss_action: {

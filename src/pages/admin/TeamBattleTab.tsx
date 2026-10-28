@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Swords, Search, User, Users } from "lucide-react";
+import { Swords, Search, User, Users, Play, FastForward, RefreshCw } from "lucide-react";
 import { UserProfile } from "./types";
 
 interface Props {
@@ -13,6 +13,11 @@ interface Props {
 
 interface TeamRow { id: string; name: string }
 interface MemberRow { profile_id: string; username: string; grade: number | null }
+interface OpenSeries {
+  id: string; kind: string; nameA: string; nameB: string;
+  winsA: number; winsB: number; currentGame: number; status: string;
+  players: { side: number; slot: number; name: string; answered: number; correct: number }[];
+}
 
 const PlayerPicker = ({ users, label, picked, onPick, exclude }: {
   users: UserProfile[]; label: string; picked: UserProfile[]; onPick: (u: UserProfile[]) => void; exclude: string[];
@@ -68,11 +73,33 @@ export const TeamBattleTab = ({ users }: Props) => {
   const [nameB, setNameB] = useState("");
   const [grade, setGrade] = useState<string>("auto");
   const [creating, setCreating] = useState(false);
+  const [openSeries, setOpenSeries] = useState<OpenSeries[]>([]);
+  const [acting, setActing] = useState<string | null>(null);
+
+  const loadOpen = () => {
+    supabase.rpc("tb_open_series" as any).then(({ data }) => setOpenSeries((data as OpenSeries[]) ?? []));
+  };
 
   useEffect(() => {
     supabase.from("teams").select("id, name").order("created_at", { ascending: false })
       .then(({ data }) => setTeams((data as TeamRow[]) ?? []));
+    loadOpen();
+    const t = setInterval(loadOpen, 5000);
+    return () => clearInterval(t);
   }, []);
+
+  const act = async (fn: "tb_start_series" | "tb_resume", id: string) => {
+    setActing(id);
+    try {
+      const { data, error } = await supabase.rpc(fn as any, { p_series: id });
+      if (error) throw error;
+      const r = data as any;
+      if (!r?.ok) { toast.error(r?.error ?? "操作失败"); return; }
+      toast.success(fn === "tb_start_series" ? "已开赛！" : "下一局已开始");
+      loadOpen();
+    } catch (e: any) { toast.error("操作失败：" + (e?.message || "")); }
+    finally { setActing(null); }
+  };
 
   const loadMembers = async (teamId: string, set: (m: MemberRow[]) => void) => {
     if (!teamId) { set([]); return; }
@@ -105,8 +132,9 @@ export const TeamBattleTab = ({ users }: Props) => {
       if (error) throw error;
       const r = data as any;
       if (!r?.ok) { toast.error(r?.error ?? "创建失败"); return; }
-      toast.success("比赛已创建！选手打开 /#/team-battle 即可参赛");
+      toast.success("房间已创建！选手打开 /#/team-battle 进房间，人齐后点「开赛」");
       setPickedA([]); setPickedB([]); setCasualA([]); setCasualB([]); setNameA(""); setNameB("");
+      loadOpen();
     } catch (e: any) { toast.error("创建失败：" + (e?.message || "")); }
     finally { setCreating(false); }
   };
@@ -126,8 +154,8 @@ export const TeamBattleTab = ({ users }: Props) => {
   return (
     <Card className="card-glow">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5 text-accent" />创建 2v2 战队赛（BO3）</CardTitle>
-        <CardDescription>每人每局 50 题，三局两胜；全队答对总数高者赢本局，打平比总用时。纯比赛模式，不影响段位、不发豆子。创建后把 /#/team-battle 发给选手。</CardDescription>
+        <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5 text-accent" />2v2 战队赛（BO3）</CardTitle>
+        <CardDescription>每人每局 50 题（选择 + 填空混合），三局两胜，局间 3 分钟中场休息；全队答对总数高者赢本局，打平比总用时。纯比赛模式，不影响段位、不发豆子。创建房间后选手打开 /#/team-battle 进房间，人齐后点「开赛」统一开始。</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex gap-2">
@@ -181,8 +209,44 @@ export const TeamBattleTab = ({ users }: Props) => {
 
         <Button onClick={create} disabled={creating} className="w-full" size="lg">
           <Swords className={`w-4 h-4 mr-2 ${creating ? "animate-spin" : ""}`} />
-          {creating ? "创建中..." : "创建比赛"}
+          {creating ? "创建中..." : "创建比赛房间"}
         </Button>
+
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">进行中的比赛（{openSeries.length}）</h3>
+            <Button variant="ghost" size="sm" onClick={loadOpen}><RefreshCw className="h-4 w-4" /></Button>
+          </div>
+          {openSeries.length === 0 && <p className="text-xs text-muted-foreground">暂无进行中的比赛。</p>}
+          <div className="grid gap-2">
+            {openSeries.map(s => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-4 py-3">
+                <div>
+                  <div className="font-gaming">{s.nameA} <span className="text-muted-foreground">vs</span> {s.nameB}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.status === "lobby" ? "等待开赛" : s.status === "halftime" ? `中场休息 · 第 ${s.currentGame} 局结束` : `第 ${s.currentGame} 局进行中`}
+                    {" · "}{s.winsA} : {s.winsB} · {s.kind === "team" ? "战队对阵" : "自由组队"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.players.map(p => `${p.name} ${p.answered}/50`).join(" · ")}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {s.status === "lobby" && (
+                    <Button size="sm" variant="hero" disabled={acting === s.id} onClick={() => act("tb_start_series", s.id)}>
+                      <Play className="mr-1 h-4 w-4" />开赛
+                    </Button>
+                  )}
+                  {s.status === "halftime" && (
+                    <Button size="sm" variant="outline" disabled={acting === s.id} onClick={() => act("tb_resume", s.id)}>
+                      <FastForward className="mr-1 h-4 w-4" />提前开始下一局
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,6 @@
--- Server-authoritative 2v2 team battle (BO3) rules. All fixtures roll back.
+-- Server-authoritative 2v2 team battle (BO3) rules: lobby start, halftime breaks, mixed question types. All fixtures roll back.
 DO $$
-DECLARE sid uuid; sid2 uuid; p uuid[]; g record; s record; n int; win int;
+DECLARE sid uuid; sid2 uuid; p uuid[]; g record; s record; n int; r jsonb;
 BEGIN
  BEGIN
   PERFORM set_config('request.jwt.claims','{"role":"service_role"}',true);
@@ -9,28 +9,44 @@ BEGIN
   IF has_function_privilege('authenticated','public.tb_tick(uuid)','EXECUTE') THEN RAISE EXCEPTION 'Client tick bypass'; END IF;
   IF has_function_privilege('authenticated','public.tb_start_game(uuid,integer,integer)','EXECUTE') THEN RAISE EXCEPTION 'Client start bypass'; END IF;
   IF NOT has_function_privilege('authenticated','public.tb_create_series(text,text,text,uuid[],uuid[],integer,uuid,uuid)','EXECUTE') THEN RAISE EXCEPTION 'Admin create missing'; END IF;
+  IF NOT has_function_privilege('authenticated','public.tb_start_series(uuid)','EXECUTE') THEN RAISE EXCEPTION 'Start series missing'; END IF;
+  IF NOT has_function_privilege('authenticated','public.tb_resume(uuid)','EXECUTE') THEN RAISE EXCEPTION 'Resume missing'; END IF;
   IF NOT has_function_privilege('authenticated','public.tb_answer(uuid,integer,text)','EXECUTE') THEN RAISE EXCEPTION 'Answer missing'; END IF;
   IF NOT has_function_privilege('authenticated','public.tb_state(uuid)','EXECUTE') THEN RAISE EXCEPTION 'State missing'; END IF;
 
   SELECT array_agg(id) INTO p FROM (SELECT id FROM profiles ORDER BY id LIMIT 4) x;
   IF coalesce(array_length(p,1),0) < 4 THEN RAISE EXCEPTION 'Need 4 fixture profiles'; END IF;
 
-  -- Series 1: side A sweeps 2-0.
-  INSERT INTO tb_series(kind, name_a, name_b, grade_key) VALUES('casual','甲队','乙队',7) RETURNING id INTO sid;
+  -- Series 1: lobby -> start -> side A sweeps 2-0 with halftime between games.
+  INSERT INTO tb_series(kind, status, name_a, name_b, grade_key) VALUES('casual','lobby','甲队','乙队',7) RETURNING id INTO sid;
   INSERT INTO tb_players(series_id, side, slot, profile_id, display_name)
    SELECT sid, i/2, i%2, p[i+1], '选手' || i FROM generate_series(0,3) i;
+  -- No questions before the admin starts the series.
+  IF (SELECT count(*) FROM tb_questions WHERE series_id=sid) <> 0 THEN RAISE EXCEPTION 'Lobby issued questions'; END IF;
+  UPDATE tb_series SET status='active' WHERE id=sid;
   PERFORM tb_start_game(sid, 1, 7);
-  -- Game 1 issued: 4 players each have question 0 with 4 options containing the answer.
+  -- Game 1 issued: 4 players each have question 0; choice questions have 4 options containing the answer, fill questions have none.
   IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=1 AND idx=0) <> 4 THEN RAISE EXCEPTION 'Game 1 not issued'; END IF;
-  IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=1 AND idx=0 AND jsonb_array_length(options)=4 AND options ? answer) <> 4 THEN RAISE EXCEPTION 'Bad options'; END IF;
-  -- Side A answers 50/50, side B answers 40/50; everyone done -> game ends.
+  IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=1 AND idx=0 AND qtype='choice'
+        AND (jsonb_array_length(options)<>4 OR NOT (options ? answer))) <> 0 THEN RAISE EXCEPTION 'Bad choice options'; END IF;
+  IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=1 AND idx=0 AND qtype='fill' AND jsonb_array_length(options)<>0) <> 0 THEN RAISE EXCEPTION 'Fill has options'; END IF;
+  -- Side A answers 50/50, side B answers 40/50; everyone done -> game ends, series goes to halftime (not straight to game 2).
   UPDATE tb_player_games SET answered=50, correct=50, total_ms=300000 WHERE series_id=sid AND game_no=1 AND side=0;
   UPDATE tb_player_games SET answered=50, correct=40, total_ms=300000 WHERE series_id=sid AND game_no=1 AND side=1;
   PERFORM tb_tick(sid);
   SELECT * INTO g FROM tb_games WHERE series_id=sid AND game_no=1;
   IF g.status<>'finished' OR g.winner_side<>0 OR g.score_a<>100 OR g.score_b<>80 THEN RAISE EXCEPTION 'Game 1 settle wrong: %', g; END IF;
   SELECT * INTO s FROM tb_series WHERE id=sid;
-  IF s.wins_a<>1 OR s.wins_b<>0 OR s.current_game<>2 OR s.status<>'active' THEN RAISE EXCEPTION 'Series not advanced: %', s; END IF;
+  IF s.wins_a<>1 OR s.wins_b<>0 OR s.current_game<>1 OR s.status<>'halftime' OR s.break_ends_at IS NULL THEN RAISE EXCEPTION 'Halftime not entered: %', s; END IF;
+  IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=2) <> 0 THEN RAISE EXCEPTION 'Game 2 issued during break'; END IF;
+  -- Tick during break is a no-op; after break ends, game 2 starts.
+  PERFORM tb_tick(sid);
+  SELECT * INTO s FROM tb_series WHERE id=sid;
+  IF s.status<>'halftime' THEN RAISE EXCEPTION 'Break ended early'; END IF;
+  UPDATE tb_series SET break_ends_at=now()-interval '1 second' WHERE id=sid;
+  PERFORM tb_tick(sid);
+  SELECT * INTO s FROM tb_series WHERE id=sid;
+  IF s.status<>'active' OR s.current_game<>2 THEN RAISE EXCEPTION 'Game 2 not started after break: %', s; END IF;
   IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=2 AND idx=0) <> 4 THEN RAISE EXCEPTION 'Game 2 not issued'; END IF;
   -- Game 2: side A wins again -> series finished 2-0.
   UPDATE tb_player_games SET answered=50, correct=45, total_ms=300000 WHERE series_id=sid AND game_no=2 AND side=0;
@@ -43,8 +59,8 @@ BEGIN
   SELECT * INTO s FROM tb_series WHERE id=sid;
   IF s.wins_a<>2 OR s.wins_b<>0 THEN RAISE EXCEPTION 'Tick double counted'; END IF;
 
-  -- Series 2: time tiebreak, then a draw game, then game 3 decider.
-  INSERT INTO tb_series(kind, name_a, name_b, grade_key) VALUES('casual','丙队','丁队',7) RETURNING id INTO sid2;
+  -- Series 2: time tiebreak, then a draw game, then game 3 decider (halftime between each).
+  INSERT INTO tb_series(kind, status, name_a, name_b, grade_key) VALUES('casual','active','丙队','丁队',7) RETURNING id INTO sid2;
   INSERT INTO tb_players(series_id, side, slot, profile_id, display_name)
    SELECT sid2, i/2, i%2, p[i+1], '选手' || i FROM generate_series(0,3) i;
   PERFORM tb_start_game(sid2, 1, 7);
@@ -54,13 +70,19 @@ BEGIN
   PERFORM tb_tick(sid2);
   SELECT * INTO g FROM tb_games WHERE series_id=sid2 AND game_no=1;
   IF g.winner_side<>1 THEN RAISE EXCEPTION 'Time tiebreak wrong'; END IF;
-  -- Game 2: exact draw -> no win awarded, series continues.
+  UPDATE tb_series SET break_ends_at=now()-interval '1 second' WHERE id=sid2;
+  PERFORM tb_tick(sid2);
+  -- Game 2: exact draw -> no win awarded, series continues to game 3 after break.
   UPDATE tb_player_games SET answered=50, correct=45, total_ms=300000 WHERE series_id=sid2 AND game_no=2;
   PERFORM tb_tick(sid2);
   SELECT * INTO g FROM tb_games WHERE series_id=sid2 AND game_no=2;
   IF g.winner_side IS NOT NULL THEN RAISE EXCEPTION 'Draw misjudged'; END IF;
   SELECT * INTO s FROM tb_series WHERE id=sid2;
-  IF s.wins_a<>0 OR s.wins_b<>1 OR s.current_game<>3 OR s.status<>'active' THEN RAISE EXCEPTION 'Draw mishandled: %', s; END IF;
+  IF s.wins_a<>0 OR s.wins_b<>1 OR s.current_game<>2 OR s.status<>'halftime' THEN RAISE EXCEPTION 'Draw mishandled: %', s; END IF;
+  UPDATE tb_series SET break_ends_at=now()-interval '1 second' WHERE id=sid2;
+  PERFORM tb_tick(sid2);
+  SELECT * INTO s FROM tb_series WHERE id=sid2;
+  IF s.current_game<>3 OR s.status<>'active' THEN RAISE EXCEPTION 'Game 3 not started: %', s; END IF;
   -- Game 3: side A wins -> 1-1 with one draw -> series draw (winner NULL).
   UPDATE tb_player_games SET answered=50, correct=50, total_ms=300000 WHERE series_id=sid2 AND game_no=3 AND side=0;
   UPDATE tb_player_games SET answered=50, correct=40, total_ms=300000 WHERE series_id=sid2 AND game_no=3 AND side=1;
@@ -69,7 +91,7 @@ BEGIN
   IF s.status<>'finished' OR s.winner_side IS NOT NULL OR s.wins_a<>1 OR s.wins_b<>1 THEN RAISE EXCEPTION 'Decider wrong: %', s; END IF;
 
   -- Timeout path: nobody finishes but time runs out -> game settles by current score.
-  INSERT INTO tb_series(kind, name_a, name_b, grade_key) VALUES('casual','戊队','己队',7) RETURNING id INTO sid;
+  INSERT INTO tb_series(kind, status, name_a, name_b, grade_key) VALUES('casual','active','戊队','己队',7) RETURNING id INTO sid;
   INSERT INTO tb_players(series_id, side, slot, profile_id, display_name)
    SELECT sid, i/2, i%2, p[i+1], '选手' || i FROM generate_series(0,3) i;
   PERFORM tb_start_game(sid, 1, 7);
@@ -80,10 +102,16 @@ BEGIN
   SELECT * INTO g FROM tb_games WHERE series_id=sid AND game_no=1;
   IF g.status<>'finished' OR g.winner_side<>0 THEN RAISE EXCEPTION 'Timeout settle wrong'; END IF;
 
-  -- 50 questions per player stay distinct within the game.
+  -- 50 questions per player stay distinct within the game (both types count).
   PERFORM tb_issue(sid, 1, 0, 0, i, 7) FROM generate_series(1,49) i;
-  SELECT count(DISTINCT prompt) INTO n FROM tb_questions WHERE series_id=sid AND game_no=1 AND side=0 AND slot=0;
+  SELECT count(DISTINCT CASE WHEN qtype='choice' THEN prompt ELSE answer END) INTO n
+    FROM tb_questions WHERE series_id=sid AND game_no=1 AND side=0 AND slot=0;
   IF n < 45 THEN RAISE EXCEPTION 'Too many repeated prompts: %', n; END IF;
+  -- Mixed types actually occur across a full 50-question slate.
+  IF (SELECT count(DISTINCT qtype) FROM tb_questions WHERE series_id=sid AND game_no=1 AND side=0 AND slot=0) < 2
+     AND (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=1 AND side=0 AND slot=0) >= 40 THEN
+    RAISE EXCEPTION 'No mixed types in 40+ questions';
+  END IF;
 
   RAISE EXCEPTION 'ROLLBACK_TEAM_BATTLE_OK';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'ROLLBACK_TEAM_BATTLE_OK' THEN RAISE; END IF;

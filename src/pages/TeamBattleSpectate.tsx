@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Loader2, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Pause, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +16,9 @@ interface SpecState {
   ok: boolean; error?: string; kind: string; status: string;
   nameA: string; nameB: string; winsA: number; winsB: number; currentGame: number; winnerSide: number | null;
   players: TbPlayer[]; games: TbGame[];
-  gameStatus: string; endsAt: string; serverNow: string;
+  gameStatus: string; endsAt: string; serverNow: string; breakEndsAt: string | null;
   watch: { side: number; slot: number; name: string; answered: number; correct: number;
-    question: { index: number; total: number; prompt: string; options: string[] } | null };
+    question: { index: number; total: number; type: string; prompt: string; options: string[] } | null };
 }
 
 const rpc = async <T,>(fn: string, args?: Record<string, unknown>): Promise<T> => {
@@ -61,7 +61,9 @@ export default function TeamBattleSpectate() {
     return () => { clearInterval(t); clearInterval(c); };
   }, [seriesId, slot, refresh]);
 
-  const left = state ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const left = state?.endsAt ? Math.max(0, Math.ceil((new Date(state.endsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const breakLeft = state?.breakEndsAt ? Math.max(0, Math.ceil((new Date(state.breakEndsAt).getTime() - now - clockOffset.current) / 1000)) : 0;
+  const inGame = state?.status === "active" && state?.gameStatus === "active";
   const sideCorrect = (sd: number) => state?.players.filter(p => p.side === sd).reduce((a, p) => a + p.correct, 0) ?? 0;
   const winDots = (wins: number) => [0, 1].map(i => (
     <span key={i} className={`inline-block h-3 w-3 rounded-full ${i < wins ? "bg-gold" : "bg-muted"}`} />
@@ -133,7 +135,7 @@ export default function TeamBattleSpectate() {
               <div className="order-2 text-center">
                 <div className="text-xs text-muted-foreground">第 {state.currentGame} 局 · BO3</div>
                 <div className="font-gaming text-xl">
-                  {state.status === "active" && state.gameStatus === "active" ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
+                  {inGame ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">{state.winsA} : {state.winsB}</div>
               </div>
@@ -148,28 +150,45 @@ export default function TeamBattleSpectate() {
               ))}
             </div>
 
-            {state.status === "active" && state.gameStatus === "active" && state.watch.question && (
+            {state.status === "lobby" && (
+              <section className="space-y-4 border border-gold/40 bg-card p-8 text-center">
+                <Eye className="mx-auto h-10 w-10 text-gold" />
+                <h2 className="font-gaming text-2xl">等待开赛</h2>
+                <p className="text-sm text-muted-foreground">选手已就位，等待管理员统一开赛。</p>
+              </section>
+            )}
+
+            {state.status === "halftime" && (
+              <section className="space-y-4 border border-border bg-card p-8 text-center">
+                <Pause className="mx-auto h-10 w-10 text-gold" />
+                <h2 className="font-gaming text-2xl">中场休息</h2>
+                <p className="font-gaming text-4xl">{Math.floor(breakLeft / 60)}:{String(breakLeft % 60).padStart(2, "0")}</p>
+                <p className="text-sm text-muted-foreground">第 {state.currentGame} 局结束，休息结束后自动开始下一局。</p>
+              </section>
+            )}
+
+            {inGame && state.watch.question && (
               <section className="space-y-4 border border-border bg-card p-6">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{state.watch.name} 的视角 · 第 {state.watch.question.index + 1} / 50 题</span>
+                  <span>{state.watch.name} 的视角 · 第 {state.watch.question.index + 1} / 50 题 · {state.watch.question.type === "fill" ? "填空" : "选择"}</span>
                   <span>已答对 {state.watch.correct}</span>
                 </div>
                 <h2 className="text-center font-gaming text-4xl" data-no-translate>{state.watch.question.prompt}</h2>
-                <div className="grid gap-3 sm:grid-cols-2" data-no-translate>
-                  {state.watch.question.options.map(o => (
-                    <div key={o} className="border border-border bg-muted/30 px-4 py-3 text-center text-sm">{o}</div>
-                  ))}
-                </div>
+                {state.watch.question.type === "fill" ? (
+                  <p className="text-center text-sm text-muted-foreground">填空题 · 选手正在输入英文单词</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2" data-no-translate>
+                    {state.watch.question.options.map(o => (
+                      <div key={o} className="border border-border bg-muted/30 px-4 py-3 text-center text-sm">{o}</div>
+                    ))}
+                  </div>
+                )}
                 <p className="text-center text-xs text-muted-foreground">观赛模式 · 答案不显示，选手提交后自动进入下一题</p>
               </section>
             )}
 
-            {state.status === "active" && state.gameStatus === "active" && !state.watch.question && (
+            {inGame && !state.watch.question && (
               <p className="text-center text-muted-foreground">{state.watch.name} 已答完本局 50 题，等待其他选手…</p>
-            )}
-
-            {state.status === "active" && state.gameStatus !== "active" && (
-              <p className="text-center text-muted-foreground">本局结束，下一局马上开始…</p>
             )}
 
             {state.games.some(g => g.status === "finished") && (

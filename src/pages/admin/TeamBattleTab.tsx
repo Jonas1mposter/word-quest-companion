@@ -154,8 +154,8 @@ export const TeamBattleTab = ({ users }: Props) => {
   return (
     <Card className="card-glow">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5 text-accent" />创建 2v2 战队赛（BO3）</CardTitle>
-        <CardDescription>每人每局 50 题，三局两胜；全队答对总数高者赢本局，打平比总用时。纯比赛模式，不影响段位、不发豆子。创建后把 /#/team-battle 发给选手。</CardDescription>
+        <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5 text-accent" />2v2 战队赛（BO3）</CardTitle>
+        <CardDescription>每人每局 50 题（选择 + 填空混合），三局两胜，局间 3 分钟中场休息；全队答对总数高者赢本局，打平比总用时。纯比赛模式，不影响段位、不发豆子。创建房间后选手打开 /#/team-battle 进房间，人齐后点「开赛」统一开始。</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex gap-2">

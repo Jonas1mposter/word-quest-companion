@@ -209,8 +209,44 @@ export const TeamBattleTab = ({ users }: Props) => {
 
         <Button onClick={create} disabled={creating} className="w-full" size="lg">
           <Swords className={`w-4 h-4 mr-2 ${creating ? "animate-spin" : ""}`} />
-          {creating ? "创建中..." : "创建比赛"}
+          {creating ? "创建中..." : "创建比赛房间"}
         </Button>
+
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">进行中的比赛（{openSeries.length}）</h3>
+            <Button variant="ghost" size="sm" onClick={loadOpen}><RefreshCw className="h-4 w-4" /></Button>
+          </div>
+          {openSeries.length === 0 && <p className="text-xs text-muted-foreground">暂无进行中的比赛。</p>}
+          <div className="grid gap-2">
+            {openSeries.map(s => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-4 py-3">
+                <div>
+                  <div className="font-gaming">{s.nameA} <span className="text-muted-foreground">vs</span> {s.nameB}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.status === "lobby" ? "等待开赛" : s.status === "halftime" ? `中场休息 · 第 ${s.currentGame} 局结束` : `第 ${s.currentGame} 局进行中`}
+                    {" · "}{s.winsA} : {s.winsB} · {s.kind === "team" ? "战队对阵" : "自由组队"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.players.map(p => `${p.name} ${p.answered}/50`).join(" · ")}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {s.status === "lobby" && (
+                    <Button size="sm" variant="hero" disabled={acting === s.id} onClick={() => act("tb_start_series", s.id)}>
+                      <Play className="mr-1 h-4 w-4" />开赛
+                    </Button>
+                  )}
+                  {s.status === "halftime" && (
+                    <Button size="sm" variant="outline" disabled={acting === s.id} onClick={() => act("tb_resume", s.id)}>
+                      <FastForward className="mr-1 h-4 w-4" />提前开始下一局
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

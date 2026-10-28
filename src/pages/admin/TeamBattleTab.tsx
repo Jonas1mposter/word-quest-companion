@@ -73,11 +73,33 @@ export const TeamBattleTab = ({ users }: Props) => {
   const [nameB, setNameB] = useState("");
   const [grade, setGrade] = useState<string>("auto");
   const [creating, setCreating] = useState(false);
+  const [openSeries, setOpenSeries] = useState<OpenSeries[]>([]);
+  const [acting, setActing] = useState<string | null>(null);
+
+  const loadOpen = () => {
+    supabase.rpc("tb_open_series" as any).then(({ data }) => setOpenSeries((data as OpenSeries[]) ?? []));
+  };
 
   useEffect(() => {
     supabase.from("teams").select("id, name").order("created_at", { ascending: false })
       .then(({ data }) => setTeams((data as TeamRow[]) ?? []));
+    loadOpen();
+    const t = setInterval(loadOpen, 5000);
+    return () => clearInterval(t);
   }, []);
+
+  const act = async (fn: "tb_start_series" | "tb_resume", id: string) => {
+    setActing(id);
+    try {
+      const { data, error } = await supabase.rpc(fn as any, { p_series: id });
+      if (error) throw error;
+      const r = data as any;
+      if (!r?.ok) { toast.error(r?.error ?? "操作失败"); return; }
+      toast.success(fn === "tb_start_series" ? "已开赛！" : "下一局已开始");
+      loadOpen();
+    } catch (e: any) { toast.error("操作失败：" + (e?.message || "")); }
+    finally { setActing(null); }
+  };
 
   const loadMembers = async (teamId: string, set: (m: MemberRow[]) => void) => {
     if (!teamId) { set([]); return; }

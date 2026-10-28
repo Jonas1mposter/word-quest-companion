@@ -132,8 +132,9 @@ export const TeamBattleTab = ({ users }: Props) => {
       if (error) throw error;
       const r = data as any;
       if (!r?.ok) { toast.error(r?.error ?? "创建失败"); return; }
-      toast.success("比赛已创建！选手打开 /#/team-battle 即可参赛");
+      toast.success("房间已创建！选手打开 /#/team-battle 进房间，人齐后点「开赛」");
       setPickedA([]); setPickedB([]); setCasualA([]); setCasualB([]); setNameA(""); setNameB("");
+      loadOpen();
     } catch (e: any) { toast.error("创建失败：" + (e?.message || "")); }
     finally { setCreating(false); }
   };

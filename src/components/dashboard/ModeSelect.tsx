@@ -1,4 +1,4 @@
-import { X, Trophy, Globe, Users, Bot, UserPlus, BookOpen, Lock, Gamepad2 } from "lucide-react";
+import { X, Trophy, Globe, Users, Bot, UserPlus, BookOpen, Lock, Gamepad2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canSelectPartyMode, type PartyGameMode } from "@/lib/partyRules";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface ModeSelectProps {
   onFriends: () => void;
   onLevels: () => void;
   onEntertainment: () => void;
+  onTeamBattle: () => void;
 }
 
 interface ModeDef {

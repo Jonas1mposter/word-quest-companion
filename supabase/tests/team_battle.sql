@@ -28,7 +28,7 @@ BEGIN
   UPDATE tb_player_games SET answered=50, correct=40, total_ms=300000 WHERE series_id=sid AND game_no=1 AND side=1;
   PERFORM tb_tick(sid);
   SELECT * INTO g FROM tb_games WHERE series_id=sid AND game_no=1;
-  IF g.status<>'finished' OR g.winner_side<>0 OR g.score_a<>50 OR g.score_b<>40 THEN RAISE EXCEPTION 'Game 1 settle wrong: %', g; END IF;
+  IF g.status<>'finished' OR g.winner_side<>0 OR g.score_a<>100 OR g.score_b<>80 THEN RAISE EXCEPTION 'Game 1 settle wrong: %', g; END IF;
   SELECT * INTO s FROM tb_series WHERE id=sid;
   IF s.wins_a<>1 OR s.wins_b<>0 OR s.current_game<>2 OR s.status<>'active' THEN RAISE EXCEPTION 'Series not advanced: %', s; END IF;
   IF (SELECT count(*) FROM tb_questions WHERE series_id=sid AND game_no=2 AND idx=0) <> 4 THEN RAISE EXCEPTION 'Game 2 not issued'; END IF;

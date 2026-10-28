@@ -1,4 +1,4 @@
-import { X, Trophy, Globe, Users, Bot, UserPlus, BookOpen, Lock, Gamepad2 } from "lucide-react";
+import { X, Trophy, Globe, Users, Bot, UserPlus, BookOpen, Lock, Gamepad2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canSelectPartyMode, type PartyGameMode } from "@/lib/partyRules";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface ModeSelectProps {
   onFriends: () => void;
   onLevels: () => void;
   onEntertainment: () => void;
+  onTeamBattle: () => void;
 }
 
 interface ModeDef {
@@ -26,12 +27,13 @@ interface ModeDef {
   onClick: () => void;
 }
 
-const ModeSelect = ({ grouped = false, canStart = true, onClose, onRanked, onFree, on2v2, onBot, onFriends, onLevels, onEntertainment }: ModeSelectProps) => {
+const ModeSelect = ({ grouped = false, canStart = true, onClose, onRanked, onFree, on2v2, onBot, onFriends, onLevels, onEntertainment, onTeamBattle }: ModeSelectProps) => {
   const modes: ModeDef[] = [
     { id: "ranked", name: "排位赛", description: "冲段位 · 青铜到狄邦巅峰", icon: Trophy, art: "from-primary/80 via-secondary to-background", badge: "竞技", onClick: onRanked },
     { id: "levels", name: "闯关模式", description: "教材同步 · 按单元学单词", icon: BookOpen, art: "from-neon-blue/70 via-secondary to-background", badge: "主线", onClick: onLevels },
     { id: "free", name: "自由服", description: "跨年级自由匹配 · 不计段位", icon: Globe, art: "from-neon-cyan/70 via-secondary to-background", onClick: onFree },
     { id: "2v2", name: "2v2 组队", description: "四人同场 · 组队切磋", icon: Users, art: "from-accent/70 via-secondary to-background", onClick: on2v2 },
+    { id: "teambattle", name: "2v2 战队赛", description: "BO3 · 每人 50 题 · 比赛专用", icon: Shield, art: "from-gold/70 via-secondary to-background", badge: "比赛", onClick: onTeamBattle },
     { id: "bot", name: "人机对战", description: "三档难度 · 随时开练", icon: Bot, art: "from-success/70 via-secondary to-background", onClick: onBot },
     { id: "friends", name: "好友对战", description: "邀请好友 · 实时 1v1", icon: UserPlus, art: "from-gold/70 via-secondary to-background", onClick: onFriends },
     { id: "entertainment", name: "娱乐模式", description: "万圣节道具赛 · 词汇肉鸽", icon: Gamepad2, art: "from-success/70 via-secondary to-background", badge: "新玩法", onClick: onEntertainment },

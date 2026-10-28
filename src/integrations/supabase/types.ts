@@ -4358,6 +4358,8 @@ export type Database = {
       }
       tb_me: { Args: never; Returns: string }
       tb_my_series: { Args: never; Returns: string }
+      tb_open_series: { Args: never; Returns: Json }
+      tb_spectate: { Args: { p_series: string; p_slot: number }; Returns: Json }
       tb_start_game: {
         Args: { p_game: number; p_grade: number; p_series: string }
         Returns: undefined

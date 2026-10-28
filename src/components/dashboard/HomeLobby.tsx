@@ -218,6 +218,7 @@ const HomeLobby = ({
           onFriends={() => onNavigate("friends")}
           onLevels={() => onNavigate("learn")}
           onEntertainment={() => navigate("/entertainment")}
+          onTeamBattle={() => navigate("/team-battle")}
         />
       )}
     </>

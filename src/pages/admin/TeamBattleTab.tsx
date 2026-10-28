@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Swords, Search, User, Users } from "lucide-react";
+import { Swords, Search, User, Users, Play, FastForward, RefreshCw } from "lucide-react";
 import { UserProfile } from "./types";
 
 interface Props {
@@ -13,6 +13,11 @@ interface Props {
 
 interface TeamRow { id: string; name: string }
 interface MemberRow { profile_id: string; username: string; grade: number | null }
+interface OpenSeries {
+  id: string; kind: string; nameA: string; nameB: string;
+  winsA: number; winsB: number; currentGame: number; status: string;
+  players: { side: number; slot: number; name: string; answered: number; correct: number }[];
+}
 
 const PlayerPicker = ({ users, label, picked, onPick, exclude }: {
   users: UserProfile[]; label: string; picked: UserProfile[]; onPick: (u: UserProfile[]) => void; exclude: string[];

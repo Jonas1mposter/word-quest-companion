@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Crown, Loader2, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, Crown, Eye, Loader2, Swords, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,7 +89,12 @@ export default function TeamBattle() {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")}><ArrowLeft className="mr-2 h-4 w-4" />回主页</Button>
-          <span className="text-xs font-semibold text-gold">TEAM BATTLE · BO3</span>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/team-battle/spectate")}>
+              <Eye className="mr-1 h-4 w-4" />观赛
+            </Button>
+            <span className="text-xs font-semibold text-gold">TEAM BATTLE · BO3</span>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">

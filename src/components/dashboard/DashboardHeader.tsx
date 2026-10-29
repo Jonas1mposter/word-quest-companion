@@ -9,6 +9,7 @@ import { zoneBadgeLabel } from "@/lib/zones";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useUiMode } from "@/hooks/useUiMode";
 import { Sparkles, Crosshair } from "lucide-react";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 
 const logoDashboard = "/placeholder.svg";
 
@@ -24,6 +25,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
   const navigate = useNavigate();
   const [zoneOpen, setZoneOpen] = useState(false);
   const { isClassic, toggle } = useUiMode();
+  const online = useOnlineCount(user?.id);
   return (
     <>
     <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b-2 border-primary/70">
@@ -55,6 +57,12 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {online !== null && (
+              <Badge variant="outline" className="rounded-none val-cut-sm text-xs gap-1.5 hidden sm:flex" title="当前在线人数">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                在线 {online}
+              </Badge>
+            )}
             <LanguageToggle />
             {!user && (
               <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="rounded-none val-cut-sm font-tactical font-semibold">

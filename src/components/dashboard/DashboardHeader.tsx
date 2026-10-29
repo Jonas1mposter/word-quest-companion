@@ -25,7 +25,7 @@ const DashboardHeader = ({ grade, className, user, isAdmin, onSignOut }: Dashboa
   const navigate = useNavigate();
   const [zoneOpen, setZoneOpen] = useState(false);
   const { isClassic, toggle } = useUiMode();
-  const online = useOnlineCount(user?.id);
+  const online = useOnlineCount();
   return (
     <>
     <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b-2 border-primary/70">

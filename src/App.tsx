@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { OnlineCountProvider } from "@/hooks/useOnlineCount";
 import { initializeNativeApp } from "@/lib/capacitor";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -45,6 +46,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <OnlineCountProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -81,6 +83,7 @@ const App = () => {
             </Routes>
           </HashRouter>
         </TooltipProvider>
+        </OnlineCountProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

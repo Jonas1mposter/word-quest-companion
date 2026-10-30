@@ -86,4 +86,18 @@ describe("服务器判定答题", () => {
     await waitFor(() => expect(onAnswer).toHaveBeenCalledTimes(2));
     expect(onAnswer.mock.calls).toEqual([["苹果"], ["苹果"]]);
   });
+  it("听力题未播放发音仍上报健康，DAC 切屏监控不中断", async () => {
+    const onHealthChange = vi.fn();
+    render(<ServerBattleQuizCard matchId="match" question={{ questionIndex: 3, total: 10, quizType: "listening", prompt: "", options: [] }} onAnswer={vi.fn()} comboCount={0} onHealthChange={onHealthChange} />);
+    await waitFor(() => expect(onHealthChange).toHaveBeenCalledWith(true));
+    expect(onHealthChange).not.toHaveBeenCalledWith(false);
+  });
+  it("发音加载失败仍上报健康，DAC 切屏监控不中断", async () => {
+    const onHealthChange = vi.fn();
+    render(<ServerBattleQuizCard matchId="match" question={{ questionIndex: 3, total: 10, quizType: "listening", prompt: "", options: [] }} onAnswer={vi.fn()} comboCount={0} onHealthChange={onHealthChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "播放发音" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(onHealthChange).toHaveBeenCalledWith(true);
+    expect(onHealthChange).not.toHaveBeenCalledWith(false);
+  });
 });

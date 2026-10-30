@@ -41,9 +41,11 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
   const choice = type === "meaning" || type === "reverse";
   const labels = { meaning: "选择释义", reverse: "中译英", spelling: "拼写单词", listening: "听音拼写" };
   const TypeIcon = { meaning: BookOpen, reverse: Languages, spelling: PenLine, listening: Headphones }[type];
+  // 健康门控只反映题目能否作答（提交中/加载出错）。发音未播放或失败不影响 DAC 监控，
+  // 否则听力题在点击播放前整题无切屏检测，发音失败时整局失去监控。
   useEffect(() => {
-    onHealthChange?.(!pending && !error && !audioError && (type !== "listening" || audioReady));
-  }, [pending, error, audioError, audioReady, type, onHealthChange]);
+    onHealthChange?.(!pending && !error);
+  }, [pending, error, onHealthChange]);
   useEffect(() => {
     activeRef.current = true;
     return () => {

@@ -4034,6 +4034,16 @@ export type Database = {
         Args: { p_choice: string; p_item_id: string }
         Returns: Json
       }
+      claim_match_completion: {
+        Args: {
+          p_match_id: string
+          p_score1: number
+          p_score2: number
+          p_winner_id: string
+          p_winner_team: number
+        }
+        Returns: Json
+      }
       claim_priority_weekly: { Args: never; Returns: Json }
       claim_reaver_event: { Args: never; Returns: Json }
       claim_review_reward: {

@@ -173,7 +173,7 @@ export const useMatchSounds = () => {
   // 按装备包的实际段数播放；六段包在6连击及以上使用第六段。
   const playCombo = useCallback(async (comboCount: number) => {
     if (!isEnabledRef.current) return;
-    const contextReady = ensureAudioReady();
+    const contextReady = ensureAudioReady().catch(() => null);
     try {
       await loadActivePack();
       const audio = getKillAudio(comboCount);
@@ -183,6 +183,7 @@ export const useMatchSounds = () => {
         // Async grading may lose HTML media user activation (notably Safari).
         // Use the context unlocked on the player's answer click as a fallback.
         const ctx = await contextReady;
+        if (!ctx || ctx.state === 'suspended') throw new Error('Combo audio context unavailable');
         const response = await fetch(audio.src);
         if (!response.ok) throw new Error('Combo audio download failed');
         const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
@@ -190,7 +191,6 @@ export const useMatchSounds = () => {
         source.buffer = buffer; source.connect(ctx.destination); source.start();
       }
     } catch { console.warn('Combo audio playback failed'); }
-    void contextReady.catch(() => {});
   }, [ensureAudioReady]);
 
   const playUrgent = useCallback(async () => {

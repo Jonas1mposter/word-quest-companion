@@ -37,19 +37,26 @@ const loadActivePack = (): Promise<void> => {
   if (activeLoadingPromise) return activeLoadingPromise;
   activeLoadingPromise = (async () => {
     try {
-      const { data: u } = await supabase.auth.getUser();
+      const { data: u, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!u?.user) return;
-      const { data: prof } = await supabase
+      const { data: prof, error: profileError } = await supabase
         .from('profiles')
         .select('active_kill_sound_pack_id')
         .eq('user_id', u.user.id)
         .maybeSingle();
-      if (!prof?.active_kill_sound_pack_id) return;
-      const { data: pack } = await supabase
+      if (profileError || !prof) throw profileError ?? new Error('Sound profile unavailable');
+      if (!prof.active_kill_sound_pack_id) {
+        activeUrls = [...DEFAULT_URLS]; activeVariants = null; activeVariantKey = null;
+        activeVariantIcons = null; clearKillCache(); activeLoaded = true;
+        return;
+      }
+      const { data: pack, error: packError } = await supabase
         .from('kill_sound_packs')
         .select('sound_urls, variant_urls, variant_icon_urls')
         .eq('id', prof.active_kill_sound_pack_id)
         .maybeSingle();
+      if (packError || !pack) throw packError ?? new Error('Equipped sound pack unavailable');
       const variants = pack?.variant_urls as unknown as Record<string, string[]> | null;
       const urls = pack?.sound_urls as unknown as string[] | undefined;
       if (variants && typeof variants === 'object' && !Array.isArray(variants) && Object.keys(variants).length > 1) {
@@ -60,12 +67,15 @@ const loadActivePack = (): Promise<void> => {
       } else if (Array.isArray(urls) && urls.length >= 5) {
         activeVariants = null;
         activeVariantKey = null;
+        activeVariantIcons = null;
         activeUrls = urls;
         clearKillCache();
-      }
-    } catch (e) { /* fallback */ }
-    finally { activeLoaded = true; notifyVariantListeners(); }
+      } else throw new Error('Equipped sound pack has no usable audio');
+      activeLoaded = true;
+    } catch { console.warn('Equipped sound pack loading failed; will retry'); }
+    finally { notifyVariantListeners(); }
   })();
+  void activeLoadingPromise.finally(() => { activeLoadingPromise = null; });
   return activeLoadingPromise;
 };
 
@@ -160,16 +170,27 @@ export const useMatchSounds = () => {
   }, [ensureAudioReady]);
 
 
-  // 击杀音效：1-5 连击对应 5 段音频，5+ 全部使用 5 连击音效
+  // 按装备包的实际段数播放；六段包在6连击及以上使用第六段。
   const playCombo = useCallback(async (comboCount: number) => {
     if (!isEnabledRef.current) return;
+    const contextReady = ensureAudioReady();
     try {
-      await ensureAudioReady();
+      await loadActivePack();
       const audio = getKillAudio(comboCount);
       audio.currentTime = 0;
-      const p = audio.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-    } catch (e) {}
+      try { await audio.play(); }
+      catch {
+        // Async grading may lose HTML media user activation (notably Safari).
+        // Use the context unlocked on the player's answer click as a fallback.
+        const ctx = await contextReady;
+        const response = await fetch(audio.src);
+        if (!response.ok) throw new Error('Combo audio download failed');
+        const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
+        const source = ctx.createBufferSource();
+        source.buffer = buffer; source.connect(ctx.destination); source.start();
+      }
+    } catch { console.warn('Combo audio playback failed'); }
+    void contextReady.catch(() => {});
   }, [ensureAudioReady]);
 
   const playUrgent = useCallback(async () => {

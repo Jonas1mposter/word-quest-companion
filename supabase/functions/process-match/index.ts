@@ -79,11 +79,22 @@ Deno.serve(async (req) => {
       .select('match_id').eq('match_id', matchId).maybeSingle();
     if (botError) throw new Error('Unable to verify match type');
     if (botState) {
+      if (match.status !== "completed") {
+        const { data: botAnswers, error: botAnswerError } = await admin.from("match_answers")
+          .select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);
+        if (botAnswerError) throw new Error("Unable to validate answer timing");
+        for (const pid of memberIds.filter(Boolean)) {
+          if (analyzeTiming((botAnswers ?? []).filter((a: any) => a.player_id === pid)).robotic) {
+            rankVoided = await voidDacRank(admin, matchId, pid, "fixed_answer_timing") || rankVoided;
+            isForfeit = true;
+          }
+        }
+      }
       const { data, error } = await admin.rpc('tick_match_bots', {
         p_match_id: matchId, p_profile_id: profile.id, p_finish: true, p_forfeit: isForfeit,
       });
       if (error) throw error;
-      return json({ ...data, botMatch: true });
+      return json({ ...data, rankVoided: data?.rankVoided === true || rankVoided, botMatch: true });
     }
 
     // 获胜方查询：对方是否因 DAC 作弊（脚本/异常程序）被判负

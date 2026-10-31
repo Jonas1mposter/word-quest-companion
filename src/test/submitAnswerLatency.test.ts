@@ -36,7 +36,7 @@ describe("answer feedback critical path", () => {
     const source = handlerSource
       .replace(/^import .*;\n/gm, "");
     const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022 });
-    new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", compiled)(
+    new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", "voidDacRank", compiled)(
       z, {}, mocks.auth, (body: unknown, status = 200) => new Response(JSON.stringify(body), { status }),
       mocks.feedback, mocks.timing, mocks.review, voidDacRank,
     );

@@ -31,6 +31,17 @@ describe("DAC uploaded-sample defenses", () => {
     expect(forfeit).toHaveBeenCalledTimes(1);
     expect(forfeit).toHaveBeenCalledWith("synthetic_input", { synthetic: 2, extension: 0 });
   });
+  it("blocks sample-style native value setting and input dispatch before React sees it", () => {
+    const inputHandler = vi.fn(), forfeit = vi.fn();
+    render(<><DacBadge onForfeit={forfeit} /><div data-dac-answer-region><input aria-label="answer" onInput={inputHandler} /></div></>);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "apple");
+    act(() => { input.dispatchEvent(new Event("input", { bubbles: true })); });
+    expect(inputHandler).not.toHaveBeenCalled();
+    expect(forfeit).not.toHaveBeenCalled();
+    act(() => { input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+    expect(forfeit).toHaveBeenCalledWith("synthetic_input", { synthetic: 2, extension: 0 });
+  });
   it("does not punish synthetic events in navigation or unrelated inputs", () => {
     const forfeit = vi.fn(), navigate = vi.fn();
     render(<><DacBadge onForfeit={forfeit} /><button onClick={navigate}>settings</button><input aria-label="search" /></>);

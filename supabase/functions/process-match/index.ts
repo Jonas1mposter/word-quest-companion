@@ -5,6 +5,7 @@ import { earnsDimensionalStrike, earnsTwinStars } from "../_shared/matchBadges.t
 import { settleEmptyMatch } from "../_shared/emptyMatch.ts";
 import { classifyForfeit } from "../_shared/forfeitReason.ts";
 import { boostSet, applyEloBoost, type BoostRow } from "../_shared/boosts.ts";
+import { voidDacRank } from "../_shared/dacRank.ts";
 
 const K = 32;
 const expected = (a: number, b: number) => 1 / (1 + Math.pow(10, (b - a) / 400));
@@ -68,16 +69,32 @@ Deno.serve(async (req) => {
       : [match.player1_id, match.player2_id];
     if (!memberIds.includes(profile.id)) return json({ error: "Not in match" }, 403);
 
+    let rankVoided = match.rank_voided === true;
+    if (isForfeit && match.status !== "completed") {
+      rankVoided = await voidDacRank(admin, matchId, profile.id, forfeit.reason) || rankVoided;
+    }
+
     // Fallback rank changes settle atomically in SQL; never reuse the PvP payout branch.
     const { data: botState, error: botError } = await admin.from('match_bot_state')
       .select('match_id').eq('match_id', matchId).maybeSingle();
     if (botError) throw new Error('Unable to verify match type');
     if (botState) {
+      if (match.status !== "completed") {
+        const { data: botAnswers, error: botAnswerError } = await admin.from("match_answers")
+          .select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);
+        if (botAnswerError) throw new Error("Unable to validate answer timing");
+        for (const pid of memberIds.filter(Boolean)) {
+          if (analyzeTiming((botAnswers ?? []).filter((a: any) => a.player_id === pid)).robotic) {
+            rankVoided = await voidDacRank(admin, matchId, pid, "fixed_answer_timing") || rankVoided;
+            isForfeit = true;
+          }
+        }
+      }
       const { data, error } = await admin.rpc('tick_match_bots', {
         p_match_id: matchId, p_profile_id: profile.id, p_finish: true, p_forfeit: isForfeit,
       });
       if (error) throw error;
-      return json({ ...data, botMatch: true });
+      return json({ ...data, rankVoided: data?.rankVoided === true || rankVoided, botMatch: true });
     }
 
     // 获胜方查询：对方是否因 DAC 作弊（脚本/异常程序）被判负
@@ -100,7 +117,7 @@ Deno.serve(async (req) => {
     // forfeits keep only the caller's penalty, never a rewarded winner/draw.
     const emptyResult = await settleEmptyMatch(admin, matchId, match.mode,
       isForfeit ? profile.id : null);
-    if (emptyResult) return json(emptyResult);
+    if (emptyResult) return json({ ...emptyResult, rankVoided });
 
     const { data: answers, error: answerError } = await admin
       .from("match_answers").select("player_id, is_correct, answered_at, answer").eq("match_id", matchId);
@@ -115,6 +132,7 @@ Deno.serve(async (req) => {
         const v = analyzeTiming((answers ?? []).filter((a: any) => a.player_id === pid) as any);
         if (v.robotic) {
           robotic.add(pid);
+          rankVoided = await voidDacRank(admin, matchId, pid, "fixed_answer_timing") || rankVoided;
           await admin.rpc("dac_flag", {
             p_profile_id: pid, p_source: "bot_input",
             p_reason: "答题节奏过于固定，疑似 AI/脚本，已判负", p_severity: "high",
@@ -136,6 +154,15 @@ Deno.serve(async (req) => {
       });
     }
     const isFree = match.match_type === "free";
+    const claimCompletion = async (winnerId: string | null, winnerTeam: number | null, score1: number, score2: number) => {
+      const { data, error } = await admin.rpc("claim_match_completion", {
+        p_match_id: matchId, p_winner_id: winnerId, p_winner_team: winnerTeam,
+        p_score1: score1, p_score2: score2,
+      });
+      if (error || !data) throw new Error("Unable to claim match settlement");
+      rankVoided = data.rankVoided === true;
+      return data.claimed === true;
+    };
 
     // 增益卡：双倍经验/豆数/排位分与不掉分卡，结算时由服务器核验与消耗
     const { data: boostRows } = await admin
@@ -173,13 +200,7 @@ Deno.serve(async (req) => {
         if (t1Bot !== t2Bot) winnerTeam = t1Bot ? 2 : 1;
       }
 
-      if (match.status !== "completed") {
-        await admin.from("ranked_matches").update({
-          status: "completed",
-          ended_at: new Date().toISOString(),
-          team1_score: t1, team2_score: t2,
-          winner_team: winnerTeam,
-        }).eq("id", matchId).neq("status", "completed");
+      if (match.status !== "completed" && await claimCompletion(null, winnerTeam, t1, t2)) {
 
         const eloField = "elo_rating";
         const winField = "wins"; const lossField = "losses";
@@ -200,7 +221,9 @@ Deno.serve(async (req) => {
           const oppAvg = onTeam1 ? t2Avg : t1Avg;
           const score: 1 | 0 | 0.5 = winnerTeam === null ? 0.5 : (winnerTeam === (onTeam1 ? 1 : 2) ? 1 : 0);
           const bs = boostSet(boosts, pid);
-          const eloBoost = applyEloBoost(Math.round(K * (score - expected(myAvg, oppAvg))), score, bs);
+          const eloBoost = rankVoided
+            ? { delta: 0, shielded: false }
+            : applyEloBoost(Math.round(K * (score - expected(myAvg, oppAvg))), score, bs);
           const delta = eloBoost.delta;
           if (eloBoost.shielded) shieldConsumed.push(pid);
 
@@ -218,7 +241,7 @@ Deno.serve(async (req) => {
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          if (!eloBoost.shielded) {
+          if (!rankVoided && !eloBoost.shielded) {
             const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
             patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
           }
@@ -268,7 +291,7 @@ Deno.serve(async (req) => {
       await admin.from("match_queue").delete().in("profile_id", memberIds);
 
       return json({
-        ok: true, mode: "2v2",
+        ok: true, mode: "2v2", rankVoided,
         winnerTeam: finalWinnerTeam,
         team1_score: match.status === "completed" ? match.team1_score : t1,
         team2_score: match.status === "completed" ? match.team2_score : t2,
@@ -297,11 +320,7 @@ Deno.serve(async (req) => {
       winnerId = robotic.has(match.player1_id) ? match.player2_id : match.player1_id;
     }
 
-    if (match.status !== "completed") {
-      await admin.from("ranked_matches").update({
-        status: "completed", ended_at: new Date().toISOString(),
-        winner_id: winnerId, player1_score: p1, player2_score: p2,
-      }).eq("id", matchId).neq("status", "completed");
+    if (match.status !== "completed" && await claimCompletion(winnerId, null, p1, p2)) {
 
       const eloField = isFree ? "elo_free" : "elo_rating";
       const winField = isFree ? "free_match_wins" : "wins";
@@ -329,7 +348,9 @@ Deno.serve(async (req) => {
         const updates: Promise<unknown>[] = [];
         for (const [pp, rawDelta, score] of [[p1p, d1, s1], [p2p, d2, s2]] as const) {
           const bs = boostSet(boosts, pp.id);
-          const eloBoost = isFree
+          const eloBoost = rankVoided
+            ? { delta: 0, shielded: false }
+            : isFree
             ? { delta: rawDelta, shielded: false }
             : applyEloBoost(rawDelta, score, bs);
           const delta = eloBoost.delta;
@@ -347,7 +368,7 @@ Deno.serve(async (req) => {
           };
           if (score === 1) patch[winField] = (pp[winField] ?? 0) + 1;
           else if (score === 0) patch[lossField] = (pp[lossField] ?? 0) + 1;
-          if (!isFree && !eloBoost.shielded) {
+          if (!isFree && !rankVoided && !eloBoost.shielded) {
             const r = computeRank(pp.rank_tier, pp.rank_stars, pp.rank_points, score, delta);
             patch.rank_tier = r.rank_tier; patch.rank_stars = r.rank_stars; patch.rank_points = r.rank_points;
           }
@@ -392,7 +413,7 @@ Deno.serve(async (req) => {
     await admin.from("match_queue").delete().in("profile_id", [match.player1_id, match.player2_id]);
 
     return json({
-      ok: true, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned,
+      ok: true, rankVoided, winnerId, player1_score: p1, player2_score: p2, coinsEarned, xpEarned,
       weekendBonus: coinMultiplier() === 2,
       shielded: shieldConsumed.includes(profile.id),
       boosts: { xp: callerBs.xp, coins: callerBs.coins, elo: callerBs.elo },

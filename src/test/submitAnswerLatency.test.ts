@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import handlerSource from "../../supabase/functions/submit-answer/index.ts?raw";
 import ts from "typescript";
 import { z } from "zod";
+import { voidDacRank } from "../../supabase/functions/_shared/dacRank";
 
 const mocks = vi.hoisted(() => ({
   serve: vi.fn(), waitUntil: vi.fn(), review: vi.fn(), auth: vi.fn(),
@@ -35,9 +36,9 @@ describe("answer feedback critical path", () => {
     const source = handlerSource
       .replace(/^import .*;\n/gm, "");
     const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2022 });
-    new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", compiled)(
+    new Function("z", "corsHeaders", "requireProfile", "json", "submittedSpellingFeedback", "analyzeTiming", "reviewAnswer", "voidDacRank", compiled)(
       z, {}, mocks.auth, (body: unknown, status = 200) => new Response(JSON.stringify(body), { status }),
-      mocks.feedback, mocks.timing, mocks.review,
+      mocks.feedback, mocks.timing, mocks.review, voidDacRank,
     );
     const handler = mocks.serve.mock.calls[0]?.[0];
     expect(handler).toBeTypeOf("function");

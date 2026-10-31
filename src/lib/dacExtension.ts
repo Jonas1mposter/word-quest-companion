@@ -13,7 +13,7 @@ export function findExtensionResource(root: ParentNode | Element): string | null
   root.querySelectorAll?.("script[src],iframe[src],img[src],link[href],embed[src],object[data]").forEach((e) => els.push(e));
   for (const el of els) {
     const url = el.getAttribute("src") || el.getAttribute("href") || el.getAttribute("data");
-    if (isExtensionUrl(url)) return url!.slice(0, 120);
+    if (url && isExtensionUrl(url)) return url.slice(0, 120);
   }
   if (root instanceof HTMLStyleElement && /(chrome|moz|edge)-extension:\/\//i.test(root.textContent || "")) return "style";
   return null;
@@ -31,6 +31,7 @@ export function tamperedNatives(w: Window & typeof globalThis = window): string[
     ["XMLHttpRequest.open", w.XMLHttpRequest?.prototype?.open],
     ["XMLHttpRequest.send", w.XMLHttpRequest?.prototype?.send],
     ["Function.toString", Function.prototype.toString],
+    ["speechSynthesis.speak", w.speechSynthesis?.speak],
   ];
   return list.filter(([, f]) => f !== undefined && !isNative(f)).map(([n]) => n);
 }
@@ -38,3 +39,15 @@ export function tamperedNatives(w: Window & typeof globalThis = window): string[
 /** 合成（脚本发出）的键盘/输入事件达到这个次数判负。 */
 export const SYNTHETIC_INPUT_LIMIT = 2;
 export const isSyntheticInputViolation = (n: number) => n >= SYNTHETIC_INPUT_LIMIT;
+
+/** Only answer controls, never navigation, unrelated widgets or mere pointer movement. */
+export function isAnswerControl(target: EventTarget | null): boolean {
+  return target instanceof Element && !!target.closest("[data-dac-answer-region]") &&
+    !!target.closest("button,input,textarea,[contenteditable='true']");
+}
+
+/** Sample-specific marker; collect its presence only, never captured words or tokens. */
+export function findAutomationMarkers(root: ParentNode = document): string[] {
+  const captured = root.querySelector("[id='__tts_captured'][data-time]");
+  return captured ? ["wordmaster_grabber_tts_bridge"] : [];
+}

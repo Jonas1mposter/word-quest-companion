@@ -6,6 +6,7 @@ import { reviewAnswer } from "./review.ts";
 declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void };
 import { requireProfile, json } from "../_shared/auth.ts";
 import { submittedSpellingFeedback } from "../_shared/answerFeedback.ts";
+import { voidDacRank } from "../_shared/dacRank.ts";
 
 // Submit an answer for a ranked/free/2v2 match. Server-validates correctness
 // against the stored words[] payload. Updates the player's (or team's) score atomically.
@@ -41,6 +42,7 @@ Deno.serve(async (req) => {
       isCorrect, mine ?? [], timing).catch(() => { console.error("Answer review unavailable"); }));
 
     if (timing.robotic) {
+      await voidDacRank(admin, matchId, profile.id, "fixed_answer_timing");
       return json({ ok: true, isCorrect, ...feedback, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
     }
 

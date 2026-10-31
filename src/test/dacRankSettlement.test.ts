@@ -18,7 +18,7 @@ describe("DAC kick invalidates the entire ranked match", () => {
     const updates: Record<string, any>[] = [];
     const match = { id: "m", mode, match_type: "ranked", status: "in_progress", player1_id: "a", player2_id: "b", player3_id: ids[2], player4_id: ids[3] };
     const players = ids.map(id => ({ id, elo_rating: 1200, rank_tier: "silver", rank_stars: 10, rank_points: 0, coins: 100, xp: 0, total_xp: 0, level: 1, xp_to_next_level: 100, wins: 1, losses: 1 }));
-    const rpc = vi.fn(async (name: string) => ({ data: name === "void_dac_match_rank" ? true : {}, error: null }));
+    const rpc = vi.fn(async (name: string) => ({ data: name === "void_dac_match_rank" ? true : name === "claim_match_completion" ? { claimed: true, rankVoided: true } : {}, error: null }));
     const admin = { rpc, from: (table: string) => {
       const q: any = {};
       for (const key of ["select", "eq", "neq", "in", "delete"]) q[key] = () => q;

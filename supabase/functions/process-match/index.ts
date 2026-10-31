@@ -154,6 +154,15 @@ Deno.serve(async (req) => {
       });
     }
     const isFree = match.match_type === "free";
+    const claimCompletion = async (winnerId: string | null, winnerTeam: number | null, score1: number, score2: number) => {
+      const { data, error } = await admin.rpc("claim_match_completion", {
+        p_match_id: matchId, p_winner_id: winnerId, p_winner_team: winnerTeam,
+        p_score1: score1, p_score2: score2,
+      });
+      if (error || !data) throw new Error("Unable to claim match settlement");
+      rankVoided = data.rankVoided === true;
+      return data.claimed === true;
+    };
 
     // 增益卡：双倍经验/豆数/排位分与不掉分卡，结算时由服务器核验与消耗
     const { data: boostRows } = await admin
@@ -191,13 +200,7 @@ Deno.serve(async (req) => {
         if (t1Bot !== t2Bot) winnerTeam = t1Bot ? 2 : 1;
       }
 
-      if (match.status !== "completed") {
-        await admin.from("ranked_matches").update({
-          status: "completed",
-          ended_at: new Date().toISOString(),
-          team1_score: t1, team2_score: t2,
-          winner_team: winnerTeam,
-        }).eq("id", matchId).neq("status", "completed");
+      if (match.status !== "completed" && await claimCompletion(null, winnerTeam, t1, t2)) {
 
         const eloField = "elo_rating";
         const winField = "wins"; const lossField = "losses";
@@ -317,11 +320,7 @@ Deno.serve(async (req) => {
       winnerId = robotic.has(match.player1_id) ? match.player2_id : match.player1_id;
     }
 
-    if (match.status !== "completed") {
-      await admin.from("ranked_matches").update({
-        status: "completed", ended_at: new Date().toISOString(),
-        winner_id: winnerId, player1_score: p1, player2_score: p2,
-      }).eq("id", matchId).neq("status", "completed");
+    if (match.status !== "completed" && await claimCompletion(winnerId, null, p1, p2)) {
 
       const eloField = isFree ? "elo_free" : "elo_rating";
       const winField = isFree ? "free_match_wins" : "wins";

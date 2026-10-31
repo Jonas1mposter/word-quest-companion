@@ -114,7 +114,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       moves = [];
       if (robotic >= 4 && robotic / clicks >= 0.6 && !reportedRef.current.has("mouse_path")) {
         reportedRef.current.add("mouse_path");
-        void supabase.rpc("report_dac_evidence" as any, { p_kind: "native_tamper", p_meta: { signal: "mouse_path", clicks, robotic } }).then(() => {}).catch(() => {});
+        void supabase.rpc("report_dac_evidence" as any, { p_kind: "native_tamper", p_meta: { signal: "mouse_path", clicks, robotic } }).then(() => {}, () => {});
       }
     };
     window.addEventListener("pointermove", onMove, true);
@@ -134,7 +134,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     const report = (kind: string, detail: Record<string, unknown>) => {
       if (reported.has(kind)) return;
       reported.add(kind);
-      void supabase.rpc("report_dac_evidence" as any, { p_kind: kind, p_meta: { ...detail, mode: location.hash.slice(0, 40) } }).then(() => {}).catch(() => {});
+      void supabase.rpc("report_dac_evidence" as any, { p_kind: kind, p_meta: { ...detail, mode: location.hash.slice(0, 40) } }).then(() => {}, () => {});
     };
     const onExt = (url: string) => {
       extSeen = true; setExtWarn(true);

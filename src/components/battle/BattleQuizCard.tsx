@@ -130,7 +130,7 @@ const BattleQuizCard = ({
   // Quiz Type: Select meaning from options (English -> Chinese)
   if (quizType === "meaning") {
     return (
-      <Card 
+      <Card data-dac-answer-region
         variant="glow" 
         className={cn(
           "max-w-lg mx-auto p-8 text-center animate-scale-in transition-all",
@@ -198,7 +198,7 @@ const BattleQuizCard = ({
   // Quiz Type: Select English word from options (Chinese -> English)
   if (quizType === "reverse") {
     return (
-      <Card 
+      <Card data-dac-answer-region
         variant="glow" 
         className={cn(
           "max-w-lg mx-auto p-8 text-center animate-scale-in transition-all",
@@ -257,7 +257,7 @@ const BattleQuizCard = ({
     const isCorrect = isAnswerCorrect(userInput, word.word);
     
     return (
-      <Card 
+      <Card data-dac-answer-region
         variant="glow" 
         className={cn(
           "max-w-lg mx-auto p-8 text-center animate-scale-in transition-all",
@@ -331,7 +331,7 @@ const BattleQuizCard = ({
     const isCorrect = isAnswerCorrect(userInput, word.word);
     
     return (
-      <Card 
+      <Card data-dac-answer-region
         variant="glow" 
         className={cn(
           "max-w-lg mx-auto p-8 text-center animate-scale-in transition-all",

@@ -115,7 +115,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
     } finally { setPending(false); submitLock.current = false; }
   };
   return (
-    <Card variant="glow" className={cn("max-w-lg mx-auto p-6 sm:p-8 text-center animate-scale-in transition-all motion-reduce:animate-none",
+    <Card data-dac-answer-region variant="glow" className={cn("max-w-lg mx-auto p-6 sm:p-8 text-center animate-scale-in transition-all motion-reduce:animate-none",
       result === true && "animate-correct-flash", result === false && "animate-wrong-shake")}>
       <div className="mb-6 flex justify-center">
         <span className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium",

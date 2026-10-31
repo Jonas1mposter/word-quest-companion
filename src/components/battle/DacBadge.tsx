@@ -3,7 +3,7 @@ import dacLogo from "@/assets/dac-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
-import { findExtensionResource, isSyntheticInputViolation, tamperedNatives } from "@/lib/dacExtension";
+import { findAutomationMarkers, findExtensionResource, isAnswerControl, isSyntheticInputViolation, tamperedNatives } from "@/lib/dacExtension";
 
 /**
  * DAC（Dipont Anti-Cheat）对局内常驻角标，固定在右下角。
@@ -23,6 +23,8 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   const awaySinceRef = useRef(0);
   const [kicked, setKicked] = useState(false);
   const kickedRef = useRef(false);
+  const syntheticRef = useRef(0);
+  const reportedRef = useRef(new Set<string>());
   const forfeitRef = useRef(onForfeit);
   forfeitRef.current = onForfeit;
   const kick = (reason: string, meta: Record<string, number>) => {
@@ -82,10 +84,10 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     const fire = kick;
     if ((navigator as any).webdriver) { fire("webdriver", {}); return; }
     let moves: { x: number; y: number; t: number }[] = [];
-    let untrusted = 0, clicks = 0, robotic = 0;
+    let clicks = 0, robotic = 0;
     let last: { x: number; y: number } | null = null;
     const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
+      if (!e.isTrusted || e.pointerType !== "mouse") return;
       moves.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
       if (moves.length > 200) moves = moves.slice(-200);
     };
@@ -110,16 +112,16 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       clicks++; if (bot) robotic++;
       last = { x: e.clientX, y: e.clientY };
       moves = [];
-      if (robotic >= 4 && robotic / clicks >= 0.6) fire("robotic_mouse", { clicks, robotic });
+      if (robotic >= 4 && robotic / clicks >= 0.6 && !reportedRef.current.has("mouse_path")) {
+        reportedRef.current.add("mouse_path");
+        void supabase.rpc("report_dac_evidence" as any, { p_kind: "native_tamper", p_meta: { signal: "mouse_path", clicks, robotic } }).then(() => {}, () => {});
+      }
     };
     window.addEventListener("pointermove", onMove, true);
     window.addEventListener("pointerdown", onDown, true);
-    const onClick = (e: MouseEvent) => { if (!e.isTrusted) { untrusted++; if (untrusted >= 2) fire("synthetic_click", { untrusted }); } };
-    window.addEventListener("click", onClick, true);
     return () => {
       window.removeEventListener("pointermove", onMove, true);
       window.removeEventListener("pointerdown", onDown, true);
-      window.removeEventListener("click", onClick, true);
     };
   }, [monitoring, !!onForfeit]);
 
@@ -127,12 +129,12 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   const [extWarn, setExtWarn] = useState(false);
   useEffect(() => {
     if (!monitoring) return;
-    const reported = new Set<string>();
-    let extSeen = false, synthetic = 0;
+    const reported = reportedRef.current;
+    let extSeen = false;
     const report = (kind: string, detail: Record<string, unknown>) => {
       if (reported.has(kind)) return;
       reported.add(kind);
-      supabase.rpc("report_dac_evidence" as any, { p_kind: kind, p_meta: { ...detail, mode: location.hash.slice(0, 40) } }).then(() => {});
+      void supabase.rpc("report_dac_evidence" as any, { p_kind: kind, p_meta: { ...detail, mode: location.hash.slice(0, 40) } }).then(() => {}, () => {});
     };
     const onExt = (url: string) => {
       extSeen = true; setExtWarn(true);
@@ -140,21 +142,30 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     };
     const initial = findExtensionResource(document);
     if (initial) onExt(initial);
-    const tampered = tamperedNatives();
-    if (tampered.length) report("native_tamper", { fns: tampered });
+    const checkHooks = () => {
+      const markers = findAutomationMarkers();
+      if (markers.length) { extSeen = true; setExtWarn(true); report("extension_injection", { markers }); }
+      const tampered = tamperedNatives();
+      if (tampered.length) report("native_tamper", { fns: tampered });
+    };
+    checkHooks();
     const mo = new MutationObserver((muts) => {
+      checkHooks();
       for (const m of muts) for (const n of Array.from(m.addedNodes)) {
         if (n instanceof Element) { const u = findExtensionResource(n); if (u) return onExt(u); }
       }
     });
-    mo.observe(document.documentElement, { childList: true, subtree: true });
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "href", "data-time"] });
     const onInput = (e: Event) => {
-      if (e.isTrusted) return;
-      synthetic++;
-      report("synthetic_input", { type: e.type, extension: extSeen });
-      if (isSyntheticInputViolation(synthetic)) kick("synthetic_input", { synthetic, extension: extSeen ? 1 : 0 });
+      if (e.isTrusted || !isAnswerControl(e.target)) return;
+      // Stop at window capture, before React or the form can send an answer.
+      e.preventDefault(); e.stopImmediatePropagation();
+      syntheticRef.current++;
+      report("synthetic_input", { type: e.type, extension: extSeen, blocked: true });
+      if (isSyntheticInputViolation(syntheticRef.current)) kick("synthetic_input", { synthetic: syntheticRef.current, extension: extSeen ? 1 : 0 });
     };
-    for (const t of ["keydown", "input", "beforeinput"]) window.addEventListener(t, onInput, true);
+    const guardedEvents = ["click", "keydown", "input", "beforeinput"];
+    for (const t of guardedEvents) window.addEventListener(t, onInput, true);
     // 复制/右键题目（拿去搜索、翻译或丢给 AI）：阻止并记录
     const onCopy = (e: Event) => {
       const tgt = e.target as HTMLElement | null;
@@ -173,13 +184,14 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     } catch { /* 旧浏览器不支持 */ }
     // 开发者工具/侧边栏（窗口内外尺寸差异过大）：仅记录
     const dev = window.setInterval(() => {
+      checkHooks();
       if (window.outerWidth - window.innerWidth > 260 || window.outerHeight - window.innerHeight > 260) report("devtools_open", { dw: window.outerWidth - window.innerWidth, dh: window.outerHeight - window.innerHeight });
     }, 3000);
     return () => {
       for (const t of ["copy", "cut", "contextmenu", "dragstart"]) document.removeEventListener(t, onCopy, true);
       bc?.close(); window.clearInterval(dev);
       mo.disconnect();
-      for (const t of ["keydown", "input", "beforeinput"]) window.removeEventListener(t, onInput, true);
+      for (const t of guardedEvents) window.removeEventListener(t, onInput, true);
     };
   }, [monitoring]);
 

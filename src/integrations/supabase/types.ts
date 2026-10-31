@@ -2054,6 +2054,7 @@ export type Database = {
           player3_id: string | null
           player4_id: string | null
           question_count: number
+          rank_voided: boolean
           started_at: string | null
           status: string
           subject: string | null
@@ -2077,6 +2078,7 @@ export type Database = {
           player3_id?: string | null
           player4_id?: string | null
           question_count?: number
+          rank_voided?: boolean
           started_at?: string | null
           status?: string
           subject?: string | null
@@ -2100,6 +2102,7 @@ export type Database = {
           player3_id?: string | null
           player4_id?: string | null
           question_count?: number
+          rank_voided?: boolean
           started_at?: string | null
           status?: string
           subject?: string | null
@@ -4416,6 +4419,10 @@ export type Database = {
       }
       use_backpack_item: { Args: { p_item_id: string }; Returns: Json }
       use_backpack_item_legacy: { Args: { p_item_id: string }; Returns: Json }
+      void_dac_match_rank: {
+        Args: { p_match_id: string; p_profile_id: string; p_reason: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "teacher" | "user"

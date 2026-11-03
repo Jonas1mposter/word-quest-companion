@@ -9,6 +9,7 @@ import { haptics } from "@/lib/haptics";
 import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/lib/audioManager";
+import { guardAnswerEvent } from "@/lib/dacAnswerEvent";
 
 export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio, onHealthChange }: {
   question: ServerQuestion;
@@ -144,7 +145,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       {choice ? <div className="grid gap-3">
         {question.options.map(option => (
           <Button key={option} variant="outline" disabled={pending || result !== null || disabled || (attemptedAnswer.current !== null && attemptedAnswer.current !== option)}
-            onClick={() => void submit(option)} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
+            onClick={event => { if (guardAnswerEvent(event)) void submit(option); }} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
               result !== null && selected !== option && "opacity-60",
               selected === option && pending && "border-primary bg-primary/10",
               selected === option && result === true && "border-success bg-success/10 text-success dark:text-success-foreground",
@@ -156,8 +157,8 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
             {selected === option && result === false && <XCircle className="w-5 h-5 shrink-0" />}
           </Button>
         ))}
-      </div> : <form className="space-y-4" onSubmit={event => { event.preventDefault(); void submit(input.trim()); }}>
-        <Input data-no-translate aria-label="输入英文单词" placeholder="输入英文单词..." value={input} onChange={event => setInput(event.target.value)}
+      </div> : <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (guardAnswerEvent(event)) void submit(input.trim()); }}>
+        <Input data-no-translate aria-label="输入英文单词" placeholder="输入英文单词..." value={input} onChange={event => { if (guardAnswerEvent(event)) setInput(event.target.value); }}
           disabled={pending || result !== null || disabled || attemptedAnswer.current !== null} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
           className={cn("h-14 text-center text-xl font-mono text-foreground", result === true && "border-success bg-success/10", result === false && "border-destructive bg-destructive/10")} />
         <Button type="submit" className="w-full h-12" disabled={!input.trim() || pending || result !== null || disabled || (type === "listening" && !audioReady)}>
@@ -168,7 +169,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
         <span>正确答案</span><p data-no-translate className="mt-1 text-xl font-mono text-foreground break-words [overflow-wrap:anywhere]">{correctAnswer}</p>
       </div>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-      {error && attemptedAnswer.current !== null && <Button variant="outline" className="mt-3" disabled={pending || disabled} onClick={() => void submit(attemptedAnswer.current ?? "")}>重试原答案</Button>}
+      {error && attemptedAnswer.current !== null && <Button variant="outline" className="mt-3" disabled={pending || disabled} onClick={event => { if (guardAnswerEvent(event)) void submit(attemptedAnswer.current ?? ""); }}>重试原答案</Button>}
       <div aria-live="polite" className="min-h-6 mt-4 text-sm flex items-center justify-center gap-2">
         {result !== null && <><span className={result ? "text-success" : "text-destructive"}>{result ? "回答正确" : "回答错误"}</span><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></>}
       </div>

@@ -8,6 +8,7 @@ import { speakWord as speak } from "@/hooks/useSpeech";
 import { useMatchSounds } from "@/hooks/useMatchSounds";
 import { haptics } from "@/lib/haptics";
 import { inferPos } from "@/lib/partOfSpeech";
+import { guardAnswerEvent } from "@/lib/dacAnswerEvent";
 
 const PosTag = ({ value }: { value: string }) =>
   value ? (
@@ -122,6 +123,7 @@ const BattleQuizCard = ({
 
   // Handle Enter key for input types
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!guardAnswerEvent(e)) return;
     if (e.key === "Enter") {
       handleInputSubmit();
     }
@@ -165,7 +167,7 @@ const BattleQuizCard = ({
             return (
               <button
                 key={index}
-                onClick={() => handleOptionSelect(option)}
+                onClick={event => { if (guardAnswerEvent(event)) handleOptionSelect(option); }}
                 disabled={showResult || disabled}
                 className={cn(
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium",
@@ -222,7 +224,7 @@ const BattleQuizCard = ({
             return (
               <button
                 key={index}
-                onClick={() => handleOptionSelect(option)}
+                onClick={event => { if (guardAnswerEvent(event)) handleOptionSelect(option); }}
                 disabled={showResult || disabled}
                 className={cn(
                   "p-4 rounded-xl border-2 text-left transition-all duration-300 font-medium font-mono",
@@ -281,7 +283,7 @@ const BattleQuizCard = ({
             type="text"
             placeholder="输入英文单词后按回车..."
             value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
+            onChange={(e) => { if (guardAnswerEvent(e)) setUserInput(e.target.value); }}
             onKeyDown={handleKeyDown}
             disabled={showResult || disabled}
             className={cn(
@@ -302,7 +304,7 @@ const BattleQuizCard = ({
 
           {!showResult && (
             <button
-              onClick={handleInputSubmit}
+              onClick={event => { if (guardAnswerEvent(event)) handleInputSubmit(); }}
               disabled={!userInput.trim() || disabled}
               className={cn(
                 "w-full py-3 rounded-xl font-medium transition-all",
@@ -358,7 +360,7 @@ const BattleQuizCard = ({
             type="text"
             placeholder="输入你听到的单词..."
             value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
+            onChange={(e) => { if (guardAnswerEvent(e)) setUserInput(e.target.value); }}
             onKeyDown={handleKeyDown}
             disabled={showResult || disabled}
             className={cn(
@@ -384,7 +386,7 @@ const BattleQuizCard = ({
 
           {!showResult && (
             <button
-              onClick={handleInputSubmit}
+              onClick={event => { if (guardAnswerEvent(event)) handleInputSubmit(); }}
               disabled={!userInput.trim() || disabled}
               className={cn(
                 "w-full py-3 rounded-xl font-medium transition-all",

@@ -48,6 +48,22 @@ export function isAnswerControl(target: EventTarget | null): boolean {
 
 /** Sample-specific marker; collect its presence only, never captured words or tokens. */
 export function findAutomationMarkers(root: ParentNode = document): string[] {
+  const markers: string[] = [];
   const captured = root.querySelector("[id='__tts_captured'][data-time]");
-  return captured ? ["wordmaster_grabber_tts_bridge"] : [];
+  if (captured) markers.push("wordmaster_grabber_tts_bridge");
+  const el = root instanceof Document ? root.documentElement : root instanceof Element ? root : null;
+  if (!el) return markers;
+  // Correlate random handoff, version and capability; never read captured content.
+  for (const attr of Array.from(el.attributes)) {
+    if (!/^data-d[a-z0-9]{6}$/.test(attr.name) || !/^x[a-z0-9]{6}$/.test(attr.value)) continue;
+    const prefix = attr.value;
+    const version = el.getAttribute(`data-${prefix}-v`);
+    if (version && /^1\.16\.0-\d{4}-\d{2}-\d{2}-/.test(version) && version.endsWith(prefix) &&
+      el.getAttribute(`data-${prefix}-cap`) === "s") {
+      markers.push("wordmaster_grabber_random_bridge");
+      if (el.getAttribute(`data-${prefix}-s`) === "1") markers.push("wordmaster_grabber_listener_shield");
+      break;
+    }
+  }
+  return markers;
 }

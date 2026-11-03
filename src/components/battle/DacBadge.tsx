@@ -3,6 +3,7 @@ import dacLogo from "@/assets/dac-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { isAwayViolation, isSwitchViolation, SWITCH_LIMIT } from "@/lib/dacAway";
+import { subscribeBlockedAnswer } from "@/lib/dacAnswerEvent";
 import { findAutomationMarkers, findExtensionResource, isAnswerControl, isSyntheticInputViolation, tamperedNatives } from "@/lib/dacExtension";
 
 /**
@@ -69,10 +70,11 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       }
     }, 1000);
     const onVis = () => (document.hidden ? leave() : back());
-    document.addEventListener("visibilitychange", onVis);
+    const visibilityListener: EventListenerObject = { handleEvent: onVis };
+    document.addEventListener("visibilitychange", visibilityListener);
     return () => {
       window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVis);
+      document.removeEventListener("visibilitychange", visibilityListener);
       awayRef.current = false;
       awaySinceRef.current = 0;
     };
@@ -156,16 +158,23 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       }
     });
     mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "href", "data-time"] });
+    const rootObserver = new MutationObserver(checkHooks);
+    rootObserver.observe(document.documentElement, { attributes: true });
+    const blockedAnswer = (type: string) => {
+      syntheticRef.current++;
+      report("synthetic_input", { type, extension: extSeen, blocked: true });
+      if (isSyntheticInputViolation(syntheticRef.current)) kick("synthetic_input", { synthetic: syntheticRef.current, extension: extSeen ? 1 : 0 });
+    };
+    const unsubscribe = subscribeBlockedAnswer(blockedAnswer);
     const onInput = (e: Event) => {
       if (e.isTrusted || !isAnswerControl(e.target)) return;
       // Stop at window capture, before React or the form can send an answer.
       e.preventDefault(); e.stopImmediatePropagation();
-      syntheticRef.current++;
-      report("synthetic_input", { type: e.type, extension: extSeen, blocked: true });
-      if (isSyntheticInputViolation(syntheticRef.current)) kick("synthetic_input", { synthetic: syntheticRef.current, extension: extSeen ? 1 : 0 });
+      blockedAnswer(e.type);
     };
-    const guardedEvents = ["click", "keydown", "input", "beforeinput"];
-    for (const t of guardedEvents) window.addEventListener(t, onInput, true);
+    const guardedEvents = ["click", "keydown", "input", "beforeinput", "submit"];
+    const inputListener: EventListenerObject = { handleEvent: onInput };
+    for (const t of guardedEvents) window.addEventListener(t, inputListener, true);
     // 复制/右键题目（拿去搜索、翻译或丢给 AI）：阻止并记录
     const onCopy = (e: Event) => {
       const tgt = e.target as HTMLElement | null;
@@ -191,7 +200,8 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       for (const t of ["copy", "cut", "contextmenu", "dragstart"]) document.removeEventListener(t, onCopy, true);
       bc?.close(); window.clearInterval(dev);
       mo.disconnect();
-      for (const t of guardedEvents) window.removeEventListener(t, onInput, true);
+      rootObserver.disconnect(); unsubscribe();
+      for (const t of guardedEvents) window.removeEventListener(t, inputListener, true);
     };
   }, [monitoring]);
 

@@ -9,10 +9,9 @@ const listener: EventListenerObject = { handleEvent(event) {
     const form = target instanceof Element ? target.closest("form") : null;
     if (form instanceof HTMLFormElement) {
       gestures.add(form);
-      queueMicrotask(() => gestures.delete(form));
+      setTimeout(() => gestures.delete(form), 0);
     }
   }
-  queueMicrotask(() => observed.delete(event));
 } };
 // Object listeners avoid the sample's function-source based listener removal.
 if (typeof window !== "undefined") {
@@ -31,7 +30,7 @@ export function guardAnswerEvent(event: unknown): boolean {
   const candidate = event as { nativeEvent?: unknown; currentTarget?: unknown } | null;
   const native = candidate?.nativeEvent;
   const target = candidate?.currentTarget;
-  const real = native instanceof Event && observed.has(native) && target instanceof Element &&
+  const real = native instanceof Event && native.eventPhase !== Event.NONE && observed.has(native) && target instanceof Element &&
     native.composedPath().includes(target);
   const allowed = real && (blockedListeners.size === 0 || (native.isTrusted &&
     (native.type !== "submit" || (target instanceof HTMLFormElement && gestures.has(target)))));

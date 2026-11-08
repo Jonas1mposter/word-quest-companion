@@ -36,8 +36,13 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   };
 
   useEffect(() => {
-    const onOnline = () => { onlineRef.current = true; setOnline(true); };
-    const onOffline = () => { onlineRef.current = false; awayRef.current = false; setOnline(false); };
+    const syncOnline = () => {
+      onlineRef.current = navigator.onLine;
+      if (!navigator.onLine) awayRef.current = false;
+      setOnline(navigator.onLine);
+    };
+    const onOnline = syncOnline;
+    const onOffline = syncOnline;
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
@@ -72,6 +77,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
     const onVis = () => (document.hidden ? leave() : back());
     const visibilityListener: EventListenerObject = { handleEvent: onVis };
     document.addEventListener("visibilitychange", visibilityListener);
+    if (document.hidden) leave();
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", visibilityListener);
@@ -130,7 +136,8 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
   // 浏览器插件检测：扩展注入、原生函数被改写、脚本合成键盘/输入
   const [extWarn, setExtWarn] = useState(false);
   useEffect(() => {
-    if (!monitoring) return;
+    // Answer enforcement must survive loading/errors/offline. Only absence monitoring pauses.
+    if (!onForfeit && !monitoring) return;
     const reported = reportedRef.current;
     let extSeen = false;
     const report = (kind: string, detail: Record<string, unknown>) => {
@@ -203,7 +210,7 @@ const DacBadge = ({ status = "监控中", onForfeit }: { status?: "启动中" | 
       rootObserver.disconnect(); unsubscribe();
       for (const t of guardedEvents) window.removeEventListener(t, inputListener, true);
     };
-  }, [monitoring]);
+  }, [monitoring, !!onForfeit]);
 
   const kickMsg = "DAC 检测到违规（疑似 AI/脚本/浏览器插件操控或长时间离开对局），本局判负并已记录";
   return (

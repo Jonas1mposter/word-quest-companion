@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     });
     if (submitError) return json({ error: submitError.message }, 409);
     const feedbackTask = submittedSpellingFeedback(admin, matchId, profile.id, questionIndex, result);
-    if (result?.matchEnded || result?.duplicate) return json({ ...result, ...await feedbackTask });
+    if (result?.matchEnded) return json({ ...result, ...await feedbackTask });
     const isCorrect = result?.isCorrect === true;
     // Fetch feedback and timing rows together; reuse timing rows for review-only speed checks.
     const [feedback, { data: mine, error: timingError }] = await Promise.all([
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     ]);
     if (timingError) return json({ error: "Unable to validate answer timing" }, 503);
     const timing = analyzeTiming(mine ?? []);
-    EdgeRuntime.waitUntil(reviewAnswer(admin, profile, match, matchId, questionIndex, elapsedMs,
+    if (!result?.duplicate) EdgeRuntime.waitUntil(reviewAnswer(admin, profile, match, matchId, questionIndex, elapsedMs,
       isCorrect, mine ?? [], timing).catch(() => { console.error("Answer review unavailable"); }));
 
     if (timing.robotic) {
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, isCorrect, ...feedback, dacForfeit: { reason: "fixed_answer_timing", meta: timing } });
     }
 
-    return json({ ok: true, isCorrect, ...feedback });
+    return json({ ...result, ok: true, isCorrect, ...feedback });
   } catch (e) {
     if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);

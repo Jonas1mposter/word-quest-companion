@@ -26,14 +26,32 @@ export function subscribeBlockedAnswer(listener: (type: string) => void) {
 }
 
 /** Not server attestation: browser-level CDP input remains indistinguishable. */
-export function guardAnswerEvent(event: unknown): boolean {
+export function guardAnswerEvent(event: unknown, requireTrusted = false): boolean {
   const candidate = event as { nativeEvent?: unknown; currentTarget?: unknown } | null;
   const native = candidate?.nativeEvent;
   const target = candidate?.currentTarget;
   const real = native instanceof Event && native.eventPhase !== Event.NONE && observed.has(native) && target instanceof Element &&
     native.composedPath().includes(target);
-  const allowed = real && (blockedListeners.size === 0 || (native.isTrusted &&
+  const allowed = real && ((!requireTrusted && blockedListeners.size === 0) || (native.isTrusted &&
     (native.type !== "submit" || (target instanceof HTMLFormElement && gestures.has(target)))));
+  if (!allowed) for (const listener of blockedListeners) listener("answer_callback");
+  return allowed;
+}
+
+// Local callback hardening only: never send this capability as server attestation.
+export type AnswerPermit = Readonly<{ readonly kind: "dac-answer" }>;
+const permits = new WeakMap<AnswerPermit, { matchId: string; questionIndex: number; answer: string }>();
+export function issueAnswerPermit(event: unknown, matchId: string, questionIndex: number, answer: string): AnswerPermit | undefined {
+  if (!guardAnswerEvent(event, true)) return;
+  const permit: AnswerPermit = Object.freeze({ kind: "dac-answer" });
+  permits.set(permit, { matchId, questionIndex, answer });
+  queueMicrotask(() => permits.delete(permit));
+  return permit;
+}
+export function consumeAnswerPermit(permit: AnswerPermit | undefined, matchId: string, questionIndex: number, answer: string): boolean {
+  const binding = permit && permits.get(permit);
+  if (permit) permits.delete(permit);
+  const allowed = !!binding && binding.matchId === matchId && binding.questionIndex === questionIndex && binding.answer === answer;
   if (!allowed) for (const listener of blockedListeners) listener("answer_callback");
   return allowed;
 }

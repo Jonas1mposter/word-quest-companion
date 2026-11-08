@@ -57,4 +57,20 @@ describe("v1.16 sample bypass defense", () => {
     const root = document.createElement("div"); root.setAttribute("data-dabc123", "xabc123");
     expect(findAutomationMarkers(root)).toEqual([]);
   });
+  it("blocks synthetic answers during a health pause without disabling the input guard", () => {
+    const onAnswer = vi.fn(), onForfeit = vi.fn();
+    render(<><DacBadge status="启动中" onForfeit={onForfeit} /><ServerBattleQuizCard requireInputProof matchId="match" question={{ questionIndex: 0, total: 15, word: "apple", options: ["苹果", "梨"] }} comboCount={0} onAnswer={onAnswer} /></>);
+    const button = screen.getByRole("button", { name: "苹果" });
+    act(() => button.click());
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(onForfeit).not.toHaveBeenCalled();
+    act(() => button.click());
+    expect(onForfeit).toHaveBeenCalledWith("synthetic_input", { synthetic: 2, extension: 0 });
+  });
+  it("ranked trust does not depend on a mounted DAC subscriber", () => {
+    const onAnswer = vi.fn();
+    render(<ServerBattleQuizCard requireInputProof matchId="match" question={{ questionIndex: 0, total: 15, word: "apple", options: ["苹果", "梨"] }} comboCount={0} onAnswer={onAnswer} />);
+    act(() => screen.getByRole("button", { name: "苹果" }).click());
+    expect(onAnswer).not.toHaveBeenCalled();
+  });
 });

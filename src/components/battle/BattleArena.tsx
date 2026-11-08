@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import ServerBattleQuizCard from "@/components/battle/ServerBattleQuizCard";
 import { useServerBattleQuestion } from "@/hooks/useServerBattleQuestion";
 import { BattleAnswerResult, submitBattleAnswer } from "@/lib/serverBattle";
+import { consumeAnswerPermit, type AnswerPermit } from "@/lib/dacAnswerEvent";
 import PlayerBattleCard from "./PlayerBattleCard";
 import KillStreakBanner from "./KillStreakBanner";
 import DacBadge from "./DacBadge";
@@ -296,8 +297,9 @@ const BattleArena = ({
     if (phase === "battle") questionShownAtRef.current = Date.now();
   }, [currentQuestion, phase]);
 
-  const handleAnswer = useCallback(async (answer: string): Promise<BattleAnswerResult> => {
+  const handleAnswer = useCallback(async (answer: string, permit?: AnswerPermit): Promise<BattleAnswerResult> => {
     if (!matchData || !question || !profile || matchEndedRef.current || answeringRef.current) throw new Error("对局已结束");
+    if (!consumeAnswerPermit(permit, matchData.id, question.questionIndex, answer)) throw new Error("请通过答题区提交答案");
     answeringRef.current = true;
     try {
       const data = await submitBattleAnswer(matchData.id, question.questionIndex, answer, Date.now() - questionShownAtRef.current);
@@ -531,7 +533,7 @@ const BattleArena = ({
         </div>
         <KillStreakBanner combo={comboCount} />
         {question && (
-          <ServerBattleQuizCard key={question.questionIndex} question={question} matchId={matchData.id}
+          <ServerBattleQuizCard requireInputProof key={question.questionIndex} question={question} matchId={matchData.id}
             onAnswer={handleAnswer} comboCount={comboCount} disabled={questionLoading || !!questionError} onHealthChange={setAnswerHealthy} />
         )}
         {questionError && <div role="alert" className="text-center mt-4 text-destructive">

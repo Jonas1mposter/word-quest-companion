@@ -9,16 +9,17 @@ import { haptics } from "@/lib/haptics";
 import { BattleAnswerResult, fetchBattleAudio, ServerQuestion } from "@/lib/serverBattle";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/lib/audioManager";
-import { guardAnswerEvent } from "@/lib/dacAnswerEvent";
+import { guardAnswerEvent, issueAnswerPermit, type AnswerPermit } from "@/lib/dacAnswerEvent";
 
-export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio, onHealthChange }: {
+export default function ServerBattleQuizCard({ question, onAnswer, comboCount, disabled, matchId, loadAudio, onHealthChange, requireInputProof = false }: {
   question: ServerQuestion;
-  onAnswer: (answer: string) => Promise<boolean | BattleAnswerResult>;
+  onAnswer: (answer: string, permit?: AnswerPermit) => Promise<boolean | BattleAnswerResult>;
   comboCount: number;
   disabled?: boolean;
   matchId?: string;
   loadAudio?: (questionIndex: number) => Promise<Blob>;
   onHealthChange?: (healthy: boolean) => void;
+  requireInputProof?: boolean;
 }) {
   const sounds = useMatchSounds();
   const [selected, setSelected] = useState<string | null>(null);
@@ -97,15 +98,18 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       if (activeRef.current) setAudioError("发音加载失败，请点击重试");
     } finally { if (activeRef.current) setAudioLoading(false); }
   };
-  const submit = async (option: string) => {
+  const submit = async (option: string, event: unknown) => {
     if (submitLock.current || pending || result !== null || disabled || (!choice && !option.trim()) || (type === "listening" && !audioReady)) return;
+    option = attemptedAnswer.current ?? option;
+    const permit = requireInputProof && matchId ? issueAnswerPermit(event, matchId, question.questionIndex, option) : undefined;
+    if (requireInputProof && !permit) return;
     submitLock.current = true;
     // A lost response may already have committed this answer. Never retry a different answer.
     attemptedAnswer.current ??= option;
     option = attemptedAnswer.current;
     setPending(true); setSelected(option); setError(null);
     try {
-      const response = await onAnswer(option);
+      const response = await (requireInputProof ? onAnswer(option, permit) : onAnswer(option));
       const correct = typeof response === "boolean" ? response : response.isCorrect;
       if (!choice && typeof response !== "boolean" && typeof response.correctAnswer === "string") setCorrectAnswer(response.correctAnswer);
       setResult(correct);
@@ -145,7 +149,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
       {choice ? <div className="grid gap-3">
         {question.options.map(option => (
           <Button key={option} variant="outline" disabled={pending || result !== null || disabled || (attemptedAnswer.current !== null && attemptedAnswer.current !== option)}
-            onClick={event => { if (guardAnswerEvent(event)) void submit(option); }} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
+            onClick={event => { if (guardAnswerEvent(event, requireInputProof)) void submit(option, event); }} className={cn("h-auto min-h-14 py-4 px-4 whitespace-normal text-left justify-between gap-3 rounded-lg border-2 bg-card text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-100",
               result !== null && selected !== option && "opacity-60",
               selected === option && pending && "border-primary bg-primary/10",
               selected === option && result === true && "border-success bg-success/10 text-success dark:text-success-foreground",
@@ -157,8 +161,8 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
             {selected === option && result === false && <XCircle className="w-5 h-5 shrink-0" />}
           </Button>
         ))}
-      </div> : <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (guardAnswerEvent(event)) void submit(input.trim()); }}>
-        <Input data-no-translate aria-label="输入英文单词" placeholder="输入英文单词..." value={input} onChange={event => { if (guardAnswerEvent(event)) setInput(event.target.value); }}
+      </div> : <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (guardAnswerEvent(event, requireInputProof)) void submit(input.trim(), event); }}>
+        <Input data-no-translate aria-label="输入英文单词" placeholder="输入英文单词..." value={input} onChange={event => { if (guardAnswerEvent(event, requireInputProof)) setInput(event.target.value); }}
           disabled={pending || result !== null || disabled || attemptedAnswer.current !== null} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false}
           className={cn("h-14 text-center text-xl font-mono text-foreground", result === true && "border-success bg-success/10", result === false && "border-destructive bg-destructive/10")} />
         <Button type="submit" className="w-full h-12" disabled={!input.trim() || pending || result !== null || disabled || (type === "listening" && !audioReady)}>
@@ -169,7 +173,7 @@ export default function ServerBattleQuizCard({ question, onAnswer, comboCount, d
         <span>正确答案</span><p data-no-translate className="mt-1 text-xl font-mono text-foreground break-words [overflow-wrap:anywhere]">{correctAnswer}</p>
       </div>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-      {error && attemptedAnswer.current !== null && <Button variant="outline" className="mt-3" disabled={pending || disabled} onClick={event => { if (guardAnswerEvent(event)) void submit(attemptedAnswer.current ?? ""); }}>重试原答案</Button>}
+      {error && attemptedAnswer.current !== null && <Button variant="outline" className="mt-3" disabled={pending || disabled} onClick={event => { if (guardAnswerEvent(event, requireInputProof)) void submit(attemptedAnswer.current ?? "", event); }}>重试原答案</Button>}
       <div aria-live="polite" className="min-h-6 mt-4 text-sm flex items-center justify-center gap-2">
         {result !== null && <><span className={result ? "text-success" : "text-destructive"}>{result ? "回答正确" : "回答错误"}</span><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></>}
       </div>

@@ -13,6 +13,12 @@ export async function searchMatch(options: SearchOptions): Promise<string | null
   const { data, error } = await boundedRequest(supabase.functions.invoke("matchmaking", {
     body: { action: "search", ...options },
   }));
+  let message = typeof data?.error === 'string' ? data.error : '';
+  if (error && 'context' in error && error.context instanceof Response) {
+    const payload = await error.context.clone().json().catch(() => null);
+    if (typeof payload?.error === 'string') message = payload.error;
+  }
+  if (message.includes('DAC_REVIEW_REQUIRED')) throw new Error('你或队友的排位资格正在等待 DAC 管理员复核，暂时可继续学习或参加自由赛。');
   if (error || data?.error) throw new Error("匹配请求未能确认，请检查网络后重试");
   if (data?.cancelled) throw new Error("匹配请求已取消，请重新匹配");
   return typeof data?.matchId === "string" ? data.matchId : null;

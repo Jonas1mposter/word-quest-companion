@@ -10,8 +10,8 @@ const visibility = (hidden: boolean) => {
   document.dispatchEvent(new Event("visibilitychange"));
 };
 describe("DAC只检测可作答期间的真实页面离开", () => {
-  beforeEach(() => { vi.useFakeTimers(); report.mockClear(); visibility(false); });
-  afterEach(() => { cleanup(); vi.useRealTimers(); visibility(false); });
+  beforeEach(() => { vi.useFakeTimers(); report.mockClear(); visibility(false); Object.defineProperty(navigator, "onLine", { configurable: true, value: true }); });
+  afterEach(() => { cleanup(); vi.useRealTimers(); visibility(false); Object.defineProperty(navigator, "onLine", { configurable: true, value: true }); });
   it("窗口失焦但页面仍可见不计切屏", () => {
     const forfeit = vi.fn();
     render(<DacBadge onForfeit={forfeit} />);
@@ -22,7 +22,7 @@ describe("DAC只检测可作答期间的真实页面离开", () => {
   it("断网期间切屏和后台60秒不判作弊", () => {
     const forfeit = vi.fn();
     render(<DacBadge onForfeit={forfeit} />);
-    act(() => { window.dispatchEvent(new Event("offline")); visibility(true); vi.advanceTimersByTime(60000); visibility(false); });
+    act(() => { Object.defineProperty(navigator, "onLine", { configurable: true, value: false }); window.dispatchEvent(new Event("offline")); visibility(true); vi.advanceTimersByTime(60000); visibility(false); });
     expect(tabCalls()).toBe(0);
     expect(forfeit).not.toHaveBeenCalled();
   });
@@ -43,5 +43,21 @@ describe("DAC只检测可作答期间的真实页面离开", () => {
     render(<DacBadge onForfeit={forfeit} />);
     act(() => { for (let i = 0; i < 3; i++) { visibility(true); visibility(false); } });
     expect(forfeit).toHaveBeenCalledWith("tab_switch_limit", { count: 3 });
+  });
+  it("伪造断网通知不能关闭在线监控", () => {
+    const forfeit = vi.fn();
+    render(<DacBadge onForfeit={forfeit} />);
+    act(() => { window.dispatchEvent(new Event("offline")); for (let i = 0; i < 3; i++) { visibility(true); visibility(false); } });
+    expect(forfeit).toHaveBeenCalledWith("tab_switch_limit", { count: 3 });
+  });
+  it("在后台恢复健康时重新开始离开计时，不计暂停时长", () => {
+    const forfeit = vi.fn();
+    const { rerender } = render(<DacBadge status="启动中" onForfeit={forfeit} />);
+    act(() => { visibility(true); vi.advanceTimersByTime(60000); });
+    expect(forfeit).not.toHaveBeenCalled();
+    rerender(<DacBadge onForfeit={forfeit} />);
+    expect(tabCalls()).toBe(1);
+    act(() => vi.advanceTimersByTime(60000));
+    expect(forfeit).toHaveBeenCalledWith("background_away", expect.objectContaining({ count: 1 }));
   });
 });

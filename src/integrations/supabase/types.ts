@@ -607,6 +607,44 @@ export type Database = {
           },
         ]
       }
+      dac_review_decisions: {
+        Row: {
+          case_id: string
+          created_at: string
+          decision: string
+          id: string
+          note: string
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          note: string
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          note?: string
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dac_review_decisions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dac_review_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_quests: {
         Row: {
           created_at: string

@@ -9,6 +9,7 @@ import { ShieldAlert, RefreshCw, Loader2, Swords, Search, ChevronDown, ChevronUp
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import DacRiskPanel from "./DacRiskPanel";
+import DacReviewPanel from "./DacReviewPanel";
 
 interface DacFlag {
   id: string;
@@ -201,12 +202,13 @@ export function DacTab() {
         </div>
         <DacRiskPanel />
         <p className="text-sm text-muted-foreground">
-          Dipont Anti-Cheat 自动检测答题/闯关速度异常。标记仅作记录，不影响玩家正常结算。
+          行为标记供人工核查；实际拦截案例单独复核。
         </p>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="flags" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+        <Tabs defaultValue="review" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="review">拦截复核</TabsTrigger>
             <TabsTrigger value="flags" className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />
               可疑标记
@@ -219,6 +221,7 @@ export function DacTab() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="review"><DacReviewPanel /></TabsContent>
           <TabsContent value="flags">
             {loading ? (
               <div className="flex justify-center py-8">

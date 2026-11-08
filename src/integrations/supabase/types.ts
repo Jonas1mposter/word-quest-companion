@@ -553,6 +553,98 @@ export type Database = {
           },
         ]
       }
+      dac_review_cases: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          profile_id: string
+          reason: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          profile_id: string
+          reason: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          profile_id?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dac_review_cases_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dac_review_cases_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dac_review_decisions: {
+        Row: {
+          case_id: string
+          created_at: string
+          decision: string
+          id: string
+          note: string
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          note: string
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          note?: string
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dac_review_decisions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dac_review_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_quests: {
         Row: {
           created_at: string
@@ -3939,6 +4031,15 @@ export type Database = {
       add_season_pass_xp: {
         Args: { p_profile_id: string; p_xp: number }
         Returns: undefined
+      }
+      admin_dac_review_decide: {
+        Args: { p_case_id: string; p_decision: string; p_note: string }
+        Returns: Json
+      }
+      admin_dac_review_detail: { Args: { p_case_id: string }; Returns: Json }
+      admin_dac_review_list: {
+        Args: { p_offset?: number; p_search?: string; p_status?: string }
+        Returns: Json
       }
       admin_dac_risk: {
         Args: { p_days?: number }

@@ -1,0 +1,2 @@
+# Architecture rules
+- Keep DAC ranked review cases separate from evidence and match invalidation; admin-checked row-locked decisions append audit history and release only future ranked access, never cancelled rewards or unrelated bans.

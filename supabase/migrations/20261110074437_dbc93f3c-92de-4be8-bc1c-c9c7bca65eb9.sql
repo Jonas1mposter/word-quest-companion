@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.leaderboard_admin_profile_ids() FROM PUBLIC, anon;

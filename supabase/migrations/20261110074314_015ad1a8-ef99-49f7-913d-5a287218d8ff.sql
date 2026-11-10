@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.leaderboard_excluded_ids() TO anon, authenticated, service_role;

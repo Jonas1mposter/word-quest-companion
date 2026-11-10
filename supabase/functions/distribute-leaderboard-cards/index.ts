@@ -92,10 +92,13 @@ Deno.serve(async (req) => {
     if (profilesErr) throw profilesErr;
     const { data: excludedRows, error: excludedError } = await supabase.rpc("leaderboard_excluded_ids");
     if (excludedError) throw excludedError;
+    const { data: adminRows, error: adminError } = await supabase.rpc("leaderboard_admin_profile_ids");
+    if (adminError) throw adminError;
     const { data: xpExcludedRows, error: xpExcludedError } = await supabase.rpc("leaderboard_xp_excluded_ids");
     if (xpExcludedError) throw xpExcludedError;
     const xpExcluded = new Set<string>((xpExcludedRows ?? []) as string[]);
-    const excluded = new Set(((excludedRows as any[]) ?? []).map((r: any) => typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id));
+    const excluded = new Set([...((excludedRows as any[]) ?? []), ...((adminRows as any[]) ?? [])]
+      .map((r: any) => typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.leaderboard_admin_profile_ids ?? r?.id));
     const profiles = ((allProfiles ?? []) as ProfileLite[]).filter((p) => !excluded.has(p.id));
     const byZone = new Map<number, ProfileLite[]>();
     for (const p of profiles) {

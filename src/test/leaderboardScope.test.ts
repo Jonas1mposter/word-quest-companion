@@ -13,18 +13,23 @@ describe("高中合榜与经验榜专用排除", () => {
   it("其他年级不参与高中合榜", () => {
     for (const grade of [1, 6, 7, 8]) expect(leaderboardGrades(grade)).toEqual([grade]);
   });
-  it("simon_jiang 仅排除经验榜，不影响其他玩家", () => {
+  it("simon_jiang 排除所有排行榜，不影响其他玩家", () => {
     const profiles = [{ id: simon }, { id: "other" }];
     expect(eligibleForLeaderboard(profiles, "leaderboard_xp", new Set([simon]))).toEqual([{ id: "other" }]);
     for (const category of ["leaderboard_rank", "leaderboard_wins", "combo", "free_match"])
       expect(eligibleForLeaderboard(profiles, category, new Set([simon]))).toEqual(profiles);
   });
-  it("线上经验榜排除名单使用稳定账号标识", async () => {
+  it("线上排除名单使用稳定账号标识，simon_jiang 在通用排除名单中", async () => {
     const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/leaderboard_xp_excluded_ids`, {
-      method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: "{}",
-    });
-    expect(response.ok).toBe(true);
-    expect(await response.json()).toEqual([simon]);
+    const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+    const [xpRes, generalRes] = await Promise.all([
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/leaderboard_xp_excluded_ids`, { method: "POST", headers, body: "{}" }),
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/leaderboard_excluded_ids`, { method: "POST", headers, body: "{}" }),
+    ]);
+    expect(xpRes.ok).toBe(true);
+    expect(await xpRes.json()).toEqual([simon]);
+    expect(generalRes.ok).toBe(true);
+    const general = (await generalRes.json()).map((r: any) => (typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id));
+    expect(general).toContain(simon);
   });
 });

@@ -14,13 +14,17 @@ export async function getLeaderboardExcludedIds(category?: "xp"): Promise<string
   }
   if (cache) return cache;
   try {
-    const { data, error } = await supabase.rpc("leaderboard_excluded_ids" as any);
-    if (error) return [];
-    const ids = ((data as any[]) || [])
-      .map((r: any) => (typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.id))
+    const [general, admins] = await Promise.all([
+      supabase.rpc("leaderboard_excluded_ids" as any),
+      supabase.rpc("leaderboard_admin_profile_ids" as any),
+    ]);
+    if (general.error) return [];
+    const ids = [...(general.data as any[]) || [], ...((admins.data as any[]) || [])]
+      .map((r: any) => (typeof r === "string" ? r : r?.leaderboard_excluded_ids ?? r?.leaderboard_admin_profile_ids ?? r?.id))
       .filter(Boolean);
-    if (ids.length) cache = ids;
-    return ids;
+    const unique = [...new Set(ids)];
+    if (unique.length) cache = unique;
+    return unique;
   } catch {
     return [];
   }

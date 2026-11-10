@@ -4286,6 +4286,7 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: undefined
       }
+      leaderboard_admin_profile_ids: { Args: never; Returns: string[] }
       leaderboard_excluded_ids: { Args: never; Returns: string[] }
       leaderboard_xp_excluded_ids: { Args: never; Returns: string[] }
       lottery_ticket_quote: {
